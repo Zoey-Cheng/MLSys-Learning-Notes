@@ -16,7 +16,7 @@
         <link rel="prev" href="../index.html">
       
       
-        <link rel="next" href="02_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20%2B%20%E5%B8%B8%E8%A7%81%20op.html">
+        <link rel="next" href="03_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%280%29%20-%20%E8%83%8C%E6%99%AF%E7%9F%A5%E8%AF%86%28%E9%80%9A%E4%BF%A1%E5%8E%9F%E8%AF%AD%20%26%20NCCL%20%26%20%E5%8D%95%E5%8D%A1%E8%AE%A1%E7%AE%97%E6%B5%81%29.html">
       
       
         
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#01-transformer" class="md-skip">
+        <a href="#transformer-with-code" class="md-skip">
           跳转至
         </a>
       
@@ -622,7 +622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="02_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20%2B%20%E5%B8%B8%E8%A7%81%20op.html" class="md-nav__link">
+      <a href="02_算子手写(1) - CUDA 入门 + 常见 op.md" class="md-nav__link">
         
   
   
@@ -970,10 +970,10 @@
   
 
 
-<h1 id="01-transformer">01-Transformer<a class="headerlink" href="#01-transformer" title="Permanent link">&para;</a></h1>
+<h1 id="transformer-with-code">Transformer详解 (with code)<a class="headerlink" href="#transformer-with-code" title="Permanent link">&para;</a></h1>
 <div class="toc">
 <ul>
-<li><a href="#01-transformer">01-Transformer</a><ul>
+<li><a href="#transformer-with-code">Transformer详解 (with code)</a><ul>
 <li><a href="#_1">前言</a></li>
 <li><a href="#1">1. 相关概念</a><ul>
 <li><a href="#11-embedding">1.1 词嵌入 Embedding</a></li>
@@ -1016,19 +1016,19 @@
 <li><strong>核心机制</strong>：Self Attention、Multi-head Attention</li>
 <li><strong>辅助模块</strong>：Word Embedding、Position Encoding、Add（残差连接）、Norm（Layer/Batch）、Feed Forward Network（FFN）、Softmax</li>
 </ul>
-<p><img src="../assets/01-transformer/fig-01.png" alt="fig-01" width="50%" /></p>
+<p><img src="../assets/01-transformer/fig-01.png" alt="fig-01" width="35%" /></p>
 <h3 id="11-embedding">1.1 词嵌入 Embedding<a class="headerlink" href="#11-embedding" title="Permanent link">&para;</a></h3>
 <p><strong>Embedding的概念</strong></p>
 <p>文本嵌入（Text Embedding）是将文本转换为固定维度的向量表示（例如 512 维）。简单来说，它是通过映射，将不同的词关联在一起，使得模型具备一定的语义理解和推理能力。例如：</p>
 <p>queen（皇后）= king（国王）- man（男人）+ woman（女人）</p>
 <p>这个embedding矩阵的初始化通常采用一些初始化方法。假设一个包含 4 个单词的输入序列 <span class="arithmatex">\((x^1, x^2, x^3, x^4)\)</span>，在经过 Embedding 处理后，会变成形状为 [4, 512] 的向量矩阵，即<span class="arithmatex">\((a^1, a^2, a^3, a^4)\)</span>。</p>
-<p><img src="../assets/01-transformer/fig-02.png" alt="fig-02" width="30%" /></p>
+<p><img src="../assets/01-transformer/fig-02.png" alt="fig-02" width="40%" /></p>
 <p>目前已有许多成熟的词嵌入方法，如 Word2Vec，可以直接使用。通常初始化方式包括 one-hot 编码、预训练词向量（如 Word2Vec、GloVe），而在 Transformer 中，Embedding 输出通常为形状 [batch_size, seq_len, embedding_dim]。</p>
 <p><strong>位置编码 Position Encoding</strong></p>
 <p>一个句子中单词的顺序很重要，如果位置并不影响结果这合理吗？</p>
 <p>当然不合理！所以在进入attention前，最好也对单词在句子中的位置也加上考量，这就是<strong>位置编码 Position Encoding</strong>。</p>
 <p>有很多种现有的策略可参考，常见的位置编码策略包括正弦和余弦函数编码，Transformer 论文中采用了三角函数形式的编码方式：</p>
-<p><img src="../assets/01-transformer/fig-03.png" alt="fig-03" width="20%" /></p>
+<p><img src="../assets/01-transformer/fig-03.png" alt="fig-03" width="30%" /></p>
 <p>在 Transformer 的输入处理过程中，最终的单词表示向量由 <strong>词嵌入（Word Embedding）</strong> 和 <strong>位置编码（Position Encoding）</strong> 相加，即：</p>
 <p>输入向量 = 初始化 Word Embedding + 位置编码 Position Embedding</p>
 <h3 id="11-self-attention">1.1 注意力机制 Self-Attention<a class="headerlink" href="#11-self-attention" title="Permanent link">&para;</a></h3>
@@ -1065,12 +1065,12 @@ v^i &amp;= W_V a^i
 </li>
 <li><span class="arithmatex">\(d\)</span> 是之前的embedding纬度度，除以 <span class="arithmatex">\(\sqrt(d)\)</span>是为了避免数值过大影响计算。</li>
 </ul>
-<p><img src="../assets/01-transformer/fig-04.png" alt="fig-04" width="30%" /></p>
+<p><img src="../assets/01-transformer/fig-04.png" alt="fig-04" width="40%" /></p>
 <p>随后对它们进行一个softmax标准化，使得概率和为1。</p>
-<p><img src="../assets/01-transformer/fig-05.png" alt="fig-05" width="30%" /></p>
+<p><img src="../assets/01-transformer/fig-05.png" alt="fig-05" width="40%" /></p>
 <p><strong>Step 3: 使用V 计算b</strong></p>
 <p><span class="arithmatex">\(v\)</span> 表示当前 Token 的特征表示，它和 <span class="arithmatex">\(k\)</span> 具有一一对应关系。由前面 <span class="arithmatex">\(q, k\)</span> 相乘得到的注意力权重加权得到：</p>
-<p><img src="../assets/01-transformer/fig-06.png" alt="fig-06" width="30%" /></p>
+<p><img src="../assets/01-transformer/fig-06.png" alt="fig-06" width="40%" /></p>
 <p><strong>Step 4: 从整体看矩阵计算</strong></p>
 <p>对于第一个token的计算我们已经了解，那么多个token同时计算会是什么情况？假设我们这么表示：</p>
 <ul>
@@ -1098,7 +1098,7 @@ O &amp;= \hat{A}V
 <li>那么此时每个head的QKV维度为：<span class="arithmatex">\(d_k = d_{model}/H\)</span>​</li>
 </ul>
 <p>在计算层面，也出现了变化。简言之就是：想要得到output <span class="arithmatex">\(b_i\)</span>，先每个head分别计算出一个<span class="arithmatex">\(b_{i,h}\)</span>​，随后进行多头注意力输出的拼接。</p>
-<p><img src="../assets/01-transformer/fig-09.png" alt="fig-09" width="30%" /></p>
+<p><img src="../assets/01-transformer/fig-09.png" alt="fig-09" width="40%" /></p>
 <p><strong>Step 1: 多头计算</strong></p>
 <p>在MHA中，多个注意力头是并行计算的，<span class="arithmatex">\(b_{i,h}\)</span> 的计算就和上面普通的attention一样。</p>
 <p>唯一值得注意的区别是，多头QKV 的 hidden layer出现了变化，因此：</p>
@@ -1108,9 +1108,9 @@ O &amp;= \hat{A}V
 </ul>
 <p><strong>Step 2: 多头拼接</strong></p>
 <p>首先进行<strong>简单的hidden layer拼接</strong>，<span class="arithmatex">\(H*[d_k] = [H*d_k] = [d_{model}]\)</span>。这时回到了和正常attention一样维度的结果。</p>
-<p><img src="../assets/01-transformer/fig-10.png" alt="fig-10" width="50%" /></p>
+<p><img src="../assets/01-transformer/fig-10.png" alt="fig-10" width="30%" /></p>
 <p>但是，多个注意力头计算出的结果可能彼此之间缺乏整合性。为了让模型能够更好地融合不同头的信息，我们需要 一个额外的线性变换进行信息融合。</p>
-<p><img src="../assets/01-transformer/fig-11.png" alt="fig-11" width="50%" /></p>
+<p><img src="../assets/01-transformer/fig-11.png" alt="fig-11" width="30%" /></p>
 <p>其中，<span class="arithmatex">\(W^O\)</span> 是一个可训练的投影矩阵，形状为 <span class="arithmatex">\(W^O \in \mathbb{R}^{d_{\text{model}} \times d_{\text{model}}}\)</span>。</p>
 <h3 id="14-layer-norm">1.4 层归一化 Layer Norm<a class="headerlink" href="#14-layer-norm" title="Permanent link">&para;</a></h3>
 <p>Batch Norm 和 Layer Norm的选择使用也是一个常见的问题。</p>
@@ -1123,7 +1123,7 @@ O &amp;= \hat{A}V
 <p>此处参考了pytorch的说明来辅助理解：</p>
 </li>
 </ul>
-<p><img src="../assets/01-transformer/fig-12.png" alt="fig-12" width="50%" /></p>
+<p><img src="../assets/01-transformer/fig-12.png" alt="fig-12" width="30%" /></p>
 <p>简单来说就是，对于一个 <span class="arithmatex">\((N,C,H,W)\)</span> 的input（或 <span class="arithmatex">\((N,C,...)\)</span>都可以 ）：</p>
 <ul>
 <li>
@@ -1145,7 +1145,7 @@ O &amp;= \hat{A}V
 <p>此处就等于对每个词，提取出所有feature做一个正则化</p>
 </li>
 </ul>
-<p><img src="../assets/01-transformer/fig-13.png" alt="fig-13" width="30%" /></p>
+<p><img src="../assets/01-transformer/fig-13.png" alt="fig-13" width="20%" /></p>
 <p>Batch Norm：</p>
 <ul>
 <li>以 <span class="arithmatex">\(C\)</span> 为 index做norm</li>
@@ -1154,38 +1154,38 @@ O &amp;= \hat{A}V
 </ul>
 <p>这样就很好理解了，对每个feature做norm（Batch Norm），相比对于一个token的所有feature做norm（Layer Norm）。Layer Norm更合理。</p>
 <h2 id="2-transformer">2. Transformer结构<a class="headerlink" href="#2-transformer" title="Permanent link">&para;</a></h2>
-<p><img src="../assets/01-transformer/fig-14.png" alt="fig-14" width="50%" /></p>
+<p><img src="../assets/01-transformer/fig-14.png" alt="fig-14" width="35%" /></p>
 <h3 id="21">2.1 输入<a class="headerlink" href="#21" title="Permanent link">&para;</a></h3>
 <p>输入的每个单词 Token 都需要进行 <strong>Embedding</strong> 处理，先通过 <strong>Word Embedding</strong> 转换为向量表示，再加上 <strong>Position Encoding</strong>，以提供位置信息。</p>
 <h3 id="22-encoder">2.2 Encoder<a class="headerlink" href="#22-encoder" title="Permanent link">&para;</a></h3>
 <p>Encoder 侧由多个 encoder block 组成。</p>
-<p><img src="../assets/01-transformer/fig-15.png" alt="fig-15" width="50%" /></p>
+<p><img src="../assets/01-transformer/fig-15.png" alt="fig-15" width="20%" /></p>
 <p><strong>【Add &amp; Norm】</strong></p>
 <p>是一种<strong>残差连接（Residual Connection）</strong>，用于缓解深层网络的梯度消失问题。这种设计最早在 <strong>ResNet</strong> 中广泛应用。</p>
-<p><img src="../assets/01-transformer/fig-16.png" alt="fig-16" width="20%" /></p>
+<p><img src="../assets/01-transformer/fig-16.png" alt="fig-16" width="30%" /></p>
 <p><strong>【Feed Forward Layer】</strong></p>
 <p>Feed Forward 层比较简单，就是一个两层全连接MLP，其中第一层的激活函数为 Relu，第二层不使用激活函数，先升维（一般为4x）后降维，对应的公式如下：</p>
-<p><img src="../assets/01-transformer/fig-17.png" alt="fig-17" width="20%" /></p>
+<p><img src="../assets/01-transformer/fig-17.png" alt="fig-17" width="30%" /></p>
 <p>为什么需要FFN？提供非线性映射，增强局部表示能力，提升模型容量。</p>
 <p><strong>【Encoder Block 的整体结构</strong></p>
 <p>每个 <strong>Encoder Block</strong> 的输入是一个 <strong>word  embedding</strong> 矩阵 <span class="arithmatex">\([seq_len, d_{model}]\)</span>，多个 Block 叠加后，最终生成 <strong>编码信息矩阵 C</strong>，这一矩阵会被 <strong>Decoder</strong> 进一步利用。</p>
-<p><img src="../assets/01-transformer/fig-18.png" alt="fig-18" width="30%" /></p>
+<p><img src="../assets/01-transformer/fig-18.png" alt="fig-18" width="40%" /></p>
 <h3 id="23-decoder">2.3 Decoder<a class="headerlink" href="#23-decoder" title="Permanent link">&para;</a></h3>
 <p>Decoder 侧也由多个 decoder block 组成，但它会利用 <strong>Encoder侧最后生成的编码信息矩阵</strong>。</p>
-<p><img src="../assets/01-transformer/fig-19.png" alt="fig-19" width="40%" /></p>
+<p><img src="../assets/01-transformer/fig-19.png" alt="fig-19" width="20%" /></p>
 <p><strong>【第一个MHA】</strong>（Masked Self-Attention）</p>
 <p>Decoder 的第一个 Multi-Head Attention 采用了 <strong>Mask 机制</strong>，因为 <strong>翻译是顺序生成的</strong>，每个位置不能看到未来的信息。</p>
 <p>可以理解为加了一个处理：使用下 <strong>三角矩阵</strong> 进行了Mask，使得未来 Token 的注意力被屏蔽。</p>
-<p><img src="../assets/01-transformer/fig-20.png" alt="fig-20" width="30%" /></p>
+<p><img src="../assets/01-transformer/fig-20.png" alt="fig-20" width="38%" /></p>
 <p><strong>具体mask体现在哪里呢？顺序是：QK计算 -&gt; Mask -&gt; Softmax -&gt; V计算</strong></p>
 <ul>
 <li>QK计算</li>
 </ul>
-<p><img src="../assets/01-transformer/fig-21.png" alt="fig-21" width="30%" /></p>
+<p><img src="../assets/01-transformer/fig-21.png" alt="fig-21" width="38%" /></p>
 <ul>
 <li>Mask</li>
 </ul>
-<p><img src="../assets/01-transformer/fig-22.png" alt="fig-22" width="30%" /></p>
+<p><img src="../assets/01-transformer/fig-22.png" alt="fig-22" width="45%" /></p>
 <ul>
 <li>
 <p>Softmax</p>
@@ -1194,7 +1194,7 @@ O &amp;= \hat{A}V
 <p>V计算</p>
 </li>
 </ul>
-<p><img src="../assets/01-transformer/fig-23.png" alt="fig-23" width="30%" /></p>
+<p><img src="../assets/01-transformer/fig-23.png" alt="fig-23" width="35%" /></p>
 <p><strong>【第二个MHA】</strong></p>
 <p>第二个MHA的主要区别是，Self-Attention 的 <strong>K, V</strong> 矩阵不是使用 上一个 Decoder block 的输出计算的，而是使用 <strong>Encoder 的编码信息矩阵 C</strong> 计算的。并且这里不需要mask。</p>
 <p>为什么这样做？好处是在 Decoder 的时候，每一位单词都可以利用到 Encoder 侧所有单词的信息。</p>
@@ -1225,7 +1225,7 @@ O &amp;= \hat{A}V
 <li><strong>隐藏层维度（Embedding 维度）</strong>：<span class="arithmatex">\(d_{model}=512\)</span></li>
 </ul>
 <p>显然现在的embedding feature数目不足以对应到词汇表的大小，所以需要一个线性变换层（Fully Connected Layer），将 <span class="arithmatex">\(d_{model}\)</span> 维度转化为词汇表大小 <span class="arithmatex">\(V\)</span>​。使得 Transformer Decoder 生成的最终隐藏状态<span class="arithmatex">\(O\)</span>对应到词汇表：</p>
-<p><img src="../assets/01-transformer/fig-24.png" alt="fig-24" width="50%" /></p>
+<p><img src="../assets/01-transformer/fig-24.png" alt="fig-24" width="20%" /></p>
 <ul>
 <li><span class="arithmatex">\(O\)</span> 的形状：<span class="arithmatex">\(R^{L×d_{model}}\)</span>​</li>
 <li><span class="arithmatex">\(W\)</span> 的形状：<span class="arithmatex">\(R^{V×d_{model}}\)</span></li>
@@ -1235,7 +1235,7 @@ O &amp;= \hat{A}V
 <p><strong>【Softmax】（概率计算）</strong></p>
 <p>线性层输出 <span class="arithmatex">\(Z\)</span> 在经过线性层后还是未归一化的分数，需要通过 <strong>Softmax</strong> 转换为概率分布。</p>
 <p>最终，Decoder 选择概率最高的单词作为输出，不断迭代，直到生成结束标记（<code>&lt;EOS&gt;</code>）。</p>
-<p><img src="../assets/01-transformer/fig-25.png" alt="fig-25" width="20%" /></p>
+<p><img src="../assets/01-transformer/fig-25.png" alt="fig-25" width="35%" /></p>
 <h2 id="3">3. 一些衍生知识点<a class="headerlink" href="#3" title="Permanent link">&para;</a></h2>
 <h3 id="31">3.1 训练和推理<a class="headerlink" href="#31" title="Permanent link">&para;</a></h3>
 <p><strong>【训练时】</strong></p>
@@ -1307,12 +1307,12 @@ O &amp;= \hat{A}V
 <p><img src="../assets/01-transformer/fig-26.png" alt="fig-26" width="50%" /></p>
 <p><strong>【激活函数SwiGLU】</strong></p>
 <p>LLaMA 使用 <strong>SwiGLU</strong> 替代 ReLU 作为激活函数。论文《Swish: a Self-Gated Activation Function》提出了Swish，SwiGLU 是其增强版。相比 ReLU，SwiGLU <strong>梯度更平滑</strong>，可以改善训练稳定性。</p>
-<p><img src="https://pic4.zhimg.com/v2-0d644ecd419bbdfdae9be5a8c076b9f7_1440w.jpg" alt="img" width="30%" /></p>
+<p><img src="https://pic4.zhimg.com/v2-0d644ecd419bbdfdae9be5a8c076b9f7_1440w.jpg" alt="img" width="40%" /></p>
 <p><strong>【 旋转位置编码RoPE】</strong></p>
 <p>RoPE 的 <strong>核心思想</strong> 是”通过<strong>绝对位置编码</strong>的方式实现<strong>相对位置编码</strong>”。</p>
 <p>优点：具备了绝对位置编码的方便性，同时可以表示不同 token 之间的相对位置关系，适配更长文本。</p>
 <p>不同于原始 Transformers 论文中，将 pos embedding 和 token embedding 进行相加，RoPE 是将位置编码和 query （或者 key） 进行相乘。具体如下：</p>
-<p><img src="https://pic1.zhimg.com/v2-befa6058db4177c657538775446ebfc8_1440w.jpg" alt="img" width="33%" /></p>
+<p><img src="https://pic1.zhimg.com/v2-befa6058db4177c657538775446ebfc8_1440w.jpg" alt="img" width="50%" /></p>
 <p>同时值得注意的是，RoPE 在LLaMa中位于MHA中。</p>
 <h2 id="4-transformer">4. 手写Transformer<a class="headerlink" href="#4-transformer" title="Permanent link">&para;</a></h2>
 <blockquote>
@@ -1392,10 +1392,10 @@ O &amp;= \hat{A}V
 <p>标准 Transformer 中，FFN 采用 <strong>线性升维-降维</strong> 结构（hidden_dim 通常设为 <code>4 * embedding_dim</code>）。</p>
 <p>但LLama版使用 <strong>SwiGLU</strong> 替代了 ReLU，SwiGLU 可以调用 <strong>SiLU</strong> 函数实现，它们的关系如下：</p>
 <p><strong>SiLU（Swish Linear Unit）的形式</strong></p>
-<p><img src="../assets/01-transformer/fig-27.png" alt="fig-27" width="50%" /></p>
+<p><img src="../assets/01-transformer/fig-27.png" alt="fig-27" width="30%" /></p>
 <p><strong>SwiGLU（Swish-Gated Linear Unit）</strong></p>
 <p>SwiGLU 是 GLU（Gated Linear Unit）的变体，由 <strong>SiLU + gating 机制</strong> 组成其定义如下：</p>
-<p><img src="../assets/01-transformer/fig-28.png" alt="fig-28" width="50%" /></p>
+<p><img src="../assets/01-transformer/fig-28.png" alt="fig-28" width="40%" /></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>

@@ -10,13 +10,9 @@
       
       
       
-        <link rel="canonical" href="https://zoey-cheng.github.io/MLSys-Learning-Notes/notes/02_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20%2B%20%E5%B8%B8%E8%A7%81%20op.html">
+        <link rel="canonical" href="https://zoey-cheng.github.io/MLSys-Learning-Notes/notes/02_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20op.html">
       
       
-        <link rel="prev" href="01_Transformer%20%E8%AF%A6%E8%A7%A3.html">
-      
-      
-        <link rel="next" href="03_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%280%29%20-%20%E8%83%8C%E6%99%AF%E7%9F%A5%E8%AF%86%28%E9%80%9A%E4%BF%A1%E5%8E%9F%E8%AF%AD%20%26%20NCCL%20%26%20%E5%8D%95%E5%8D%A1%E8%AE%A1%E7%AE%97%E6%B5%81%29.html">
       
       
         
@@ -27,7 +23,7 @@
     
     
       
-        <title>02-算子手写(1) - CUDA 入门 + 常见 op - MLSys 菜狗自学笔记</title>
+        <title>02-常见CUDA手写实现(with code) - MLSys 菜狗自学笔记</title>
       
     
     
@@ -118,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              02-算子手写(1) - CUDA 入门 + 常见 op
+              02-常见CUDA手写实现(with code)
             
           </span>
         </div>
@@ -317,37 +313,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    02-算子手写(1) - CUDA 入门 + 常见 op
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="02_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20%2B%20%E5%B8%B8%E8%A7%81%20op.html" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="02_算子手写(1) - CUDA 入门 + 常见 op.md" class="md-nav__link">
         
   
   
@@ -363,387 +332,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="目录">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      目录
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        前言
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        说明
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#1-add" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Add
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="1. Add">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#11-1d-vecadd" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1.1 1D vecAdd
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#12-1d-vecadd-float4" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1.2 1D vecAdd + Float4
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#13-2d-matadd" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1.3 2D matAdd
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-matmul" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. matMul 矩阵乘
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2. matMul 矩阵乘">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#21-naive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.1 naive版矩阵乘
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#22-tiled-matmul-tiled" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.2 Tiled Matmul - tiled矩阵乘
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-transpose" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Transpose 转置
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-reduce-1d" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Reduce 1D规约
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="4. Reduce 1D规约">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#41-naive-atom" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.1 naive版-atom
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#42-block" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.2 block内折半归约
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#43-warp-shuffle" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.3 warp shuffle 折半归约
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#44-warp-shuffle-float4" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.4 warp shuffle + Float4
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-reduce-2d" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Reduce 2D行/列规约
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="5. Reduce 2D行/列规约">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#51-column-reduction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5.1 Column Reduction 列规约
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#52-row-reduction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5.2 Row Reduction 行规约
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-softmax" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Softmax
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="6. Softmax">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#61-2d-softmax-tiled" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6.1 2D Softmax Tiled
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#62-2d-softmax-tiled-float4" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6.2 2D Softmax Tiled + Float4
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#63-1d-softmax" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6.3 1D Softmax
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#7-conv" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. conv
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="7. conv">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#71-1d-conv-naive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7.1 1D conv - naive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#72-1d-conv-tiled" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7.2 1D conv - Tiled
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#73-2d-conv-naive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7.3 2D conv - naive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#74-2d-conv-tiled" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7.4 2D conv - Tiled
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#8-layer-norm" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        8. Layer Norm
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="8. Layer Norm">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#81-layer-norm-tiled" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        8.1 Layer Norm - Tiled
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1372,16 +960,16 @@
 <li>同一个block中的所有thread可共享</li>
 <li>ON CHIP！对应到硬件是SM 内部的 SRAM，物理上是和L1 cache share的</li>
 </ul>
-<p><img src="../assets/02-cuda-ops/fig-01.png" alt="fig-01" width="70%" /></p>
+<p><img src="../assets/02-cuda-ops/fig-01.png" alt="fig-01" width="50%" /></p>
 <p>Global memory 大而慢， shared memory 小而快，因此减少内存访问延迟的一个常见的策略就是 Tiling —— 将数据分片，然后将每个小分片缓存到 shared memory 中。</p>
 <ul>
 <li>为了匹配thread，每个sub matrix形如（BLOCKSIZE, BLOCKSIZE）</li>
 <li>为了计算C中的sub matrix，多次迭代load A/B 中的sub matrix 进入shared memory，每次计算一个分块矩阵乘，然后叠加得到这部分结果</li>
 </ul>
-<p><img src="../assets/02-cuda-ops/fig-02.png" alt="fig-02" width="60%" /></p>
+<p><img src="../assets/02-cuda-ops/fig-02.png" alt="fig-02" width="25%" /></p>
 <p><strong>【复杂度分析】</strong></p>
 <p>GPU 的计算能力（TFLOPS）通常远大于其内存带宽 bandwidth（TB/s），所以内存带宽往往才是瓶颈。</p>
-<p>假设<img src="../assets/02-cuda-ops/fig-03.png" alt="fig-03" width="35%" /></p>
+<p>假设<img src="../assets/02-cuda-ops/fig-03.png" alt="fig-03" width="15%" /></p>
 <ul>
 <li>
 <p>Naive Matmul</p>
@@ -1392,7 +980,7 @@
 <li>Total: <span class="arithmatex">\(n*p\)</span> - elements</li>
 <li>Total Load + store: <span class="arithmatex">\(2mnp\)</span></li>
 </ul>
-<p><img src="../assets/02-cuda-ops/fig-04.png" alt="fig-04" width="35%" /></p>
+<p><img src="../assets/02-cuda-ops/fig-04.png" alt="fig-04" width="45%" /></p>
 <ul>
 <li>
 <p>Tiled Matmul</p>
@@ -1404,7 +992,7 @@
 <li>Total: <span class="arithmatex">\(m*p/d^2\)</span>​ - elements</li>
 <li>Total Load + store: <span class="arithmatex">\(2mnp/d\)</span></li>
 </ul>
-<p><img src="../assets/02-cuda-ops/fig-05.png" alt="fig-05" width="35%" /></p>
+<p><img src="../assets/02-cuda-ops/fig-05.png" alt="fig-05" width="40%" /></p>
 <p>结论：load/store相差了一个d的倍数。</p>
 <p><strong>【实现】</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="cp"># define BLOCKSIZE 32</span>
@@ -1676,7 +1264,7 @@
 <ul>
 <li>基础idea：每个block处理一个列！然后在kernel内部就是对这个element进行一维的reduce啦</li>
 </ul>
-<p><img src="../assets/02-cuda-ops/fig-06.png" alt="fig-06" width="30%" /></p>
+<p><img src="../assets/02-cuda-ops/fig-06.png" alt="fig-06" width="40%" /></p>
 <ul>
 <li>
 <p>Naive的设计（❌）：</p>
@@ -1799,7 +1387,7 @@
 <ul>
 <li>softmax的公式：</li>
 </ul>
-<p><img src="../assets/02-cuda-ops/fig-07.png" alt="fig-07" width="30%" /></p>
+<p><img src="../assets/02-cuda-ops/fig-07.png" alt="fig-07" width="25%" /></p>
 <ul>
 <li>softmax的计算分为三个步骤：最大值、求指数和、计算指数并归一化（因为避免溢出，要减去最大值）：</li>
 </ul>
@@ -2122,7 +1710,7 @@
 <p>Step3：elementwise process -&gt; Norm (aX + b, epsilon)</p>
 </li>
 </ul>
-<p><img src="../assets/02-cuda-ops/fig-10.png" alt="fig-10" width="50%" /></p>
+<p><img src="../assets/02-cuda-ops/fig-10.png" alt="fig-10" width="30%" /></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="cp"># define WARPSIZE 32</span>
 <a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>
 <a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a><span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">layerNormKernel</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="o">*</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="o">*</span><span class="n">B</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">K</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">epsilon</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">b</span><span class="p">){</span>

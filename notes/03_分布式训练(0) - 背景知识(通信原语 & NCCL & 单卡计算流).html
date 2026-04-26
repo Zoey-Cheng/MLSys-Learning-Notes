@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://zoey-cheng.github.io/MLSys-Learning-Notes/notes/03_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%280%29%20-%20%E8%83%8C%E6%99%AF%E7%9F%A5%E8%AF%86%28%E9%80%9A%E4%BF%A1%E5%8E%9F%E8%AF%AD%20%26%20NCCL%20%26%20%E5%8D%95%E5%8D%A1%E8%AE%A1%E7%AE%97%E6%B5%81%29.html">
       
       
-        <link rel="prev" href="02_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20%2B%20%E5%B8%B8%E8%A7%81%20op.html">
+        <link rel="prev" href="01_Transformer%20%E8%AF%A6%E8%A7%A3.html">
       
       
       
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#_1" class="md-skip">
+        <a href="#03-0-nccl" class="md-skip">
           跳转至
         </a>
       
@@ -318,7 +318,7 @@
   
   
     <li class="md-nav__item">
-      <a href="02_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20%2B%20%E5%B8%B8%E8%A7%81%20op.html" class="md-nav__link">
+      <a href="02_算子手写(1) - CUDA 入门 + 常见 op.md" class="md-nav__link">
         
   
   
@@ -405,7 +405,7 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
+  <a href="#_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         前言
@@ -627,7 +627,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
+  <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         参考资料 &amp; 结语
@@ -672,7 +672,7 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
+  <a href="#_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         前言
@@ -894,7 +894,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
+  <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         参考资料 &amp; 结语
@@ -924,8 +924,8 @@
   
 
 
-<h1 id="_1">并行基础<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
-<h2 id="_2">前言<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<h1 id="03-0-nccl">03-分布式训练(0)-背景知识(通信原语/NCCL/单卡计算流)<a class="headerlink" href="#03-0-nccl" title="Permanent link">&para;</a></h1>
+<h2 id="_1">前言<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
 <p>LLM Infra的训练部分，<strong>分布式训练</strong>是重要知识点，仅读过相关系列的论文是远远不够的，还需要明白其中的细节和第一性原理。面试常问的问题包括但不限于：<strong>描述某种并行、并行策略设计、开销分析、手写并行代码</strong>。</p>
 <p>那么这个系列的通信细节，就以hugging face开源的 <strong>终极训练指南</strong>  为reference大纲，一一展开好了（但它讲的相对简略，所以我会随机搜索相关资料以保持基础知识和逻辑的连贯），相关link如下：</p>
 <ul>
@@ -966,7 +966,7 @@
 <p>相比基础原语，<strong>Reduce Scatter</strong> 和 <strong>All Gather</strong> 更常用于优化大规模训练中的通信瓶颈。</p>
 <p><strong>【Reduce Scatter】</strong></p>
 <p>本质是一个跨节点的分片reduce操作。</p>
-<p><img src="../assets/03-distributed-training/fig-03.png" alt="fig-03" width="50%" /></p>
+<p><img src="../assets/03-distributed-training/fig-03.png" alt="fig-03" width="30%" /></p>
 <p>假设有 4 个节点，每个节点持有一段相同维度的向量：</p>
 <ul>
 <li>
@@ -1052,11 +1052,11 @@
 <li><strong>Tree All Reduce</strong>：以树形结构分层聚合与广播，通信延迟更低，适用于节点数量较多的场景</li>
 </ul>
 <p>最有名的 Ring All Reduce 通信结构如下图所示：</p>
-<p><img src="../assets/03-distributed-training/fig-05.png" alt="fig-05" width="40%" /></p>
+<p><img src="../assets/03-distributed-training/fig-05.png" alt="fig-05" width="30%" /></p>
 <p>一轮（n次）Reduce Scatter结束：</p>
-<p><img src="../assets/03-distributed-training/fig-06.png" alt="fig-06" width="40%" /></p>
+<p><img src="../assets/03-distributed-training/fig-06.png" alt="fig-06" width="30%" /></p>
 <p>一轮（n次）All Gather &amp; All Reduce结束：</p>
-<p><img src="../assets/03-distributed-training/fig-07.png" alt="fig-07" width="40%" /></p>
+<p><img src="../assets/03-distributed-training/fig-07.png" alt="fig-07" width="50%" /></p>
 <h2 id="2">2. 通信方式（软硬件）<a class="headerlink" href="#2" title="Permanent link">&para;</a></h2>
 <p>为了对通信有一个更深入的认识，我们也来简单了解一下其自下而上的对应吧。依次为：</p>
 <ul>
@@ -1082,7 +1082,7 @@
 <li>传统 PCI 总线：同时间只能单向传输；PCIe：可双向同时通信</li>
 <li>通常作为 CPU 与 GPU、网卡之间的连接通道</li>
 </ul>
-<p><img src="../assets/03-distributed-training/fig-08.png" alt="fig-08" width="40%" /></p>
+<p><img src="../assets/03-distributed-training/fig-08.png" alt="fig-08" width="50%" /></p>
 <p><strong>【NVLink】</strong></p>
 <ul>
 <li>NVLink 是一种由 NVIDIA 开发的高速互连协议技术，可实现 GPU 之间的直接通信</li>
@@ -1091,7 +1091,7 @@
 <li>GPU 同时具备 NVLink 接口和 PCIe 接口</li>
 <li><strong>NVLink 专用于 GPU-GPU 直连，PCIe 用于连接 CPU、网卡、存储等</strong></li>
 </ul>
-<p><img src="../assets/03-distributed-training/fig-09.png" alt="fig-09" width="40%" /></p>
+<p><img src="../assets/03-distributed-training/fig-09.png" alt="fig-09" width="50%" /></p>
 <p><strong>【IB】</strong>（InfiniBand）</p>
 <ul>
 <li>一种高带宽、低延迟的网络通信协议</li>
@@ -1151,7 +1151,7 @@
 </ul>
 </li>
 </ul>
-<p><img src="../assets/03-distributed-training/fig-10.png" alt="fig-10" width="50%" /></p>
+<p><img src="../assets/03-distributed-training/fig-10.png" alt="fig-10" width="55%" /></p>
 <ul>
 <li>
 <p><strong>Point-To-Point Communication</strong></p>
@@ -1352,7 +1352,7 @@
 </blockquote>
 <p>让我们以一个典型的多层感知机（MLP，含多个Linear Layer）为例，来看看计算的具体流程。</p>
 <p><strong>【Forward Pass】</strong></p>
-<p><img src="../assets/03-distributed-training/fig-11.png" alt="fig-11" width="30%" /></p>
+<p><img src="../assets/03-distributed-training/fig-11.png" alt="fig-11" width="40%" /></p>
 <ul>
 <li>Linear Layer 计算公式：<span class="arithmatex">\(X @ W= Y\)</span></li>
 <li>存储需求：</li>
@@ -1372,7 +1372,7 @@
 <li><span class="arithmatex">\(\nabla Y = \frac{\partial L}{\partial Y}\)</span> - 反向第一步梯度计算</li>
 </ul>
 <p><strong>【Backward Pass】</strong></p>
-<p><img src="../assets/03-distributed-training/fig-12.png" alt="fig-12" width="40%" /></p>
+<p><img src="../assets/03-distributed-training/fig-12.png" alt="fig-12" width="45%" /></p>
 <ul>
 <li>根据链式法则，计算对所有input和weight的权重</li>
 <li>Linear Layer 计算公式：</li>
@@ -1380,7 +1380,7 @@
 <li>$ \nabla X = \nabla Y @ W^T$ （用于辅助前一层的计算）</li>
 </ul>
 <p><strong>【Weight Updates】</strong></p>
-<p><img src="../assets/03-distributed-training/fig-13.png" alt="fig-13" width="50%" /></p>
+<p><img src="../assets/03-distributed-training/fig-13.png" alt="fig-13" width="30%" /></p>
 <ul>
 <li>计算公式：$ W' = W - \eta * f(\nabla W)$​​</li>
 <li>学习率（<span class="arithmatex">\(\eta\)</span>）：通常由优化器（如 torch.optim.SGD）控制。</li>
@@ -1427,7 +1427,7 @@
 <li>在反向传播时，梯度逐渐累加，但之前存储的激活值可以逐步释放</li>
 <li>优化步骤，此时需要所有梯度，然后更新优化器状态，此时暂存的计算值临时上升</li>
 </ul>
-<p><img src="../assets/03-distributed-training/fig-15.png" alt="fig-15" width="30%" /></p>
+<p><img src="../assets/03-distributed-training/fig-15.png" alt="fig-15" width="50%" /></p>
 <p><strong>【权重、激活值、梯度和优化器状态的显存】</strong></p>
 <p>其实可以计算具体的数值，但我认为太过于细节了所以略过了，如果你感兴趣细节可以查看<a href="权重、梯度和优化器状态的显存"> 这里</a></p>
 <ul>
@@ -1439,7 +1439,7 @@
 <ul>
 <li>和精度选取有关，如果都使用FP32(4 byte)，则 <span class="arithmatex">\(m_{para} = 4N\)</span></li>
 </ul>
-<p><img src="../assets/03-distributed-training/fig-16.png" alt="fig-16" width="40%" /></p>
+<p><img src="../assets/03-distributed-training/fig-16.png" alt="fig-16" width="50%" /></p>
 </li>
 <li>
 <p>梯度亦然：<span class="arithmatex">\(m_{grad} = 4*N\)</span></p>
@@ -1460,8 +1460,8 @@
 <li>在计算图中随时变化，周期性分配和释放</li>
 <li><strong>对于大输入 tokens（即大 batch size/长序列），激活值会成为主要的显存负担。</strong></li>
 </ul>
-<p><img src="../assets/03-distributed-training/fig-17.png" alt="fig-17" width="40%" /></p>
-<p><img src="../assets/03-distributed-training/fig-18.png" alt="fig-18" width="40%" /></p>
+<p><img src="../assets/03-distributed-training/fig-17.png" alt="fig-17" width="50%" /></p>
+<p><img src="../assets/03-distributed-training/fig-18.png" alt="fig-18" width="60%" /></p>
 <h3 id="33-activation-">3.3 Activation优化 - 激活重计算<a class="headerlink" href="#33-activation-" title="Permanent link">&para;</a></h3>
 <p>根据上一步我们发现，Activation对显存的影响很大！</p>
 <p>为应对激活值高占用的问题，可使用 <strong>激活重计算</strong> 技术（又称 Gradient Checkpointing 或 Rematerialization）。</p>
@@ -1786,7 +1786,7 @@
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>
 </code></pre></div>
-<h2 id="_3">参考资料 &amp; 结语<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<h2 id="_2">参考资料 &amp; 结语<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
 <p><strong>【参考资料】</strong></p>
 <ul>
 <li>NYU CSCI-GA.3033-077 Big Data and Machine Learning Systems 相关课件</li>
