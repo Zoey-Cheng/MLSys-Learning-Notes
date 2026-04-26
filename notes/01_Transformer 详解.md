@@ -1,4 +1,6 @@
-# Transformer详解 (with code)
+# 01-Transformer详解 (with code)
+
+**[Quick Ref for 手写code]**：mini Llama ｜ [ipynb](../code/01-mini-llama.ipynb) ｜ [Colab](https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link)
 
 [toc]
 
@@ -425,8 +427,6 @@ RoPE 的 **核心思想** 是”通过**绝对位置编码**的方式实现**相
 
 ## 4. 手写Transformer
 
-> 配套代码：[本地 ipynb](../code/01-mini-llama.ipynb) ｜ [Colab](https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link)
-
 了解了以上内容，现在我们来手写一个Transformer。
 
 为了能够在面试中快速实现，我们采用一个**极简的 LLaMA 版实现**（这样我们只需要实现 Decoder 部分）。特别感谢我 Hugging Face 的朋友提供的指导！
@@ -617,7 +617,7 @@ class MiniLlama(nn.Module):
 
 ### **测试实现**
 
-可以运行测试代码，确保 `MiniLLaMA` 的输出形状正确！我写了一个test函数，你可以下载 `ipynb` 文件直接运行。
+可以运行测试代码，确保 `MiniLLaMA` 的输出形状正确！我写了一个test函数，你可以下载 [`ipynb` 文件](../code/01-mini-llama.ipynb)（或在 [Colab](https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link) 上）直接运行。
 
 
 

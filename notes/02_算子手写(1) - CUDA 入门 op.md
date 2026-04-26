@@ -1,7 +1,6 @@
 # 02-常见CUDA手写实现(with code)
 
-
-
+**[Quick Ref for 手写code]**：一些基础CUDA算子 ｜ [ipynb](../code/02-cuda-ops.ipynb) ｜ [Colab](https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link)
 
 
 ## 前言
@@ -30,9 +29,7 @@ Plus：Float4向量化也需要会写，原本以为不太需要，结果在考r
 - NYU CSCI-GA.3033-077 Big Data and Machine Learning Systems 相关课件
 - 相关帖子：https://zhuanlan.zhihu.com/p/12661298743；https://zhuanlan.zhihu.com/p/678903537
 
-先准备这些常见的吧！我都加了 Test case，可以下载代码运行（CUDA 部分需要 GPU 环境）。
-
-> 配套代码：[本地 ipynb](../code/02-cuda-ops.ipynb) ｜ [Colab](https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link)
+先准备这些常见的吧！我都加了 Test case，可以下载 [ipynb 文件](../code/02-cuda-ops.ipynb)（或在 [Colab](https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link) 上）运行（CUDA 部分需要 GPU 环境）。
 
 plus：频率是从面intern的角度来评价的。
 

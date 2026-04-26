@@ -1,5 +1,7 @@
 # 03-分布式训练(0)-背景知识(通信原语/NCCL/单卡计算流)
 
+**[Quick Ref for 手写code]**：通信原语 + DDP demo ｜ [ipynb](../code/03-distributed-demo.ipynb) ｜ [Colab](https://drive.google.com/file/d/15V25khFs8M8Ui3LW-_zDXUkquQytvBgq/view?usp=drive_link)
+
 ## 前言
 
 LLM Infra的训练部分，**分布式训练**是重要知识点，仅读过相关系列的论文是远远不够的，还需要明白其中的细节和第一性原理。面试常问的问题包括但不限于：**描述某种并行、并行策略设计、开销分析、手写并行代码**。
@@ -574,8 +576,6 @@ Rank 0, Epoch 1, Loss: 0.8204
 ## 4. 代码实现
 
 本章节我们先来熟悉一下`torch.distributed` 的使用吧，在接下来的分布式代码详解中我都会使用这个库。
-
-> 配套代码：[本地 ipynb](../code/03-distributed-demo.ipynb) ｜ [Colab](https://drive.google.com/file/d/15V25khFs8M8Ui3LW-_zDXUkquQytvBgq/view?usp=drive_link)
 
 不过值得注意的是：
 
