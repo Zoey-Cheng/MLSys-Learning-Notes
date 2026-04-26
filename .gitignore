@@ -8,5 +8,8 @@ dist/
 # Jupyter
 .ipynb_checkpoints/
 
+# MkDocs build output
+site/
+
 # System
 .DS_Store

@@ -1,0 +1,77 @@
+site_name: MLSys 菜狗自学笔记
+site_description: MLSys 自学笔记，知乎同步更新
+site_url: https://zoey-cheng.github.io/MLSys-Learning-Notes/
+repo_url: https://github.com/Zoey-Cheng/MLSys-Learning-Notes
+repo_name: Zoey-Cheng/MLSys-Learning-Notes
+
+docs_dir: docs
+use_directory_urls: false   # 让 URL 是 .html 而非目录，使 ../assets/ 相对路径正常解析
+
+watch:
+  - notes
+  - assets
+
+theme:
+  name: material
+  language: zh
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.top
+    - toc.follow               # 右侧 TOC 跟随阅读位置
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: 切换到暗色模式
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: 切换到亮色模式
+
+nav:
+  - 首页: index.md
+  - 01-Transformer 详解: notes/01_Transformer 详解.md
+  - 02-算子手写(1) - CUDA 入门 + 常见 op: notes/02_算子手写(1) - CUDA 入门 + 常见 op.md
+  - 03-分布式训练(0) - 背景知识: notes/03_分布式训练(0) - 背景知识(通信原语 & NCCL & 单卡计算流).md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.arithmatex:
+      generic: true
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      marker: '[toc]'          # 兼容 Typora 风格的小写 marker
+
+extra_javascript:
+  - javascripts/katex.js
+  - https://unpkg.com/katex@0/dist/katex.min.js
+  - https://unpkg.com/katex@0/dist/contrib/auto-render.min.js
+
+extra_css:
+  - https://unpkg.com/katex@0/dist/katex.min.css
+  - stylesheets/extra.css
+
+plugins:
+  - search:
+      lang:
+        - zh
+        - en
