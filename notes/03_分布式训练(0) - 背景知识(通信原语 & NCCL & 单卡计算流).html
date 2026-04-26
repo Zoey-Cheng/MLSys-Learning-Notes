@@ -1,0 +1,1867 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="MLSys 自学笔记，知乎同步更新">
+      
+      
+      
+        <link rel="canonical" href="https://zoey-cheng.github.io/MLSys-Learning-Notes/notes/03_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%280%29%20-%20%E8%83%8C%E6%99%AF%E7%9F%A5%E8%AF%86%28%E9%80%9A%E4%BF%A1%E5%8E%9F%E8%AF%AD%20%26%20NCCL%20%26%20%E5%8D%95%E5%8D%A1%E8%AE%A1%E7%AE%97%E6%B5%81%29.html">
+      
+      
+        <link rel="prev" href="02_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20%2B%20%E5%B8%B8%E8%A7%81%20op.html">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>03-分布式训练(0) - 背景知识 - MLSys 菜狗自学笔记</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="https://unpkg.com/katex@0/dist/katex.min.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#_1" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../index.html" title="MLSys 菜狗自学笔记" class="md-header__button md-logo" aria-label="MLSys 菜狗自学笔记" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            MLSys 菜狗自学笔记
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              03-分布式训练(0) - 背景知识
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换到暗色模式"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到暗色模式" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换到亮色模式"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到亮色模式" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Zoey-Cheng/MLSys-Learning-Notes
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../index.html" title="MLSys 菜狗自学笔记" class="md-nav__button md-logo" aria-label="MLSys 菜狗自学笔记" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    MLSys 菜狗自学笔记
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Zoey-Cheng/MLSys-Learning-Notes
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="01_Transformer%20%E8%AF%A6%E8%A7%A3.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-Transformer 详解
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="02_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20%2B%20%E5%B8%B8%E8%A7%81%20op.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-算子手写(1) - CUDA 入门 + 常见 op
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    03-分布式训练(0) - 背景知识
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="03_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%280%29%20-%20%E8%83%8C%E6%99%AF%E7%9F%A5%E8%AF%86%28%E9%80%9A%E4%BF%A1%E5%8E%9F%E8%AF%AD%20%26%20NCCL%20%26%20%E5%8D%95%E5%8D%A1%E8%AE%A1%E7%AE%97%E6%B5%81%29.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    03-分布式训练(0) - 背景知识
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前言
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 通信原语
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 通信原语">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 基本原语
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-reduce-scatter-all-gather" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Reduce Scatter / All Gather
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-all-reduce" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 All Reduce
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 通信方式（软硬件）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. 通信方式（软硬件）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-pcie-nvlink-ib" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 PCIe / NVLink / IB 硬件连接
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-nccl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 NCCL 通信软件库
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-torchdistributed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 torch.distributed 前端
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-torchdistributed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Torch.distributed 实例
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 单卡训练计算流
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 单卡训练计算流">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 模型训练过程
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-transformer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Transformer 中的显存使用
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-activation-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Activation优化 - 激活重计算
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-activation-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Activation优化 - 梯度累加
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 代码实现
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 代码实现">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 通信原语测试
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 自定义分布式训练测试
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        参考资料 &amp; 结语
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前言
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 通信原语
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 通信原语">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 基本原语
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-reduce-scatter-all-gather" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Reduce Scatter / All Gather
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-all-reduce" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 All Reduce
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 通信方式（软硬件）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. 通信方式（软硬件）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-pcie-nvlink-ib" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 PCIe / NVLink / IB 硬件连接
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-nccl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 NCCL 通信软件库
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-torchdistributed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 torch.distributed 前端
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-torchdistributed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Torch.distributed 实例
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 单卡训练计算流
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 单卡训练计算流">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 模型训练过程
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-transformer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Transformer 中的显存使用
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-activation-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Activation优化 - 激活重计算
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-activation-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Activation优化 - 梯度累加
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 代码实现
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 代码实现">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 通信原语测试
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 自定义分布式训练测试
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        参考资料 &amp; 结语
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="_1">并行基础<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
+<h2 id="_2">前言<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<p>LLM Infra的训练部分，<strong>分布式训练</strong>是重要知识点，仅读过相关系列的论文是远远不够的，还需要明白其中的细节和第一性原理。面试常问的问题包括但不限于：<strong>描述某种并行、并行策略设计、开销分析、手写并行代码</strong>。</p>
+<p>那么这个系列的通信细节，就以hugging face开源的 <strong>终极训练指南</strong>  为reference大纲，一一展开好了（但它讲的相对简略，所以我会随机搜索相关资料以保持基础知识和逻辑的连贯），相关link如下：</p>
+<ul>
+<li><a href="https://huggingface.co/spaces/nanotron/ultrascale-playbook?section=high_level_overview">The Ultra-Scale Playbook: Training LLMs on GPU Clusters（英文版）</a></li>
+<li>Hugging Face - The Ultra-Scale Playbook: Training LLMs on GPU Clusters</li>
+<li><a href="https://huggingface.co/spaces/Ki-Seki/ultrascale-playbook-zh-cn">终极训练指南： 在大规模 GPU 集群上训练大语言模型（中文版）</a></li>
+</ul>
+<p>此外，对经典论文的讲解也必不可少。因此，在上述训练指南的基础上，我将同步穿插分析相关<strong>代表性论文</strong>。后续的内容规划如下（每完成一个章节我会附上对应链接）：</p>
+<ul>
+<li>数据并行（ Data Parallism）: DP / DDP / FSDP</li>
+<li>模型并行（Model Parallism）</li>
+<li>张量并行（Tensor Parallisim）: Megatron</li>
+<li>流水线并行（ Pipeline Parallelism）: GPipe, PipeStream</li>
+<li>上下文并行（Context Parallelism）: DeepSpeed Ulysses, Ring-Attention</li>
+<li>专家并行（Expert parallelism）</li>
+<li>Zero：数据并行的零冗余优化策略</li>
+</ul>
+<p>本节主要从通信原语，对应软硬件支持，以及单卡时模型本身的计算流（辅助后续分析多卡通信内容）展开，为后续的并行切分/通信开销计算作个铺垫。如有不专业之处，欢迎指正</p>
+<p>这是一道算子题（因为是语音转文字的可能有些问题），给我解释CUDA设计思路：</p>
+<p>给了你四个数组，A1B1和A2B2，然后你要去找到就是A，首先首先A1的大小是256，然后B1大小是256×5000。然后，你要从就是比较那个A一和B一里面数组里的，就是它以它那个讲，相当于A一里面存的是index。你要找到B一里面所有IND词和A一相同的，相同索引的就是A和B的in代词。然后呢，就是你找到这两个应该之后，你要把对应的那个数据从A2考到B2，然后A2大小是256×512，B二大小是256×512×5000，然后你要去考虑怎么去分数据，然后。然后他他他想要的解法是使用就是每就是每个wap协作协作去搬运数据，用这个wap reduction, 然后相当于你要去自己考虑怎么把A一B1的数据分开，然后并且把A二B2的数据。</p>
+<p>A, B2的数据怎么去用线程包括C包去分，然后分完之后你怎么去高效率去拷贝？</p>
+<p>然后这个过程就是他那个查索引过程，我感觉有点类似于那个SC或者是SC那个过程吧。然后，然后拷贝的话，还希望你用那个是卧铺的协作拷贝，所以，你分数据的时候，就是你包括那些。所以，之你要广播到所有的B全部知道。</p>
+<h2 id="1">1. 通信原语<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>
+<p><strong>集体通信原语（collective communication primitives）</strong>源于HPC社区开发的 MPI （Message Passing Interface）中的一部分，在分布式训练中扮演着关键角色。</p>
+<p>在 MPI 中，除了点对点通信（如 <code>send/receive</code>），还定义了更高层次的集体通信，即多个进程协同参与的操作，如 广播（broadcast）、聚合（gather）、同步（sync） 等。集体通信具有<strong>同步性</strong>，即所有进程必须同时参与。</p>
+<h3 id="11">1.1 基本原语<a class="headerlink" href="#11" title="Permanent link">&para;</a></h3>
+<p>几种基础的集体通信操作如下：</p>
+<ul>
+<li><strong>Broadcast</strong>：进程0将数据广播复制到其他所有进程</li>
+<li><strong>Scatter</strong>：进程0将自己的数据拆分后分别发给其他进程</li>
+<li><strong>Gather</strong>：所有进程的数据被收集到进程0</li>
+<li><strong>Reduce</strong>：所有进程将数据传给进程0，执行某种reduce op</li>
+</ul>
+<p>(图：scatter -&gt; Gather - &gt; Reduce)</p>
+<p><img src="../assets/03-distributed-training/fig-01.png" alt="fig-01" width="50%" /></p>
+<p><img src="../assets/03-distributed-training/fig-02.png" alt="fig-02" width="40%" /></p>
+<h3 id="12-reduce-scatter-all-gather">1.2 Reduce Scatter / All Gather<a class="headerlink" href="#12-reduce-scatter-all-gather" title="Permanent link">&para;</a></h3>
+<p>相比基础原语，<strong>Reduce Scatter</strong> 和 <strong>All Gather</strong> 更常用于优化大规模训练中的通信瓶颈。</p>
+<p><strong>【Reduce Scatter】</strong></p>
+<p>本质是一个跨节点的分片reduce操作。</p>
+<p><img src="../assets/03-distributed-training/fig-03.png" alt="fig-03" width="50%" /></p>
+<p>假设有 4 个节点，每个节点持有一段相同维度的向量：</p>
+<ul>
+<li>
+<table>
+<thead>
+<tr>
+<th>节点</th>
+<th>输入</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>N0</td>
+<td>[1, 2, 3, 4]</td>
+</tr>
+<tr>
+<td>N1</td>
+<td>[10, 20, 30, 40]</td>
+</tr>
+<tr>
+<td>N2</td>
+<td>[100, 200, 300, 400]</td>
+</tr>
+<tr>
+<td>N3</td>
+<td>[1000, 2000, 3000, 4000]</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ul>
+<p><strong>Step 1: Reduce</strong></p>
+<p>对相同位置元素做加法（加法是最常见的 Reduce 操作）：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>[1+10+100+1000, 2+20+200+2000, 3+30+300+3000, 4+40+400+4000] = [1111, 2222, 3333, 4444]
+</code></pre></div>
+<ul>
+<li>
+<p><strong>Step 2: Scatter</strong></p>
+</li>
+<li>
+<p>N0 拿到 [1111]</p>
+</li>
+<li>N1 拿到 [2222]</li>
+<li>N2 拿到 [3333]</li>
+<li>
+<p>N3 拿到 [4444]</p>
+</li>
+<li>
+<p>常用通信方法：Ring Reduce Scatter</p>
+</li>
+<li>
+<p>通信量：</p>
+</li>
+<li>
+<p>每个node数据量：G</p>
+</li>
+<li>每个node发出：G * (n-1)/n</li>
+<li>总通信量：(n-1)G</li>
+</ul>
+<p><strong>【All Gather】</strong></p>
+<p>每个进程都向所有其他进程广播自己的数据，最终每个进程都有全部数据。</p>
+<p>通信量分析同样为：</p>
+<ul>
+<li>每个node数据量：G</li>
+<li>每个node发出：G * (n-1)/n</li>
+<li>总通信量：(n-1)G</li>
+</ul>
+<p><img src="../assets/03-distributed-training/fig-04.png" alt="fig-04" width="30%" /></p>
+<h3 id="13-all-reduce">1.3 All Reduce<a class="headerlink" href="#13-all-reduce" title="Permanent link">&para;</a></h3>
+<p><strong>【通信开销】</strong></p>
+<ul>
+<li><strong>All Reduce = Reduce Scatter + All Gather</strong></li>
+<li>通信开销 = Cost（Reduce Scatter）+ Cost（All Gather）= 2(n-1)G</li>
+<li>假设每个node数据量：G</li>
+</ul>
+<p><img src="https://engineering.fb.com/wp-content/uploads/2021/07/FSDP-graph-2a.png" alt="img" width="40%" /></p>
+<p><strong>【通信方式 - Ring All Reduce】</strong></p>
+<p>All Reduce 的实现方式不止一种。例如：</p>
+<ul>
+<li><strong>集中式 All Reduce</strong>：先 gather 到一个节点计算，再广播（PyTorch DDP 的早期实现）</li>
+<li>缺点：通信带宽瓶颈，其他节点资源利用率不高</li>
+<li><strong>Ring All Reduce</strong>：各节点只与相邻节点通信，所有节点并行工作，充分利用带宽资源（PyTorch DDP 默认）</li>
+<li><strong>Tree All Reduce</strong>：以树形结构分层聚合与广播，通信延迟更低，适用于节点数量较多的场景</li>
+</ul>
+<p>最有名的 Ring All Reduce 通信结构如下图所示：</p>
+<p><img src="../assets/03-distributed-training/fig-05.png" alt="fig-05" width="40%" /></p>
+<p>一轮（n次）Reduce Scatter结束：</p>
+<p><img src="../assets/03-distributed-training/fig-06.png" alt="fig-06" width="40%" /></p>
+<p>一轮（n次）All Gather &amp; All Reduce结束：</p>
+<p><img src="../assets/03-distributed-training/fig-07.png" alt="fig-07" width="40%" /></p>
+<h2 id="2">2. 通信方式（软硬件）<a class="headerlink" href="#2" title="Permanent link">&para;</a></h2>
+<p>为了对通信有一个更深入的认识，我们也来简单了解一下其自下而上的对应吧。依次为：</p>
+<ul>
+<li>NV硬件连接层：PCIe / NVLink / IB</li>
+<li>NV中间软件通信库：NCCL</li>
+<li>上层封装接口：torch.distributed</li>
+</ul>
+<p>其中通信又可分为：</p>
+<ul>
+<li><strong>机器内通信（Intra-Machine Communication）</strong> </li>
+<li><strong>机器间通信（Inter-Machine Communication）</strong></li>
+</ul>
+<p>例如我们说“一个模型用32张GPU训练”时，它可能实际的部署方式可能是这样：</p>
+<ul>
+<li><strong>单节点多GPU</strong>：一台服务器（节点）包含多块GPU（例如NVIDIA DGX H100每节点8卡）</li>
+<li><strong>多节点集群</strong>：多个节点互联，每节点 8 张 GPU，4 个节点共构成 32-GPU 训练系统</li>
+</ul>
+<h3 id="21-pcie-nvlink-ib">2.1 PCIe / NVLink / IB 硬件连接<a class="headerlink" href="#21-pcie-nvlink-ib" title="Permanent link">&para;</a></h3>
+<p>此部分可简单总结为：机器内GPU-GPU互联用NVLink，GPU和其他硬件（如CPU）互联用PCIe，跨机器互联可以使用IB (InfiniBand)作为硬件支持（也可以只用RoCE + 高速以太网）。</p>
+<p><strong>【PCIe】</strong> (Peripheral Component Interconnect Express)</p>
+<ul>
+<li>标准的高速总线接口，用于连接 GPU、加速器卡等设备</li>
+<li>传统 PCI 总线：同时间只能单向传输；PCIe：可双向同时通信</li>
+<li>通常作为 CPU 与 GPU、网卡之间的连接通道</li>
+</ul>
+<p><img src="../assets/03-distributed-training/fig-08.png" alt="fig-08" width="40%" /></p>
+<p><strong>【NVLink】</strong></p>
+<ul>
+<li>NVLink 是一种由 NVIDIA 开发的高速互连协议技术，可实现 GPU 之间的直接通信</li>
+<li>NVLink 可以提供比普通 PCIe 更高的带宽和更低的延迟，NVSwitch是基于NVLink的交换设备</li>
+<li>硬件设计：</li>
+<li>GPU 同时具备 NVLink 接口和 PCIe 接口</li>
+<li><strong>NVLink 专用于 GPU-GPU 直连，PCIe 用于连接 CPU、网卡、存储等</strong></li>
+</ul>
+<p><img src="../assets/03-distributed-training/fig-09.png" alt="fig-09" width="40%" /></p>
+<p><strong>【IB】</strong>（InfiniBand）</p>
+<ul>
+<li>一种高带宽、低延迟的网络通信协议</li>
+<li>支持 RDMA（远程直接内存访问），适用于分布式训练场景</li>
+<li>NV生态：</li>
+<li>GPUDirect RDMA：允许IB网卡直接访问GPU显存，加速跨节点GPU通信（如分布式训练）</li>
+<li>NCCL优化：NCCL库优先选择InfiniBand路径，实现高效的跨节点集合通信</li>
+</ul>
+<p>【<strong>实例分析：机器内/间通信</strong>】</p>
+<ul>
+<li><strong>机器内通信</strong></li>
+<li>相关通信硬件：PCIe / NVLink</li>
+<li>硬件配置（以 NVIDIA DGX H100 为例）<ul>
+<li>设备：2 CPU + 8 GPU</li>
+<li>互连方式：</li>
+<li>GPU-GPU：通过 NVLink 4.0 全互连（每 GPU 有 18 条 NVLink 通道）</li>
+<li>GPU-CPU/其他设备：通过 PCIe 5.0 x16 连接</li>
+</ul>
+</li>
+<li><strong>机器间通信</strong></li>
+<li>相关通信硬件：使用IB / 不用IB</li>
+<li>硬件配置<ul>
+<li>单节点配置（共4个）：2 CPU + 8 GPU</li>
+<li>网络拓扑：4 个节点通过 InfiniBand 交换机互联</li>
+</ul>
+</li>
+<li>额外注意点<ul>
+<li>IB互联是硬件上的互联了，性能好，但需要修改硬件，灵活性不算特别高</li>
+<li>软件层可替代 InfiniBand 的方案：RoCE（RDMA over Converged Ethernet）+ 高速以太网</li>
+</ul>
+</li>
+</ul>
+<h3 id="22-nccl">2.2 NCCL 通信软件库<a class="headerlink" href="#22-nccl" title="Permanent link">&para;</a></h3>
+<p>NCCL是Nvidia Collective multi-GPU Communication Library的简称（发音为"Nickel"），它是一个实现多GPU的collective communication通信（all-gather, reduce, broadcast）库。NV做了很多优化，以在PCIe、Nvlink、InfiniBand上实现较高的通信速度。</p>
+<p>NCCL实现了集体通信（collective communication）和点对点（point to point）发送/接收原语。主要有：</p>
+<ul>
+<li>
+<p><strong>Collective Operations</strong>（与第 1 节中通信原语对应）</p>
+</li>
+<li>
+<p>AllReduce, Broadcast, Reduce, AllGather, ReduceScatter...</p>
+</li>
+<li>
+<p>它们做了hardware awareness的优化，实现高效通信</p>
+</li>
+<li>
+<p><strong>Group Calls</strong></p>
+</li>
+<li>
+<p>多 GPU 在单线程中操作时，需要通过 group call 保证同步性与死锁避免</p>
+</li>
+<li>核心函数：<code>ncclGroupStart()</code> 和 <code>ncclGroupEnd()</code>，用于将多个通信操作合并为原子性执行组</li>
+<li>用途：<ul>
+<li>多 GPU 单线程管理，避免死锁</li>
+<li>通信操作聚合，减少启动开销</li>
+<li>复杂点对点模式融合，将多个 <code>ncclSend()</code> 和 <code>ncclRecv()</code> 合并为单一操作组</li>
+</ul>
+</li>
+</ul>
+<p><img src="../assets/03-distributed-training/fig-10.png" alt="fig-10" width="50%" /></p>
+<ul>
+<li>
+<p><strong>Point-To-Point Communication</strong></p>
+</li>
+<li>
+<p>核心函数：<code>ncclSend()</code> 和 <code>ncclRecv()</code>，需成对调用且参数一致</p>
+</li>
+<li>举例：<ul>
+<li>Sendrecv：两个 Rank 同时发送和接收数据</li>
+<li>One-to-All：单 Rank 向所有其他 Rank 分发数据（Scatter）</li>
+<li>All-to-One：所有 Rank 向单 Rank 聚合数据（Gather）</li>
+<li>All-to-All：每个 Rank 与其他所有 Rank 交换数据</li>
+<li>Neighbor Exchange：在网格拓扑中与相邻 Rank 通信</li>
+</ul>
+</li>
+</ul>
+<p>NCCL也有预先的<strong>环境设置（System Configuration）</strong>，通过环境变量优化通信行为，一些关键配置举例：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;"><strong>类别</strong></th>
+<th style="text-align: left;"><strong>环境变量</strong></th>
+<th style="text-align: left;"><strong>作用</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>网络接口选择</strong></td>
+<td style="text-align: left;"><code>NCCL_SOCKET_IFNAME</code></td>
+<td style="text-align: left;">指定使用的 IP 接口（如 <code>eth0</code>），绕过自动选择。</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>NCCL_IB_HCA</code></td>
+<td style="text-align: left;">指定使用的 InfiniBand/RDMA 设备（如 <code>mlx5_0,mlx5_1</code>）。</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>NCCL_IB_GID_INDEX</code></td>
+<td style="text-align: left;">在 RoCE 网络中指定 GID 索引（通常设为 <code>3</code>）。</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>协议与传输层</strong></td>
+<td style="text-align: left;"><code>NCCL_SOCKET_FAMILY</code></td>
+<td style="text-align: left;">强制使用 IPv4/IPv6（设为 <code>AF_INET</code> 或 <code>AF_INET6</code>）。</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>NCCL_PROTO</code></td>
+<td style="text-align: left;">指定通信协议（如 <code>SIMPLE</code>,<code>LL</code>,<code>LL128</code>），默认自动选择最优。</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>线程与资源</strong></td>
+<td style="text-align: left;"><code>NCCL_SOCKET_NTHREADS</code></td>
+<td style="text-align: left;">设置每个网络连接的 CPU 辅助线程数（默认 2，增大可提升吞吐但增加延迟）。</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>NCCL_NSOCKS_PERTHREAD</code></td>
+<td style="text-align: left;">控制每个线程管理的 Socket 数量（调整网络连接并发度）。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="23-torchdistributed">2.3 torch.distributed 前端<a class="headerlink" href="#23-torchdistributed" title="Permanent link">&para;</a></h3>
+<p><code>Pytorch</code> 中通过 <code>torch.distributed</code> 包提供分布式支持，包括 <code>GPU</code> 和 <code>CPU</code> 的分布式训练支持。</p>
+<ul>
+<li>
+<p><a href="https://pytorch.org/tutorials/beginner/dist_overview.html">Official Tutorial</a></p>
+</li>
+<li>
+<p><a href="https://pytorch.org/docs/stable/distributed.html">Official Doc</a></p>
+</li>
+</ul>
+<p><strong>【部分并行API】</strong></p>
+<ul>
+<li>Distributed Data-Parallel (DDP): <code>torch.distributed.DistributedDataParallel</code></li>
+<li>Fully Sharded Data-Parallel Training (FSDP): <code>torch.distributed.fsdp</code></li>
+<li>Tensor Parallel (TP): <code>torch.distributed.tensor.parallel</code></li>
+<li>Pipeline Parallel (PP): <code>torch.distributed.pipelining</code></li>
+</ul>
+<p><strong>【支持的3种后端】</strong></p>
+<ul>
+<li>MPI：CPU，需要安装MPI 库（如 OpenMPI）</li>
+<li>NCCL：GPU，效率最高，推荐优先使用</li>
+<li>Gloo：Facebook 提供的通信库，兼容 CPU/GPU，但 GPU 表现不佳，CPU 略逊于 MPI</li>
+</ul>
+<p><strong>【相关概念及定义】</strong></p>
+<ul>
+<li>Process 进程：每个训练进程，独立执行模型训练，仅交换必要数据（如梯度）</li>
+<li>Group 进程组：是我们所有进程的子集。默认情况下，只有一个组（所有进程的全集）</li>
+<li>Backend：通信后端，支持 NCCL、GLOO、MPI</li>
+<li>world_size：在进程组中的进程数</li>
+<li>Rank 秩：表示进程序号，用于进程间通讯，表征进程优先级。<code>rank = 0</code> 的主机为 <code>master</code> 节点，范围为[0, world_size -1]</li>
+<li>local_rank：进程内的GPU编号，非显式参数。例如：<code>rank = 3，local_rank = 0</code> 表示第 3 个进程内的第1块GPU</li>
+</ul>
+<h3 id="24-torchdistributed">2.4 Torch.distributed 实例<a class="headerlink" href="#24-torchdistributed" title="Permanent link">&para;</a></h3>
+<p>在 PyTorch 中，使用 <code>torch.distributed</code> 进行分布式训练通常遵循以下基本流程（对应步骤已在代码中标注）：</p>
+<ol>
+<li><strong>初始化进程组</strong>
+    使用 <code>init_process_group()</code> 初始化通信环境，这是使用 <code>torch.distributed</code> 的前置步骤，必须在调用任何其他分布式函数之前完成。</li>
+<li><strong>创建子进程组（可选）</strong>
+    如需在一个训练任务中进行<strong>子组级别的通信</strong>，可通过 <code>new_group()</code> 创建子分组（例如在模型并行中应用）。</li>
+<li><strong>构建分布式模型封装器</strong>
+    将模型封装为 <code>DistributedDataParallel</code>（即 <code>DDP(model, device_ids=device_ids)</code>），以实现梯度同步与自动通信优化。</li>
+<li><strong>为数据加载器配置分布式采样器</strong>
+    使用 <code>DistributedSampler</code> 为训练数据集创建采样器，确保每个进程加载互不重复的数据子集。</li>
+<li><strong>启动多进程训练脚本</strong>
+    使用 <code>torch.distributed.launch</code> 或推荐的 <code>torchrun</code> 工具，在每台主机上启动训练脚本，分配不同的 <code>rank</code>。</li>
+<li><strong>训练结束后销毁进程组（推荐）</strong>
+    使用 <code>destroy_process_group()</code> 清理通信资源，确保程序正常退出。</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">train</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">world_size</span><span class="p">):</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="c1"># 1. 初始化进程组</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="c1"># 没有设置小组内集体通信</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">init_process_group</span><span class="p">(</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;gloo&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        <span class="n">init_method</span><span class="o">=</span><span class="s2">&quot;tcp://localhost:12355&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>        <span class="n">world_size</span><span class="o">=</span><span class="n">world_size</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="p">)</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="c1"># 设置设备</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="n">device</span> <span class="o">=</span> <span class="s2">&quot;cpu&quot;</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rank </span><span class="si">{</span><span class="n">rank</span><span class="si">}</span><span class="s2"> using device: </span><span class="si">{</span><span class="n">device</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="c1"># 2. 创建模型 + DDP封装</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="n">model</span> <span class="o">=</span> <span class="n">SimpleModel</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="n">model</span> <span class="o">=</span> <span class="n">DDP</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="c1"># 3. 数据加载器 + 分布式采样器 Sampler</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="n">dataset</span> <span class="o">=</span> <span class="n">DummyDataset</span><span class="p">()</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="n">sampler</span> <span class="o">=</span> <span class="n">DistributedSampler</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">num_replicas</span><span class="o">=</span><span class="n">world_size</span><span class="p">,</span> <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    <span class="n">dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">sampler</span><span class="o">=</span><span class="n">sampler</span><span class="p">)</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>    <span class="c1"># 优化器</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">SGD</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>    <span class="c1"># 简单训练循环（2个epoch）</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>    <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>        <span class="n">sampler</span><span class="o">.</span><span class="n">set_epoch</span><span class="p">(</span><span class="n">epoch</span><span class="p">)</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>        <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> <span class="n">y</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>            <span class="n">output</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>            <span class="n">loss</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">CrossEntropyLoss</span><span class="p">()(</span><span class="n">output</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>            <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>            <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>            <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>        <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rank </span><span class="si">{</span><span class="n">rank</span><span class="si">}</span><span class="s2">, Epoch </span><span class="si">{</span><span class="n">epoch</span><span class="si">}</span><span class="s2">, Loss: </span><span class="si">{</span><span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a>    <span class="c1"># 6. 结束后销毁进程组</span>
+<a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">destroy_process_group</span><span class="p">()</span>
+<a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a>
+<a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a><span class="c1">################### Step 4: 函数入口 ###################</span>
+<a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a><span class="c1"># 5. 启动入口</span>
+<a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a>    <span class="n">world_size</span> <span class="o">=</span> <span class="mi">2</span>
+<a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a>
+<a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a>    <span class="c1"># 启动多进程</span>
+<a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a>    <span class="n">torch</span><span class="o">.</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span>
+<a id="__codelineno-1-49" name="__codelineno-1-49" href="#__codelineno-1-49"></a>        <span class="n">train</span><span class="p">,</span>
+<a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a>        <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">world_size</span><span class="p">,),</span>
+<a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a>        <span class="n">nprocs</span><span class="o">=</span><span class="n">world_size</span><span class="p">,</span>
+<a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a>        <span class="n">join</span><span class="o">=</span><span class="kc">True</span>
+<a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a>    <span class="p">)</span>
+</code></pre></div>
+<p>由于之前说的只有单GPU的问题，我用了CPU + gloo后端。它的output：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Rank<span class="w"> </span><span class="m">1</span><span class="w"> </span>using<span class="w"> </span>device:<span class="w"> </span>cpu
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>Rank<span class="w"> </span><span class="m">0</span><span class="w"> </span>using<span class="w"> </span>device:<span class="w"> </span>cpu
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>Rank<span class="w"> </span><span class="m">0</span>,<span class="w"> </span>Epoch<span class="w"> </span><span class="m">0</span>,<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.5726
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>Rank<span class="w"> </span><span class="m">0</span>,<span class="w"> </span>Epoch<span class="w"> </span><span class="m">1</span>,<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.8204
+</code></pre></div>
+<h2 id="3">3. 单卡训练计算流<a class="headerlink" href="#3" title="Permanent link">&para;</a></h2>
+<p>此处假定你已经熟悉了一些训练的基础术语和流程，以下是部分关键概念的回顾：</p>
+<ul>
+<li><strong>常见术语</strong></li>
+<li>Batch Size：每次前向和反向传播处理的数据样本数</li>
+<li>1 Iteration = 处理 1 个 Batch 并完成一次参数更新</li>
+<li>1 Epoch：表示完整遍历一次所有训练数据</li>
+<li>Learning rate：weight在某方向上改变的步长，$ W' = W - \eta * f(\nabla W)$</li>
+<li><strong>优化器 optimizer</strong> - <span class="arithmatex">\(f(\nabla W)\)</span> </li>
+<li>SGD （随机梯度下降），默认不包含动量；在 PyTorch 中可通过 <code>momentum</code> 参数开启</li>
+<li>RMSProp（自适应梯度缩放），简言之引入了norm（通过梯度平方的指数移动平均自适应调整学习率）</li>
+<li>Adam（Adam = Momentum + RMSProp 的结合体）</li>
+<li><strong>Learning Rate Scheduler 学习率调度器</strong></li>
+<li>学习率 <span class="arithmatex">\(\eta\)</span> 大：收敛快，但可能跳过最优点</li>
+<li>学习率 <span class="arithmatex">\(\eta\)</span> 小：稳定但慢，可能卡住不动</li>
+<li>调度器的作用：根据训练进度动态调整学习率</li>
+</ul>
+<h3 id="31">3.1 模型训练过程<a class="headerlink" href="#31" title="Permanent link">&para;</a></h3>
+<p>在扩展到多 GPU 之前，让我们先快速回顾在单卡 GPU 上训练模型的基本流程。单卡训练中，单层通常包括三步：</p>
+<ul>
+<li>前向传播（forward pass）：输入数据通过模型，得到输出</li>
+<li>反向传播（backward pass）：计算梯度</li>
+<li>权重更新（weight update）：利用梯度更新权重等参数</li>
+</ul>
+<blockquote>
+<p>一个标准流程：Forward → Loss → Backward (update parameters)</p>
+</blockquote>
+<p>让我们以一个典型的多层感知机（MLP，含多个Linear Layer）为例，来看看计算的具体流程。</p>
+<p><strong>【Forward Pass】</strong></p>
+<p><img src="../assets/03-distributed-training/fig-11.png" alt="fig-11" width="30%" /></p>
+<ul>
+<li>Linear Layer 计算公式：<span class="arithmatex">\(X @ W= Y\)</span></li>
+<li>存储需求：</li>
+<li>weight (W, b)：必须存储</li>
+<li>Activation (X - 上一层的output，Y - 本层的output)：<strong>存储视后向的计算需求而定（后面会详细讲）</strong></li>
+<li>注意：PyTorch 中偏置项 <span class="arithmatex">\(b\)</span> 的加法自动广播至 batch 维度，无需显式扩展</li>
+</ul>
+<p><strong>【所有Forward结束后 - 计算Loss】</strong></p>
+<ul>
+<li>Loss 的本质：损失函数的作用是衡量模型最终输出与真实标签之间的差距</li>
+<li>反向传播的起点：Loss 是反向传播的起点，计算 Loss 后，通过链式法则（自动微分）逐层回传梯度，最终更新所有层的参数</li>
+<li>常见 Loss 类型：</li>
+<li>分类任务：交叉熵损失（Cross-Entropy Loss）</li>
+<li>回归任务：均方误差（MSE Loss）、L1 Loss</li>
+<li>计算公式：</li>
+<li>$ L = Loss(Y)$ - 使用真实label计算</li>
+<li><span class="arithmatex">\(\nabla Y = \frac{\partial L}{\partial Y}\)</span> - 反向第一步梯度计算</li>
+</ul>
+<p><strong>【Backward Pass】</strong></p>
+<p><img src="../assets/03-distributed-training/fig-12.png" alt="fig-12" width="40%" /></p>
+<ul>
+<li>根据链式法则，计算对所有input和weight的权重</li>
+<li>Linear Layer 计算公式：</li>
+<li><span class="arithmatex">\(\nabla W = X^T @ \nabla Y\)</span> （用于更新W）</li>
+<li>$ \nabla X = \nabla Y @ W^T$ （用于辅助前一层的计算）</li>
+</ul>
+<p><strong>【Weight Updates】</strong></p>
+<p><img src="../assets/03-distributed-training/fig-13.png" alt="fig-13" width="50%" /></p>
+<ul>
+<li>计算公式：$ W' = W - \eta * f(\nabla W)$​​</li>
+<li>学习率（<span class="arithmatex">\(\eta\)</span>）：通常由优化器（如 torch.optim.SGD）控制。</li>
+<li>优化器的作用：实际训练中可能使用更复杂的更新规则（如动量、Adam），但上面的公式表示的是最基础的 SGD</li>
+</ul>
+<h3 id="32-transformer">3.2 Transformer 中的显存使用<a class="headerlink" href="#32-transformer" title="Permanent link">&para;</a></h3>
+<p><strong>【回顾：Model 计算流】</strong></p>
+<p>我们刚刚以简单的<code>batch_size = 1</code> 的 MLP 为例梳理了训练过程。实际上，无论是 MLP 还是 Transformer，其训练过程都可以抽象为以下阶段：</p>
+<ul>
+<li>一个Model由多层组成，执行：</li>
+<li>Forward 前向传播（多层） -&gt; 计算loss -&gt; 开始后向</li>
+<li>Backward后向传播</li>
+<li>每层计算对input的gradient，以用于传给上一层</li>
+<li>每层计算对weight参数的gradient，以用于更新weight<ul>
+<li>使用计算出的gradient，选择optimizer，更新weight</li>
+<li>$ W' = W - \eta * f(\nabla W)$</li>
+</ul>
+</li>
+</ul>
+<p><img src="../assets/03-distributed-training/fig-14.png" alt="fig-14" width="40%" /></p>
+<p><strong>【显存占用】</strong></p>
+<p>在训练神经网络模型时，一般需要存储：</p>
+<ul>
+<li><strong>模型权重</strong> (weights, <span class="arithmatex">\(W\)</span>)</li>
+<li><strong>模型梯度</strong> (gradients, <span class="arithmatex">\(\nabla W\)</span>)</li>
+<li><strong>优化器状态</strong> (optimizer states)：如动量、方差等</li>
+<li>用于反向传播的<strong>激活值</strong> (activations, <span class="arithmatex">\(X\)</span> &amp; <span class="arithmatex">\(Y\)</span>​)</li>
+<li>大小和batch size 成正比（实际是<span class="arithmatex">\(BX\)</span> &amp; <span class="arithmatex">\(BY\)</span>​）</li>
+<li>需要临时计算并存储它们的Gradient（<span class="arithmatex">\(\nabla X\)</span> &amp; <span class="arithmatex">\(\nabla Y\)</span>）</li>
+<li>可选择性保留或动态释放</li>
+</ul>
+<p>这些需要存储的项目以Tensor的形式存在，不同Tensor有不同的 <strong>形状（shape）</strong>和 **精度（precision），直接影响其内存占用：</p>
+<ul>
+<li><strong>形状</strong>：由例如 batch size、序列长度、模型隐层维度、注意力头数、词表大小，以及是否进行模型切分等超参数决定</li>
+<li><strong>精度</strong>：对应 FP32、BF16 或 FP8 等格式，会影响每个元素所占的字节数（4、2 或 1 字节）</li>
+<li>混合精度训练就是其优化的一个方向</li>
+<li>也有的优化保存两份weight（高精度+低精度），低精度用于优化计算，同时高精度的保存又能尽量减少精度损失</li>
+</ul>
+<p><strong>【分析显存使用】</strong></p>
+<p>借助 PyTorch 的 profiler 工具，我们可以查看训练过程中不同阶段的显存分配。</p>
+<p>发现显存使用并非静态，而是在训练过程（尤其是单个 Iteration 内）不断变化：</p>
+<ul>
+<li>前向传播时，会随着激活值的产生，显存占用快速上涨</li>
+<li>在反向传播时，梯度逐渐累加，但之前存储的激活值可以逐步释放</li>
+<li>优化步骤，此时需要所有梯度，然后更新优化器状态，此时暂存的计算值临时上升</li>
+</ul>
+<p><img src="../assets/03-distributed-training/fig-15.png" alt="fig-15" width="30%" /></p>
+<p><strong>【权重、激活值、梯度和优化器状态的显存】</strong></p>
+<p>其实可以计算具体的数值，但我认为太过于细节了所以略过了，如果你感兴趣细节可以查看<a href="权重、梯度和优化器状态的显存"> 这里</a></p>
+<ul>
+<li>
+<p>相对固定的3个</p>
+</li>
+<li>
+<p>模型权重 <span class="arithmatex">\(N\)</span>​​：</p>
+<ul>
+<li>和精度选取有关，如果都使用FP32(4 byte)，则 <span class="arithmatex">\(m_{para} = 4N\)</span></li>
+</ul>
+<p><img src="../assets/03-distributed-training/fig-16.png" alt="fig-16" width="40%" /></p>
+</li>
+<li>
+<p>梯度亦然：<span class="arithmatex">\(m_{grad} = 4*N\)</span></p>
+</li>
+<li>
+<p>优化器状态：</p>
+<ul>
+<li>优化器在使用 Adam 时，需要存储动量和方差各 4 字节，还会加上一些管理用的结构。总结起来</li>
+<li><span class="arithmatex">\(m_{opt} = (4+4)*N\)</span></li>
+</ul>
+</li>
+<li>
+<p><strong>激活值占用</strong>：</p>
+</li>
+<li>
+<p>重点：随 <code>batch_size</code>, <code>seq_len</code> 线性增长</p>
+</li>
+<li>在计算图中随时变化，周期性分配和释放</li>
+<li><strong>对于大输入 tokens（即大 batch size/长序列），激活值会成为主要的显存负担。</strong></li>
+</ul>
+<p><img src="../assets/03-distributed-training/fig-17.png" alt="fig-17" width="40%" /></p>
+<p><img src="../assets/03-distributed-training/fig-18.png" alt="fig-18" width="40%" /></p>
+<h3 id="33-activation-">3.3 Activation优化 - 激活重计算<a class="headerlink" href="#33-activation-" title="Permanent link">&para;</a></h3>
+<p>根据上一步我们发现，Activation对显存的影响很大！</p>
+<p>为应对激活值高占用的问题，可使用 <strong>激活重计算</strong> 技术（又称 Gradient Checkpointing 或 Rematerialization）。</p>
+<p>核心思想是：在前向传播时丢弃部分激活值，从而省显存；需要它们做反向传播时，再运行一次子前向过程把它们计算回来，换取多一些计算量来节省显存。</p>
+<ul>
+<li>若不开启重计算：我们会在每个可学习操作（比如 feed-forward，layernorm 等）之间都保存激活值</li>
+<li>启用重计算后：我们<strong>只保存少量关键位置的激活值</strong>；当反向传播需要时，再用已保存的进行部分前向运算重算出所需内容。</li>
+</ul>
+<p><img src="../assets/03-distributed-training/fig-19.png" alt="fig-19" width="33%" /></p>
+<h3 id="34-activation-">3.4 Activation优化 - 梯度累加<a class="headerlink" href="#34-activation-" title="Permanent link">&para;</a></h3>
+<p>已知Activation还正比于 <code>batch_size</code> 所以还有一个节省Activation的技巧 —— <strong>梯度累加</strong>（Gradient accumulation），用于避免因过大 batch size 带来的显存爆炸。</p>
+<p>思路：把原本的一次大 batch，拆成多个更小的 micro-batch</p>
+<ul>
+<li>每次处理一个小 batch，执行前向 + 反向并累加梯度</li>
+<li>把这些梯度累加起来，最后再做一次优化器更新（<code>optimizer.step()</code>）</li>
+</ul>
+<p>效果：</p>
+<ul>
+<li>存储需求：只需要 micro-batch的activation + gradient</li>
+<li>缺点：每个优化步骤需要重复多次前后向，因此增加了计算量，放慢了训练速度🤔</li>
+</ul>
+<h2 id="4">4. 代码实现<a class="headerlink" href="#4" title="Permanent link">&para;</a></h2>
+<p>本章节我们先来熟悉一下<code>torch.distributed</code> 的使用吧，在接下来的分布式代码详解中我都会使用这个库。</p>
+<blockquote>
+<p>配套代码：<a href="../code/03-distributed-demo.ipynb">本地 ipynb</a> ｜ <a href="https://drive.google.com/file/d/15V25khFs8M8Ui3LW-_zDXUkquQytvBgq/view?usp=drive_link">Colab</a></p>
+</blockquote>
+<p>不过值得注意的是：</p>
+<ul>
+<li><code>torch.distributed</code> 支持三种后端：nccl、mpi、gloo，正常的多GPU分布式应该用<strong>NCCL后端</strong>（在“2. 通信方式（软硬件）-&gt; torch.distributed 前端”部分也有讲解）</li>
+<li>但是由于我用的是免费的Google Colab（最多提供 1 个免费 GPU 😭），因此后续部分示例将使用 <strong>GLOO 后端+ CPU 模拟</strong>（不选 MPI 是因为配置略繁琐）</li>
+</ul>
+<h3 id="41">4.1 通信原语测试<a class="headerlink" href="#41" title="Permanent link">&para;</a></h3>
+<p><strong>【结构搭建】</strong></p>
+<p>在 PyTorch 中，使用 <code>torch.distributed</code> 进行分布式训练通常遵循以下基本流程（对应步骤已在代码中标注）：</p>
+<ol>
+<li><strong>初始化进程组</strong>
+    使用 <code>init_process_group()</code> 初始化通信环境，这是使用 <code>torch.distributed</code> 的前置步骤，必须在调用任何其他分布式函数之前完成。</li>
+<li><strong>创建子进程组（可选）</strong>
+    如需在一个训练任务中进行<strong>子组级别的通信</strong>，可通过 <code>new_group()</code> 创建子分组（例如在模型并行中应用）。</li>
+<li><strong>构建分布式模型封装器</strong>
+    将模型封装为 <code>DistributedDataParallel</code>（即 <code>DDP(model, device_ids=device_ids)</code>），以实现梯度同步与自动通信优化。</li>
+<li><strong>为数据加载器配置分布式采样器</strong>
+    使用 <code>DistributedSampler</code> 为训练数据集创建采样器，确保每个进程加载互不重复的数据子集。</li>
+<li><strong>启动多进程训练脚本</strong>
+    使用 <code>torch.distributed.launch</code> 或推荐的 <code>torchrun</code> 工具，在每台主机上启动训练脚本，分配不同的 <code>rank</code>。</li>
+<li><strong>训练结束后销毁进程组（推荐）</strong>
+    使用 <code>destroy_process_group()</code> 清理通信资源，确保程序正常退出。</li>
+</ol>
+<p><strong>【我设置的对应setting函数】</strong></p>
+<p>共用的参数设置为了库函数：</p>
+<p>(1) 初始化进程组：<code>init_process_group()</code> 初始化通信环境</p>
+<p>(6) 训练结束后销毁进程组</p>
+<p><strong>剩下的那些</strong>，由于此处是一个通信源语的test所以：</p>
+<p>(2) 没有选择子进程组</p>
+<p>(3)(4) 不是模型，不用封装model和数据sampler</p>
+<p>(5) 启动器：<code>torchrun</code> 是正式推荐的，用于训练任务；但此处用了<code>mp.spawn()</code> ，是轻量、灵活的调试工具</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="o">%%</span><span class="n">writefile</span> <span class="n">dist_utils</span><span class="o">.</span><span class="n">py</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.distributed</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dist</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">world_size</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">12355</span><span class="p">):</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">init_process_group</span><span class="p">(</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>        <span class="n">backend</span><span class="o">=</span><span class="s1">&#39;gloo&#39;</span><span class="p">,</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        <span class="n">init_method</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;tcp://127.0.0.1:</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>        <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>        <span class="n">world_size</span><span class="o">=</span><span class="n">world_size</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="p">)</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="k">def</span><span class="w"> </span><span class="nf">cleanup</span><span class="p">():</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">destroy_process_group</span><span class="p">()</span>
+</code></pre></div>
+<p><strong>【各类通信原语示例】</strong></p>
+<p>值得注意的是：</p>
+<ul>
+<li>使用<code>log</code>代替显式的<code>print</code>，可以自动加 <code>flush=True</code>，避免 spawn/join 卡死</li>
+<li>在原语后添加<code>dist.barrier()</code>有助于解决结束时的同步和锁死问题</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="o">%%</span><span class="n">writefile</span> <span class="n">commu_funcs</span><span class="o">.</span><span class="n">py</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.distributed</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dist</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.multiprocessing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mp</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dist_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup</span><span class="p">,</span> <span class="n">cleanup</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="c1"># ------------------- 打印封装 ----------------------</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">rank</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="n">prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[Rank </span><span class="si">{</span><span class="n">rank</span><span class="si">}</span><span class="s2">] &quot;</span> <span class="k">if</span> <span class="n">rank</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="n">msg</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="c1"># ------------------- 通信原语 ----------------------</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="k">def</span><span class="w"> </span><span class="nf">example_broadcast</span><span class="p">(</span><span class="n">rank</span><span class="p">):</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>    <span class="n">tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>    <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Before Broadcast: </span><span class="si">{</span><span class="n">tensor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">broadcast</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="n">src</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>    <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;After Broadcast: </span><span class="si">{</span><span class="n">tensor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">barrier</span><span class="p">()</span>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="k">def</span><span class="w"> </span><span class="nf">example_reduce</span><span class="p">(</span><span class="n">rank</span><span class="p">):</span>
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>    <span class="n">tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">rank</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">5</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a>    <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Before Reduce: </span><span class="si">{</span><span class="n">tensor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="n">dst</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">dist</span><span class="o">.</span><span class="n">ReduceOp</span><span class="o">.</span><span class="n">SUM</span><span class="p">)</span>
+<a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a>    <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;After Reduce: </span><span class="si">{</span><span class="n">tensor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">barrier</span><span class="p">()</span>
+<a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a>
+<a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="k">def</span><span class="w"> </span><span class="nf">example_all_reduce</span><span class="p">(</span><span class="n">rank</span><span class="p">):</span>
+<a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a>    <span class="n">tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">rank</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">5</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a>    <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Before AllReduce: </span><span class="si">{</span><span class="n">tensor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">all_reduce</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">dist</span><span class="o">.</span><span class="n">ReduceOp</span><span class="o">.</span><span class="n">SUM</span><span class="p">)</span>
+<a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a>    <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;After AllReduce: </span><span class="si">{</span><span class="n">tensor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">barrier</span><span class="p">()</span>
+<a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a>
+<a id="__codelineno-4-37" name="__codelineno-4-37" href="#__codelineno-4-37"></a><span class="k">def</span><span class="w"> </span><span class="nf">example_gather</span><span class="p">(</span><span class="n">rank</span><span class="p">):</span>
+<a id="__codelineno-4-38" name="__codelineno-4-38" href="#__codelineno-4-38"></a>    <span class="n">tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">rank</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">5</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<a id="__codelineno-4-39" name="__codelineno-4-39" href="#__codelineno-4-39"></a>    <span class="n">gather_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dist</span><span class="o">.</span><span class="n">get_world_size</span><span class="p">())]</span> <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">None</span>
+<a id="__codelineno-4-40" name="__codelineno-4-40" href="#__codelineno-4-40"></a>    <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Before Gather: </span><span class="si">{</span><span class="n">tensor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-41" name="__codelineno-4-41" href="#__codelineno-4-41"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="n">gather_list</span><span class="p">,</span> <span class="n">dst</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-4-42" name="__codelineno-4-42" href="#__codelineno-4-42"></a>    <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-4-43" name="__codelineno-4-43" href="#__codelineno-4-43"></a>        <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;After Gather: </span><span class="si">{</span><span class="n">gather_list</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-44" name="__codelineno-4-44" href="#__codelineno-4-44"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">barrier</span><span class="p">()</span>
+<a id="__codelineno-4-45" name="__codelineno-4-45" href="#__codelineno-4-45"></a>
+<a id="__codelineno-4-46" name="__codelineno-4-46" href="#__codelineno-4-46"></a><span class="k">def</span><span class="w"> </span><span class="nf">example_all_gather</span><span class="p">(</span><span class="n">rank</span><span class="p">):</span>
+<a id="__codelineno-4-47" name="__codelineno-4-47" href="#__codelineno-4-47"></a>    <span class="n">tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">rank</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">5</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<a id="__codelineno-4-48" name="__codelineno-4-48" href="#__codelineno-4-48"></a>    <span class="n">gather_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dist</span><span class="o">.</span><span class="n">get_world_size</span><span class="p">())]</span>
+<a id="__codelineno-4-49" name="__codelineno-4-49" href="#__codelineno-4-49"></a>    <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Before AllGather: </span><span class="si">{</span><span class="n">tensor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-50" name="__codelineno-4-50" href="#__codelineno-4-50"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">all_gather</span><span class="p">(</span><span class="n">gather_list</span><span class="p">,</span> <span class="n">tensor</span><span class="p">)</span>
+<a id="__codelineno-4-51" name="__codelineno-4-51" href="#__codelineno-4-51"></a>    <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;After AllGather: </span><span class="si">{</span><span class="n">gather_list</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-52" name="__codelineno-4-52" href="#__codelineno-4-52"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">barrier</span><span class="p">()</span>
+<a id="__codelineno-4-53" name="__codelineno-4-53" href="#__codelineno-4-53"></a>
+<a id="__codelineno-4-54" name="__codelineno-4-54" href="#__codelineno-4-54"></a><span class="k">def</span><span class="w"> </span><span class="nf">example_scatter</span><span class="p">(</span><span class="n">rank</span><span class="p">):</span>
+<a id="__codelineno-4-55" name="__codelineno-4-55" href="#__codelineno-4-55"></a>    <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-4-56" name="__codelineno-4-56" href="#__codelineno-4-56"></a>        <span class="n">scatter_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">5</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dist</span><span class="o">.</span><span class="n">get_world_size</span><span class="p">())]</span>
+<a id="__codelineno-4-57" name="__codelineno-4-57" href="#__codelineno-4-57"></a>        <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rank 0 Scatter List: </span><span class="si">{</span><span class="n">scatter_list</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-58" name="__codelineno-4-58" href="#__codelineno-4-58"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-4-59" name="__codelineno-4-59" href="#__codelineno-4-59"></a>        <span class="n">scatter_list</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-4-60" name="__codelineno-4-60" href="#__codelineno-4-60"></a>    <span class="n">tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<a id="__codelineno-4-61" name="__codelineno-4-61" href="#__codelineno-4-61"></a>    <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Before Scatter: </span><span class="si">{</span><span class="n">tensor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-62" name="__codelineno-4-62" href="#__codelineno-4-62"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="n">scatter_list</span><span class="p">,</span> <span class="n">src</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-4-63" name="__codelineno-4-63" href="#__codelineno-4-63"></a>    <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;After Scatter: </span><span class="si">{</span><span class="n">tensor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-64" name="__codelineno-4-64" href="#__codelineno-4-64"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">barrier</span><span class="p">()</span>
+<a id="__codelineno-4-65" name="__codelineno-4-65" href="#__codelineno-4-65"></a>
+<a id="__codelineno-4-66" name="__codelineno-4-66" href="#__codelineno-4-66"></a><span class="k">def</span><span class="w"> </span><span class="nf">example_reduce_scatter</span><span class="p">(</span><span class="n">rank</span><span class="p">):</span>
+<a id="__codelineno-4-67" name="__codelineno-4-67" href="#__codelineno-4-67"></a>    <span class="n">world_size</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">get_world_size</span><span class="p">()</span>
+<a id="__codelineno-4-68" name="__codelineno-4-68" href="#__codelineno-4-68"></a>    <span class="n">input_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([(</span><span class="n">rank</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">world_size</span><span class="p">)]</span>
+<a id="__codelineno-4-69" name="__codelineno-4-69" href="#__codelineno-4-69"></a>    <span class="n">output_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-4-70" name="__codelineno-4-70" href="#__codelineno-4-70"></a>    <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Before ReduceScatter: </span><span class="si">{</span><span class="n">input_list</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-71" name="__codelineno-4-71" href="#__codelineno-4-71"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">reduce_scatter</span><span class="p">(</span><span class="n">output_tensor</span><span class="p">,</span> <span class="n">input_list</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">dist</span><span class="o">.</span><span class="n">ReduceOp</span><span class="o">.</span><span class="n">SUM</span><span class="p">)</span>
+<a id="__codelineno-4-72" name="__codelineno-4-72" href="#__codelineno-4-72"></a>    <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;After ReduceScatter: </span><span class="si">{</span><span class="n">output_tensor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-73" name="__codelineno-4-73" href="#__codelineno-4-73"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">barrier</span><span class="p">()</span>
+<a id="__codelineno-4-74" name="__codelineno-4-74" href="#__codelineno-4-74"></a>
+<a id="__codelineno-4-75" name="__codelineno-4-75" href="#__codelineno-4-75"></a><span class="k">def</span><span class="w"> </span><span class="nf">example_barrier</span><span class="p">(</span><span class="n">rank</span><span class="p">):</span>
+<a id="__codelineno-4-76" name="__codelineno-4-76" href="#__codelineno-4-76"></a>    <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sleeping </span><span class="si">{</span><span class="n">rank</span><span class="si">}</span><span class="s2"> seconds...&quot;</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-77" name="__codelineno-4-77" href="#__codelineno-4-77"></a>    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-78" name="__codelineno-4-78" href="#__codelineno-4-78"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">barrier</span><span class="p">()</span>
+<a id="__codelineno-4-79" name="__codelineno-4-79" href="#__codelineno-4-79"></a>    <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Passed barrier.&quot;</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-80" name="__codelineno-4-80" href="#__codelineno-4-80"></a>
+<a id="__codelineno-4-81" name="__codelineno-4-81" href="#__codelineno-4-81"></a><span class="c1"># ------------------- 启动器 ----------------------</span>
+<a id="__codelineno-4-82" name="__codelineno-4-82" href="#__codelineno-4-82"></a>
+<a id="__codelineno-4-83" name="__codelineno-4-83" href="#__codelineno-4-83"></a><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">world_size</span><span class="p">,</span> <span class="n">op_name</span><span class="p">):</span>
+<a id="__codelineno-4-84" name="__codelineno-4-84" href="#__codelineno-4-84"></a>    <span class="n">setup</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">world_size</span><span class="p">)</span>
+<a id="__codelineno-4-85" name="__codelineno-4-85" href="#__codelineno-4-85"></a>
+<a id="__codelineno-4-86" name="__codelineno-4-86" href="#__codelineno-4-86"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-4-87" name="__codelineno-4-87" href="#__codelineno-4-87"></a>        <span class="n">ops</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-4-88" name="__codelineno-4-88" href="#__codelineno-4-88"></a>            <span class="s2">&quot;broadcast&quot;</span><span class="p">:</span> <span class="n">example_broadcast</span><span class="p">,</span>
+<a id="__codelineno-4-89" name="__codelineno-4-89" href="#__codelineno-4-89"></a>            <span class="s2">&quot;reduce&quot;</span><span class="p">:</span> <span class="n">example_reduce</span><span class="p">,</span>
+<a id="__codelineno-4-90" name="__codelineno-4-90" href="#__codelineno-4-90"></a>            <span class="s2">&quot;all_reduce&quot;</span><span class="p">:</span> <span class="n">example_all_reduce</span><span class="p">,</span>
+<a id="__codelineno-4-91" name="__codelineno-4-91" href="#__codelineno-4-91"></a>            <span class="s2">&quot;gather&quot;</span><span class="p">:</span> <span class="n">example_gather</span><span class="p">,</span>
+<a id="__codelineno-4-92" name="__codelineno-4-92" href="#__codelineno-4-92"></a>            <span class="s2">&quot;all_gather&quot;</span><span class="p">:</span> <span class="n">example_all_gather</span><span class="p">,</span>
+<a id="__codelineno-4-93" name="__codelineno-4-93" href="#__codelineno-4-93"></a>            <span class="s2">&quot;scatter&quot;</span><span class="p">:</span> <span class="n">example_scatter</span><span class="p">,</span>
+<a id="__codelineno-4-94" name="__codelineno-4-94" href="#__codelineno-4-94"></a>            <span class="s2">&quot;reduce_scatter&quot;</span><span class="p">:</span> <span class="n">example_reduce_scatter</span><span class="p">,</span>
+<a id="__codelineno-4-95" name="__codelineno-4-95" href="#__codelineno-4-95"></a>            <span class="s2">&quot;barrier&quot;</span><span class="p">:</span> <span class="n">example_barrier</span>
+<a id="__codelineno-4-96" name="__codelineno-4-96" href="#__codelineno-4-96"></a>        <span class="p">}</span>
+<a id="__codelineno-4-97" name="__codelineno-4-97" href="#__codelineno-4-97"></a>
+<a id="__codelineno-4-98" name="__codelineno-4-98" href="#__codelineno-4-98"></a>        <span class="k">if</span> <span class="n">op_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ops</span><span class="p">:</span>
+<a id="__codelineno-4-99" name="__codelineno-4-99" href="#__codelineno-4-99"></a>            <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-4-100" name="__codelineno-4-100" href="#__codelineno-4-100"></a>                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Rank </span><span class="si">{</span><span class="n">rank</span><span class="si">}</span><span class="s2">] Unknown operation: </span><span class="si">{</span><span class="n">op_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-4-101" name="__codelineno-4-101" href="#__codelineno-4-101"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-4-102" name="__codelineno-4-102" href="#__codelineno-4-102"></a>            <span class="n">ops</span><span class="p">[</span><span class="n">op_name</span><span class="p">](</span><span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-103" name="__codelineno-4-103" href="#__codelineno-4-103"></a>
+<a id="__codelineno-4-104" name="__codelineno-4-104" href="#__codelineno-4-104"></a>    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-4-105" name="__codelineno-4-105" href="#__codelineno-4-105"></a>        <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exception: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-106" name="__codelineno-4-106" href="#__codelineno-4-106"></a>
+<a id="__codelineno-4-107" name="__codelineno-4-107" href="#__codelineno-4-107"></a>    <span class="k">finally</span><span class="p">:</span>
+<a id="__codelineno-4-108" name="__codelineno-4-108" href="#__codelineno-4-108"></a>        <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-4-109" name="__codelineno-4-109" href="#__codelineno-4-109"></a>            <span class="n">cleanup</span><span class="p">()</span>
+<a id="__codelineno-4-110" name="__codelineno-4-110" href="#__codelineno-4-110"></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-4-111" name="__codelineno-4-111" href="#__codelineno-4-111"></a>            <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cleanup failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-4-112" name="__codelineno-4-112" href="#__codelineno-4-112"></a>        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># 显式退出</span>
+<a id="__codelineno-4-113" name="__codelineno-4-113" href="#__codelineno-4-113"></a>
+<a id="__codelineno-4-114" name="__codelineno-4-114" href="#__codelineno-4-114"></a><span class="c1"># ------------------- 可执行入口 ----------------------</span>
+<a id="__codelineno-4-115" name="__codelineno-4-115" href="#__codelineno-4-115"></a>
+<a id="__codelineno-4-116" name="__codelineno-4-116" href="#__codelineno-4-116"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<a id="__codelineno-4-117" name="__codelineno-4-117" href="#__codelineno-4-117"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<a id="__codelineno-4-118" name="__codelineno-4-118" href="#__codelineno-4-118"></a>    <span class="n">op</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;broadcast&quot;</span>
+<a id="__codelineno-4-119" name="__codelineno-4-119" href="#__codelineno-4-119"></a>    <span class="n">world_size</span> <span class="o">=</span> <span class="mi">3</span>
+<a id="__codelineno-4-120" name="__codelineno-4-120" href="#__codelineno-4-120"></a>    <span class="n">mp</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">world_size</span><span class="p">,</span> <span class="n">op</span><span class="p">),</span> <span class="n">nprocs</span><span class="o">=</span><span class="n">world_size</span><span class="p">,</span> <span class="n">join</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>【调用运行参考】</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>python commu_funcs.py broadcast
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>[Rank 1] Before Broadcast: tensor([0., 0., 0., 0., 0.])
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>[Rank 2] Before Broadcast: tensor([0., 0., 0., 0., 0.])
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>[Rank 0] Before Broadcast: tensor([1., 2., 3., 4., 5.])
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>[Rank 1] After Broadcast: tensor([1., 2., 3., 4., 5.])
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>[Rank 2] After Broadcast: tensor([1., 2., 3., 4., 5.])
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>[Rank 0] After Broadcast: tensor([1., 2., 3., 4., 5.])
+</code></pre></div>
+<h3 id="42">4.2 自定义分布式训练测试<a class="headerlink" href="#42" title="Permanent link">&para;</a></h3>
+<p>同前面的“结构搭建”部分。</p>
+<p><strong>【我设置的对应setting函数】</strong></p>
+<p><strong>把共用的参数设置为了库函数：</strong></p>
+<p>(1) 初始化进程组：<code>init_process_group()</code> 初始化通信环境</p>
+<p>(2) 没有选择子进程组</p>
+<p>(3)写了个模型，定义为了库函数</p>
+<p>(4)写了个简单的数据集，并且定义了数据sampler</p>
+<p>(6) 训练结束后销毁进程组</p>
+<p><strong>此外，同上：</strong></p>
+<p>(5) 启动器：<code>torchrun</code> 是正式推荐的，用于训练任务；但此处用了<code>mp.spawn()</code> ，是轻量、灵活的调试工具</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="o">%%</span><span class="n">writefile</span> <span class="n">ddp_utils</span><span class="o">.</span><span class="n">py</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.optim</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">optim</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.distributed</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dist</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="kn">from</span><span class="w"> </span><span class="nn">torch.nn.parallel</span><span class="w"> </span><span class="kn">import</span> <span class="n">DistributedDataParallel</span> <span class="k">as</span> <span class="n">DDP</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="kn">from</span><span class="w"> </span><span class="nn">torch.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">DataLoader</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">torch.utils.data.distributed</span><span class="w"> </span><span class="kn">import</span> <span class="n">DistributedSampler</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="c1"># ------------------ 强制 CPU 模式 ------------------</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="kc">False</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="c1"># ------------------ 1. 通信初始化 ------------------</span>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">world_size</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;tcp://localhost:12355&quot;</span><span class="p">):</span>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">init_process_group</span><span class="p">(</span>
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>        <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;gloo&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>        <span class="n">init_method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>        <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>        <span class="n">world_size</span><span class="o">=</span><span class="n">world_size</span>
+<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>    <span class="p">)</span>
+<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a>
+<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a><span class="c1"># ------------------ 3. 模型 ------------------</span>
+<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a><span class="k">class</span><span class="w"> </span><span class="nc">SimpleModel</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+<a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a>
+<a id="__codelineno-7-31" name="__codelineno-7-31" href="#__codelineno-7-31"></a><span class="c1"># ------------------ 4. 数据集 &amp; Sampler ------------------</span>
+<a id="__codelineno-7-32" name="__codelineno-7-32" href="#__codelineno-7-32"></a><span class="k">class</span><span class="w"> </span><span class="nc">DummyDataset</span><span class="p">(</span><span class="n">Dataset</span><span class="p">):</span>
+<a id="__codelineno-7-33" name="__codelineno-7-33" href="#__codelineno-7-33"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-7-34" name="__codelineno-7-34" href="#__codelineno-7-34"></a>        <span class="k">return</span> <span class="mi">100</span>
+<a id="__codelineno-7-35" name="__codelineno-7-35" href="#__codelineno-7-35"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+<a id="__codelineno-7-36" name="__codelineno-7-36" href="#__codelineno-7-36"></a>        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,))</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<a id="__codelineno-7-37" name="__codelineno-7-37" href="#__codelineno-7-37"></a>
+<a id="__codelineno-7-38" name="__codelineno-7-38" href="#__codelineno-7-38"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_sampler</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">world_size</span><span class="p">,</span> <span class="n">rank</span><span class="p">):</span>
+<a id="__codelineno-7-39" name="__codelineno-7-39" href="#__codelineno-7-39"></a>    <span class="k">return</span> <span class="n">DistributedSampler</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">num_replicas</span><span class="o">=</span><span class="n">world_size</span><span class="p">,</span> <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-7-40" name="__codelineno-7-40" href="#__codelineno-7-40"></a>
+<a id="__codelineno-7-41" name="__codelineno-7-41" href="#__codelineno-7-41"></a><span class="c1"># ------------------ 6. 销毁进程组 ------------------</span>
+<a id="__codelineno-7-42" name="__codelineno-7-42" href="#__codelineno-7-42"></a><span class="k">def</span><span class="w"> </span><span class="nf">cleanup</span><span class="p">():</span>
+<a id="__codelineno-7-43" name="__codelineno-7-43" href="#__codelineno-7-43"></a>    <span class="n">dist</span><span class="o">.</span><span class="n">destroy_process_group</span><span class="p">()</span>
+</code></pre></div>
+<p><strong>【分布式训练主体】</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="o">%%</span><span class="n">writefile</span> <span class="n">ddp_simple</span><span class="o">.</span><span class="n">py</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.optim</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">optim</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.multiprocessing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mp</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="kn">from</span><span class="w"> </span><span class="nn">torch.nn.parallel</span><span class="w"> </span><span class="kn">import</span> <span class="n">DistributedDataParallel</span> <span class="k">as</span> <span class="n">DDP</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="kn">from</span><span class="w"> </span><span class="nn">torch.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ddp_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup</span><span class="p">,</span> <span class="n">cleanup</span><span class="p">,</span> <span class="n">SimpleModel</span><span class="p">,</span> <span class="n">DummyDataset</span><span class="p">,</span> <span class="n">get_sampler</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="c1">################### 分布式训练定义 ###################</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">train</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">world_size</span><span class="p">,</span> <span class="n">epochs</span><span class="p">):</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>    <span class="c1"># 1. 初始化进程组</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>    <span class="n">setup</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">world_size</span><span class="p">)</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>    <span class="c1"># 设置设备</span>
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>    <span class="n">device</span> <span class="o">=</span> <span class="s2">&quot;cpu&quot;</span>
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Rank </span><span class="si">{</span><span class="n">rank</span><span class="si">}</span><span class="s2">] initialized&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>
+<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>    <span class="c1"># 3. 创建模型 + DDP封装</span>
+<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a>    <span class="n">model</span> <span class="o">=</span> <span class="n">SimpleModel</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a>    <span class="n">model</span> <span class="o">=</span> <span class="n">DDP</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a>
+<a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a>    <span class="c1"># 4. 数据加载器 + 分布式采样器 Sampler</span>
+<a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a>    <span class="n">dataset</span> <span class="o">=</span> <span class="n">DummyDataset</span><span class="p">()</span>
+<a id="__codelineno-8-26" name="__codelineno-8-26" href="#__codelineno-8-26"></a>    <span class="n">sampler</span> <span class="o">=</span> <span class="n">get_sampler</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">world_size</span><span class="p">,</span> <span class="n">rank</span><span class="p">)</span>
+<a id="__codelineno-8-27" name="__codelineno-8-27" href="#__codelineno-8-27"></a>    <span class="n">dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">sampler</span><span class="o">=</span><span class="n">sampler</span><span class="p">)</span>
+<a id="__codelineno-8-28" name="__codelineno-8-28" href="#__codelineno-8-28"></a>
+<a id="__codelineno-8-29" name="__codelineno-8-29" href="#__codelineno-8-29"></a>    <span class="c1"># 优化器</span>
+<a id="__codelineno-8-30" name="__codelineno-8-30" href="#__codelineno-8-30"></a>    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">SGD</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+<a id="__codelineno-8-31" name="__codelineno-8-31" href="#__codelineno-8-31"></a>
+<a id="__codelineno-8-32" name="__codelineno-8-32" href="#__codelineno-8-32"></a>    <span class="c1"># 简单训练循环（2个epoch）</span>
+<a id="__codelineno-8-33" name="__codelineno-8-33" href="#__codelineno-8-33"></a>    <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">epochs</span><span class="p">):</span>
+<a id="__codelineno-8-34" name="__codelineno-8-34" href="#__codelineno-8-34"></a>        <span class="n">sampler</span><span class="o">.</span><span class="n">set_epoch</span><span class="p">(</span><span class="n">epoch</span><span class="p">)</span>
+<a id="__codelineno-8-35" name="__codelineno-8-35" href="#__codelineno-8-35"></a>        <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+<a id="__codelineno-8-36" name="__codelineno-8-36" href="#__codelineno-8-36"></a>            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> <span class="n">y</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<a id="__codelineno-8-37" name="__codelineno-8-37" href="#__codelineno-8-37"></a>            <span class="n">output</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<a id="__codelineno-8-38" name="__codelineno-8-38" href="#__codelineno-8-38"></a>            <span class="n">loss</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">CrossEntropyLoss</span><span class="p">()(</span><span class="n">output</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<a id="__codelineno-8-39" name="__codelineno-8-39" href="#__codelineno-8-39"></a>            <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+<a id="__codelineno-8-40" name="__codelineno-8-40" href="#__codelineno-8-40"></a>            <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+<a id="__codelineno-8-41" name="__codelineno-8-41" href="#__codelineno-8-41"></a>            <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<a id="__codelineno-8-42" name="__codelineno-8-42" href="#__codelineno-8-42"></a>        <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-8-43" name="__codelineno-8-43" href="#__codelineno-8-43"></a>            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Rank </span><span class="si">{</span><span class="n">rank</span><span class="si">}</span><span class="s2">] Epoch </span><span class="si">{</span><span class="n">epoch</span><span class="si">}</span><span class="s2">, Loss: </span><span class="si">{</span><span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-8-44" name="__codelineno-8-44" href="#__codelineno-8-44"></a>
+<a id="__codelineno-8-45" name="__codelineno-8-45" href="#__codelineno-8-45"></a>    <span class="c1"># 6. 销毁进程组</span>
+<a id="__codelineno-8-46" name="__codelineno-8-46" href="#__codelineno-8-46"></a>    <span class="n">cleanup</span><span class="p">()</span>
+<a id="__codelineno-8-47" name="__codelineno-8-47" href="#__codelineno-8-47"></a>
+<a id="__codelineno-8-48" name="__codelineno-8-48" href="#__codelineno-8-48"></a><span class="c1">################### 函数入口 ###################</span>
+<a id="__codelineno-8-49" name="__codelineno-8-49" href="#__codelineno-8-49"></a><span class="c1"># 5. 启动入口</span>
+<a id="__codelineno-8-50" name="__codelineno-8-50" href="#__codelineno-8-50"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<a id="__codelineno-8-51" name="__codelineno-8-51" href="#__codelineno-8-51"></a>    <span class="n">world_size</span> <span class="o">=</span> <span class="mi">2</span>
+<a id="__codelineno-8-52" name="__codelineno-8-52" href="#__codelineno-8-52"></a>    <span class="n">epochs</span> <span class="o">=</span> <span class="mi">2</span>
+<a id="__codelineno-8-53" name="__codelineno-8-53" href="#__codelineno-8-53"></a>    <span class="n">mp</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">world_size</span><span class="p">,</span> <span class="n">epochs</span><span class="p">),</span> <span class="n">nprocs</span><span class="o">=</span><span class="n">world_size</span><span class="p">,</span> <span class="n">join</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>【调用运行】</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>python ddp_simple.py
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>
+</code></pre></div>
+<h2 id="_3">参考资料 &amp; 结语<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<p><strong>【参考资料】</strong></p>
+<ul>
+<li>NYU CSCI-GA.3033-077 Big Data and Machine Learning Systems 相关课件</li>
+<li>NYU CSCI-GA.3033-9483 Efficient AI and Hardware Accelerator Design 相关课件</li>
+<li>相关帖子：<a href="https://zhuanlan.zhihu.com/p/76638962">知乎：Pytorch 分布式训练</a></li>
+</ul>
+<p><strong>【结语】</strong></p>
+<p>本节内容就先到这里咯，之所以整理这部分分布式基础，是因为我感觉直接进入各类分布式策略的paper reading会有一些理解不透彻的问题（正如去年读了那些paper的我一样）。</p>
+<p>所以说，回到第一性原理的角度去理解通信与计算流程，真的很重要。下节DP再见！</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/katex.js"></script>
+      
+        <script src="https://unpkg.com/katex@0/dist/katex.min.js"></script>
+      
+        <script src="https://unpkg.com/katex@0/dist/contrib/auto-render.min.js"></script>
+      
+    
+  </body>
+</html>

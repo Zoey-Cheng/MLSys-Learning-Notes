@@ -1,0 +1,174 @@
+/* ==========================================================================
+   Lapis-inspired theme (亮色 / 暗色双适配)
+   - chrome (顶栏 / sidebar) 保留 mkdocs-material indigo 默认
+   - 正文字体保留默认（Material 默认）
+   - 多级标题用 Lapis 风格：思源宋体 + 蓝色 + H2 标签样式
+   - **bold** / *em* 保留默认黑色（不上色）
+   - code block / inline code / blockquote 等都做了亮暗双适配
+   ========================================================================== */
+
+/* 加载思源宋体（仅用于标题） */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&display=swap');
+
+/* --------- Lapis 配色变量：亮色模式 --------- */
+[data-md-color-scheme="default"] {
+  --lapis-primary:   #4870ac;
+  --lapis-text:      #40464f;
+  --lapis-block-bg:  #f6f8fa;
+  --lapis-border:    #d9dfe4;
+  --lapis-h2-text:   #ffffff;
+}
+
+/* --------- Lapis 配色变量：暗色模式（slate） --------- */
+[data-md-color-scheme="slate"] {
+  --lapis-primary:   #7aa6db;                            /* 更亮的蓝在深色底上更易读 */
+  --lapis-text:      var(--md-typeset-color);            /* 跟随 Material 默认 */
+  --lapis-block-bg:  var(--md-code-bg-color);            /* 跟随 Material 的代码底色 */
+  --lapis-border:    var(--md-default-fg-color--lightest);
+  --lapis-h2-text:   var(--md-default-bg-color);         /* 暗模式下白字 → 深底色对比依然清晰 */
+}
+
+/* --------- 隐藏页面顶部 [toc]（右栏已有） --------- */
+.md-content .toc {
+  display: none;
+}
+
+/* --------- 加宽 content 区域 --------- */
+.md-grid {
+  max-width: 80rem;
+}
+
+/* --------- content 颜色（用变量，自动适配亮暗） --------- */
+.md-typeset {
+  color: var(--lapis-text);
+}
+
+/* --------- 标题（思源宋体 + Lapis 蓝） --------- */
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4,
+.md-typeset h5,
+.md-typeset h6 {
+  font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+  font-weight: 600;
+}
+
+.md-typeset h1,
+.md-typeset h3,
+.md-typeset h4,
+.md-typeset h5,
+.md-typeset h6 {
+  color: var(--lapis-primary);
+}
+
+.md-typeset h1 {
+  text-align: center;
+  margin-top: 1em;
+  margin-bottom: 1.2em;
+  font-weight: 700;
+}
+
+/* H2: Lapis 标志性的"蓝底白字"标签 */
+.md-typeset h2 {
+  display: inline-block;
+  background-color: var(--lapis-primary);
+  color: var(--lapis-h2-text);
+  padding: 2px 14px;
+  border-radius: 4px;
+  margin-top: 2em;
+  margin-bottom: 1em;
+  border: none;
+  font-weight: 700;
+}
+.md-typeset h2 code {
+  background: transparent;
+  color: var(--lapis-h2-text);
+}
+/* H2 蓝标签内不显示 ¶ 锚点（避免右侧多余 padding） */
+.md-typeset h2 .headerlink {
+  display: none;
+}
+
+/* --------- 图片居中 + 防超界 --------- */
+.md-typeset img {
+  display: block;
+  margin: 1em auto;
+  max-width: 100%;
+  height: auto;
+}
+
+/* --------- 链接 --------- */
+.md-typeset a {
+  color: var(--lapis-primary);
+}
+
+/* --------- 行内 code --------- */
+.md-typeset code {
+  color: var(--lapis-primary);
+  background-color: var(--lapis-block-bg);
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 0.92em;
+  border: none;
+  box-shadow: none;
+}
+
+/* --------- 代码块：完全保留 Material 默认配色，只调字号 --------- */
+.md-typeset pre > code,
+.md-typeset pre code,
+.md-typeset .highlight pre,
+.md-typeset .highlight pre code,
+.md-typeset .highlight code {
+  font-size: 0.88em;     /* ≈ 11.3px (正文 12.8px 基础上稍小) */
+  line-height: 1.55;
+}
+
+/* --------- Blockquote --------- */
+.md-typeset blockquote {
+  border-left: 3px solid var(--lapis-primary);
+  background: var(--lapis-block-bg);
+  padding: 0.5rem 1.2rem;
+  margin: 1em 0;
+  color: var(--lapis-text);
+  line-height: 1.5;       /* 比正文 (~1.7) 紧凑 */
+}
+.md-typeset blockquote p {
+  margin: 0.2em 0;        /* 段落间隔收紧 */
+}
+.md-typeset blockquote p:first-child {
+  margin-top: 0;
+}
+.md-typeset blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* --------- Table --------- */
+.md-typeset table:not([class]) th {
+  color: var(--lapis-primary);
+  background: transparent;
+  font-weight: 700;
+  text-align: center;
+  border: 1px solid var(--lapis-border);
+  padding: 6px 12px;
+}
+.md-typeset table:not([class]) td {
+  border: 1px solid var(--lapis-border);
+  padding: 6px 12px;
+}
+.md-typeset table:not([class]) tr:hover td {
+  background-color: var(--lapis-block-bg);
+}
+
+/* --------- 列表 marker 上色 --------- */
+.md-typeset ul li::marker,
+.md-typeset ol li::marker {
+  color: var(--lapis-primary);
+  opacity: 0.6;
+}
+
+/* --------- bold / em 保留默认黑色 (不要 lapis 化) --------- */
+.md-typeset strong,
+.md-typeset em {
+  color: inherit;
+}

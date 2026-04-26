@@ -1,0 +1,1544 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="MLSys 自学笔记，知乎同步更新">
+      
+      
+      
+        <link rel="canonical" href="https://zoey-cheng.github.io/MLSys-Learning-Notes/notes/01_Transformer%20%E8%AF%A6%E8%A7%A3.html">
+      
+      
+        <link rel="prev" href="../index.html">
+      
+      
+        <link rel="next" href="02_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20%2B%20%E5%B8%B8%E8%A7%81%20op.html">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>01-Transformer 详解 - MLSys 菜狗自学笔记</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="https://unpkg.com/katex@0/dist/katex.min.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#01-transformer" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../index.html" title="MLSys 菜狗自学笔记" class="md-header__button md-logo" aria-label="MLSys 菜狗自学笔记" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            MLSys 菜狗自学笔记
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              01-Transformer 详解
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换到暗色模式"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到暗色模式" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换到亮色模式"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到亮色模式" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Zoey-Cheng/MLSys-Learning-Notes
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../index.html" title="MLSys 菜狗自学笔记" class="md-nav__button md-logo" aria-label="MLSys 菜狗自学笔记" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    MLSys 菜狗自学笔记
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Zoey-Cheng/MLSys-Learning-Notes
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-Transformer 详解
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="01_Transformer%20%E8%AF%A6%E8%A7%A3.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-Transformer 详解
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前言
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 相关概念
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 相关概念">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-embedding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 词嵌入 Embedding
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11-self-attention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 注意力机制 Self-Attention
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-mha" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 多头注意力机制 MHA
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-layer-norm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 层归一化 Layer Norm
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-transformer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Transformer结构
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Transformer结构">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 输入
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-encoder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Encoder
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-decoder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Decoder
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-linear-softmax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Linear + Softmax + 输出
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 一些衍生知识点
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 一些衍生知识点">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 训练和推理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-encoderdecoder-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Encoder/Decoder Only
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-llama" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 LLama
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-transformer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 手写Transformer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 手写Transformer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-multi-head-attention-mha" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Multi-Head Attention (MHA) 实现
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-feed-forward-mlp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Feed Forward (MLP) 的实现
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-decoder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Decoder侧的实现
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#46-llama" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.6 LLama的整体实现
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        测试实现
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="02_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20%2B%20%E5%B8%B8%E8%A7%81%20op.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-算子手写(1) - CUDA 入门 + 常见 op
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="03_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%280%29%20-%20%E8%83%8C%E6%99%AF%E7%9F%A5%E8%AF%86%28%E9%80%9A%E4%BF%A1%E5%8E%9F%E8%AF%AD%20%26%20NCCL%20%26%20%E5%8D%95%E5%8D%A1%E8%AE%A1%E7%AE%97%E6%B5%81%29.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    03-分布式训练(0) - 背景知识
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前言
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 相关概念
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 相关概念">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-embedding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 词嵌入 Embedding
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11-self-attention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 注意力机制 Self-Attention
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-mha" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 多头注意力机制 MHA
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-layer-norm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 层归一化 Layer Norm
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-transformer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Transformer结构
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Transformer结构">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 输入
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-encoder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Encoder
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-decoder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Decoder
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-linear-softmax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Linear + Softmax + 输出
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 一些衍生知识点
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 一些衍生知识点">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 训练和推理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-encoderdecoder-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Encoder/Decoder Only
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-llama" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 LLama
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-transformer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 手写Transformer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 手写Transformer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-multi-head-attention-mha" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Multi-Head Attention (MHA) 实现
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-feed-forward-mlp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Feed Forward (MLP) 的实现
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-decoder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Decoder侧的实现
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#46-llama" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.6 LLama的整体实现
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        测试实现
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="01-transformer">01-Transformer<a class="headerlink" href="#01-transformer" title="Permanent link">&para;</a></h1>
+<div class="toc">
+<ul>
+<li><a href="#01-transformer">01-Transformer</a><ul>
+<li><a href="#_1">前言</a></li>
+<li><a href="#1">1. 相关概念</a><ul>
+<li><a href="#11-embedding">1.1 词嵌入 Embedding</a></li>
+<li><a href="#11-self-attention">1.1 注意力机制 Self-Attention</a></li>
+<li><a href="#12-mha">1.2 多头注意力机制 MHA</a></li>
+<li><a href="#14-layer-norm">1.4 层归一化 Layer Norm</a></li>
+</ul>
+</li>
+<li><a href="#2-transformer">2. Transformer结构</a><ul>
+<li><a href="#21">2.1 输入</a></li>
+<li><a href="#22-encoder">2.2 Encoder</a></li>
+<li><a href="#23-decoder">2.3 Decoder</a></li>
+<li><a href="#24-linear-softmax">2.4 Linear + Softmax + 输出</a></li>
+</ul>
+</li>
+<li><a href="#3">3. 一些衍生知识点</a><ul>
+<li><a href="#31">3.1 训练和推理</a></li>
+<li><a href="#32-encoderdecoder-only">3.2 Encoder/Decoder Only</a></li>
+<li><a href="#33-llama">3.3 LLama</a></li>
+</ul>
+</li>
+<li><a href="#4-transformer">4. 手写Transformer</a><ul>
+<li><a href="#41-multi-head-attention-mha">4.1 Multi-Head Attention (MHA) 实现</a></li>
+<li><a href="#42-feed-forward-mlp">4.2 Feed Forward (MLP) 的实现</a></li>
+<li><a href="#43-decoder">4.3 Decoder侧的实现</a></li>
+<li><a href="#46-llama">4.6 LLama的整体实现</a></li>
+<li><a href="#_2">测试实现</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<h2 id="_1">前言<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<p>Transformer 在 MLSys 相关面试中，已经成为了"过年的饺子"，被问到的概率极高。当然，也可能因为太基础而被跳过。但作为众多知识点的基石，熟悉 Transformer 是必不可少的——谁知道哪天面试官会让你手写一个 Transformer 呢？</p>
+<p>因此，我的自学笔记就从 Transformer 开始，以下内容是我从一个"半小白"的视角重新梳理和学习的过程，并结合自己的理解进行总结，欢迎指正。</p>
+<h2 id="1">1. 相关概念<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>
+<p>首先需要理解这些概念：</p>
+<ul>
+<li><strong>核心机制</strong>：Self Attention、Multi-head Attention</li>
+<li><strong>辅助模块</strong>：Word Embedding、Position Encoding、Add（残差连接）、Norm（Layer/Batch）、Feed Forward Network（FFN）、Softmax</li>
+</ul>
+<p><img src="../assets/01-transformer/fig-01.png" alt="fig-01" width="50%" /></p>
+<h3 id="11-embedding">1.1 词嵌入 Embedding<a class="headerlink" href="#11-embedding" title="Permanent link">&para;</a></h3>
+<p><strong>Embedding的概念</strong></p>
+<p>文本嵌入（Text Embedding）是将文本转换为固定维度的向量表示（例如 512 维）。简单来说，它是通过映射，将不同的词关联在一起，使得模型具备一定的语义理解和推理能力。例如：</p>
+<p>queen（皇后）= king（国王）- man（男人）+ woman（女人）</p>
+<p>这个embedding矩阵的初始化通常采用一些初始化方法。假设一个包含 4 个单词的输入序列 <span class="arithmatex">\((x^1, x^2, x^3, x^4)\)</span>，在经过 Embedding 处理后，会变成形状为 [4, 512] 的向量矩阵，即<span class="arithmatex">\((a^1, a^2, a^3, a^4)\)</span>。</p>
+<p><img src="../assets/01-transformer/fig-02.png" alt="fig-02" width="30%" /></p>
+<p>目前已有许多成熟的词嵌入方法，如 Word2Vec，可以直接使用。通常初始化方式包括 one-hot 编码、预训练词向量（如 Word2Vec、GloVe），而在 Transformer 中，Embedding 输出通常为形状 [batch_size, seq_len, embedding_dim]。</p>
+<p><strong>位置编码 Position Encoding</strong></p>
+<p>一个句子中单词的顺序很重要，如果位置并不影响结果这合理吗？</p>
+<p>当然不合理！所以在进入attention前，最好也对单词在句子中的位置也加上考量，这就是<strong>位置编码 Position Encoding</strong>。</p>
+<p>有很多种现有的策略可参考，常见的位置编码策略包括正弦和余弦函数编码，Transformer 论文中采用了三角函数形式的编码方式：</p>
+<p><img src="../assets/01-transformer/fig-03.png" alt="fig-03" width="20%" /></p>
+<p>在 Transformer 的输入处理过程中，最终的单词表示向量由 <strong>词嵌入（Word Embedding）</strong> 和 <strong>位置编码（Position Encoding）</strong> 相加，即：</p>
+<p>输入向量 = 初始化 Word Embedding + 位置编码 Position Embedding</p>
+<h3 id="11-self-attention">1.1 注意力机制 Self-Attention<a class="headerlink" href="#11-self-attention" title="Permanent link">&para;</a></h3>
+<p>在处理序列数据时，传统方法如 RNN 由于<strong>顺序计算</strong>的特性，难以并行加速，计算效率较低。</p>
+<p><strong>Self-Attention 通过以下方式改进了这一点</strong>：</p>
+<ul>
+<li><strong>全局计算（All-to-All）</strong>：不再按照顺序处理，而是计算所有 Token 之间的关系。</li>
+<li><strong>矩阵乘法优化</strong>：通过矩阵分块计算，使得 Attention 机制可以高效地适配分布式计算与底层加速（如 GPU）。</li>
+</ul>
+<p>此处简单理解一下推理过程：</p>
+<p><strong>Step 1: 理解QKV</strong></p>
+<p>QKV的实际含义理解起来很简单。QKV 的概念可以类比为 <strong>Key-Value 数据结构</strong> 或数据库的索引机制：</p>
+<ul>
+<li><strong>Query（Q）</strong>：类似于数据库查询，表示当前 Token 需要关注的内容。</li>
+<li><strong>Key（K）- Value（V）</strong>：类似于数据库的索引和值，对应于整个输入序列的表示。</li>
+</ul>
+<p>QKV是怎么得到的？</p>
+<p>QKV 的初始化通常使用 <strong>Xavier 初始化或正态分布</strong>，并在训练过程中不断优化</p>
+<div class="arithmatex">\[
+\begin{aligned}
+q^i &amp;= W_Q a^i \\
+k^i &amp;= W_K a^i \\
+v^i &amp;= W_V a^i
+\end{aligned}
+\]</div>
+<p><strong>Step 2: Q, K 操作</strong></p>
+<p>首先以第一个output token <span class="arithmatex">\(b_1\)</span>​的计算为例：</p>
+<ul>
+<li>
+<p><span class="arithmatex">\(b_1\)</span> 的实际意义来源于 <span class="arithmatex">\(a_1\)</span> 和 <span class="arithmatex">\(a_2,a_3,a_4\)</span> 之间的关联。</p>
+</li>
+<li>
+<p>因此我们需要用 <span class="arithmatex">\(q_1\)</span> 和 <span class="arithmatex">\(k_2,k_3,k_4\)</span> 进行匹配计算注意力分数。</p>
+</li>
+<li><span class="arithmatex">\(d\)</span> 是之前的embedding纬度度，除以 <span class="arithmatex">\(\sqrt(d)\)</span>是为了避免数值过大影响计算。</li>
+</ul>
+<p><img src="../assets/01-transformer/fig-04.png" alt="fig-04" width="30%" /></p>
+<p>随后对它们进行一个softmax标准化，使得概率和为1。</p>
+<p><img src="../assets/01-transformer/fig-05.png" alt="fig-05" width="30%" /></p>
+<p><strong>Step 3: 使用V 计算b</strong></p>
+<p><span class="arithmatex">\(v\)</span> 表示当前 Token 的特征表示，它和 <span class="arithmatex">\(k\)</span> 具有一一对应关系。由前面 <span class="arithmatex">\(q, k\)</span> 相乘得到的注意力权重加权得到：</p>
+<p><img src="../assets/01-transformer/fig-06.png" alt="fig-06" width="30%" /></p>
+<p><strong>Step 4: 从整体看矩阵计算</strong></p>
+<p>对于第一个token的计算我们已经了解，那么多个token同时计算会是什么情况？假设我们这么表示：</p>
+<ul>
+<li>Input (embedding 后)：<span class="arithmatex">\(I\)</span></li>
+<li>Outout: <span class="arithmatex">\(O\)</span></li>
+<li>Softmax 前后的概率：<span class="arithmatex">\(A, \hat{A}\)</span>​​​</li>
+</ul>
+<p>根据示意图很容易理解：</p>
+<p><img src="../assets/01-transformer/fig-07.png" alt="fig-07" width="50%" /></p>
+<p><strong>那么就有这个结论（反正就是矩阵乘法，可以加速)</strong>：</p>
+<div class="arithmatex">\[
+\begin{aligned}
+A &amp;= QK^T \\
+\hat{A} &amp;= Softmax(A) \\
+O &amp;= \hat{A}V
+\end{aligned}
+\]</div>
+<p>计算疑似youtube视频里的矩阵放反了，我手工调换了一下顺序</p>
+<p><img src="../assets/01-transformer/fig-08.png" alt="fig-08" width="40%" /></p>
+<h3 id="12-mha">1.2 多头注意力机制 MHA<a class="headerlink" href="#12-mha" title="Permanent link">&para;</a></h3>
+<p>Multi-head Attention (MHA) 在设计层可以理解为，多个head各自计算一部分Embedding Feature。</p>
+<ul>
+<li>注意力头的数量：<span class="arithmatex">\(H\)</span></li>
+<li>embedding时的维度：<span class="arithmatex">\(d_{model}\)</span>​</li>
+<li>那么此时每个head的QKV维度为：<span class="arithmatex">\(d_k = d_{model}/H\)</span>​</li>
+</ul>
+<p>在计算层面，也出现了变化。简言之就是：想要得到output <span class="arithmatex">\(b_i\)</span>，先每个head分别计算出一个<span class="arithmatex">\(b_{i,h}\)</span>​，随后进行多头注意力输出的拼接。</p>
+<p><img src="../assets/01-transformer/fig-09.png" alt="fig-09" width="30%" /></p>
+<p><strong>Step 1: 多头计算</strong></p>
+<p>在MHA中，多个注意力头是并行计算的，<span class="arithmatex">\(b_{i,h}\)</span> 的计算就和上面普通的attention一样。</p>
+<p>唯一值得注意的区别是，多头QKV 的 hidden layer出现了变化，因此：</p>
+<ul>
+<li><span class="arithmatex">\(b_{i,h}\)</span> 形状为 <span class="arithmatex">\([d_k = d_{model}/H]\)</span></li>
+<li>而普通attention得到的 <span class="arithmatex">\(b_{i}\)</span> 形状为 <span class="arithmatex">\([d_{model}]\)</span></li>
+</ul>
+<p><strong>Step 2: 多头拼接</strong></p>
+<p>首先进行<strong>简单的hidden layer拼接</strong>，<span class="arithmatex">\(H*[d_k] = [H*d_k] = [d_{model}]\)</span>。这时回到了和正常attention一样维度的结果。</p>
+<p><img src="../assets/01-transformer/fig-10.png" alt="fig-10" width="50%" /></p>
+<p>但是，多个注意力头计算出的结果可能彼此之间缺乏整合性。为了让模型能够更好地融合不同头的信息，我们需要 一个额外的线性变换进行信息融合。</p>
+<p><img src="../assets/01-transformer/fig-11.png" alt="fig-11" width="50%" /></p>
+<p>其中，<span class="arithmatex">\(W^O\)</span> 是一个可训练的投影矩阵，形状为 <span class="arithmatex">\(W^O \in \mathbb{R}^{d_{\text{model}} \times d_{\text{model}}}\)</span>。</p>
+<h3 id="14-layer-norm">1.4 层归一化 Layer Norm<a class="headerlink" href="#14-layer-norm" title="Permanent link">&para;</a></h3>
+<p>Batch Norm 和 Layer Norm的选择使用也是一个常见的问题。</p>
+<p><strong>Norm操作的核心思想</strong>：</p>
+<ul>
+<li>
+<p>将数据转换为均值为 0，方差为 1 的标准正态分布（此处可先忽略<span class="arithmatex">\(\beta, \gamma, \epsilon\)</span>​）。</p>
+</li>
+<li>
+<p>此处参考了pytorch的说明来辅助理解：</p>
+</li>
+</ul>
+<p><img src="../assets/01-transformer/fig-12.png" alt="fig-12" width="50%" /></p>
+<p>简单来说就是，对于一个 <span class="arithmatex">\((N,C,H,W)\)</span> 的input（或 <span class="arithmatex">\((N,C,...)\)</span>都可以 ）：</p>
+<ul>
+<li>
+<p><span class="arithmatex">\(N\)</span>：不同的sample，此处可理解为句子的长度</p>
+</li>
+<li>
+<p><span class="arithmatex">\(C\)</span>：不同的channel，此处可理解为多维的embedding</p>
+</li>
+</ul>
+<p>Layer Norm：</p>
+<ul>
+<li>
+<p>以 <span class="arithmatex">\(N\)</span>​ 为 index做norm</p>
+</li>
+<li>
+<p>即：提取出 N = 1的所有element 做正则化，N = 2 的再做正则化，以此类推</p>
+</li>
+<li>
+<p>此处就等于对每个词，提取出所有feature做一个正则化</p>
+</li>
+</ul>
+<p><img src="../assets/01-transformer/fig-13.png" alt="fig-13" width="30%" /></p>
+<p>Batch Norm：</p>
+<ul>
+<li>以 <span class="arithmatex">\(C\)</span> 为 index做norm</li>
+<li>即：提取出 C = 1的所有element 做正则化，C = 2 的再做正则化，以此类推</li>
+<li>此处就等于对每个feature，提取所有词的这个feature做一次正则化</li>
+</ul>
+<p>这样就很好理解了，对每个feature做norm（Batch Norm），相比对于一个token的所有feature做norm（Layer Norm）。Layer Norm更合理。</p>
+<h2 id="2-transformer">2. Transformer结构<a class="headerlink" href="#2-transformer" title="Permanent link">&para;</a></h2>
+<p><img src="../assets/01-transformer/fig-14.png" alt="fig-14" width="50%" /></p>
+<h3 id="21">2.1 输入<a class="headerlink" href="#21" title="Permanent link">&para;</a></h3>
+<p>输入的每个单词 Token 都需要进行 <strong>Embedding</strong> 处理，先通过 <strong>Word Embedding</strong> 转换为向量表示，再加上 <strong>Position Encoding</strong>，以提供位置信息。</p>
+<h3 id="22-encoder">2.2 Encoder<a class="headerlink" href="#22-encoder" title="Permanent link">&para;</a></h3>
+<p>Encoder 侧由多个 encoder block 组成。</p>
+<p><img src="../assets/01-transformer/fig-15.png" alt="fig-15" width="50%" /></p>
+<p><strong>【Add &amp; Norm】</strong></p>
+<p>是一种<strong>残差连接（Residual Connection）</strong>，用于缓解深层网络的梯度消失问题。这种设计最早在 <strong>ResNet</strong> 中广泛应用。</p>
+<p><img src="../assets/01-transformer/fig-16.png" alt="fig-16" width="20%" /></p>
+<p><strong>【Feed Forward Layer】</strong></p>
+<p>Feed Forward 层比较简单，就是一个两层全连接MLP，其中第一层的激活函数为 Relu，第二层不使用激活函数，先升维（一般为4x）后降维，对应的公式如下：</p>
+<p><img src="../assets/01-transformer/fig-17.png" alt="fig-17" width="20%" /></p>
+<p>为什么需要FFN？提供非线性映射，增强局部表示能力，提升模型容量。</p>
+<p><strong>【Encoder Block 的整体结构</strong></p>
+<p>每个 <strong>Encoder Block</strong> 的输入是一个 <strong>word  embedding</strong> 矩阵 <span class="arithmatex">\([seq_len, d_{model}]\)</span>，多个 Block 叠加后，最终生成 <strong>编码信息矩阵 C</strong>，这一矩阵会被 <strong>Decoder</strong> 进一步利用。</p>
+<p><img src="../assets/01-transformer/fig-18.png" alt="fig-18" width="30%" /></p>
+<h3 id="23-decoder">2.3 Decoder<a class="headerlink" href="#23-decoder" title="Permanent link">&para;</a></h3>
+<p>Decoder 侧也由多个 decoder block 组成，但它会利用 <strong>Encoder侧最后生成的编码信息矩阵</strong>。</p>
+<p><img src="../assets/01-transformer/fig-19.png" alt="fig-19" width="40%" /></p>
+<p><strong>【第一个MHA】</strong>（Masked Self-Attention）</p>
+<p>Decoder 的第一个 Multi-Head Attention 采用了 <strong>Mask 机制</strong>，因为 <strong>翻译是顺序生成的</strong>，每个位置不能看到未来的信息。</p>
+<p>可以理解为加了一个处理：使用下 <strong>三角矩阵</strong> 进行了Mask，使得未来 Token 的注意力被屏蔽。</p>
+<p><img src="../assets/01-transformer/fig-20.png" alt="fig-20" width="30%" /></p>
+<p><strong>具体mask体现在哪里呢？顺序是：QK计算 -&gt; Mask -&gt; Softmax -&gt; V计算</strong></p>
+<ul>
+<li>QK计算</li>
+</ul>
+<p><img src="../assets/01-transformer/fig-21.png" alt="fig-21" width="30%" /></p>
+<ul>
+<li>Mask</li>
+</ul>
+<p><img src="../assets/01-transformer/fig-22.png" alt="fig-22" width="30%" /></p>
+<ul>
+<li>
+<p>Softmax</p>
+</li>
+<li>
+<p>V计算</p>
+</li>
+</ul>
+<p><img src="../assets/01-transformer/fig-23.png" alt="fig-23" width="30%" /></p>
+<p><strong>【第二个MHA】</strong></p>
+<p>第二个MHA的主要区别是，Self-Attention 的 <strong>K, V</strong> 矩阵不是使用 上一个 Decoder block 的输出计算的，而是使用 <strong>Encoder 的编码信息矩阵 C</strong> 计算的。并且这里不需要mask。</p>
+<p>为什么这样做？好处是在 Decoder 的时候，每一位单词都可以利用到 Encoder 侧所有单词的信息。</p>
+<p>当然，第一个 <strong>MHA</strong> 的信息没有丢失，它会在 <strong>Add &amp; Norm</strong> 阶段被整合。</p>
+<h3 id="24-linear-softmax">2.4 Linear + Softmax + 输出<a class="headerlink" href="#24-linear-softmax" title="Permanent link">&para;</a></h3>
+<p>Decoder 侧 <strong>最终的目标：预测下一个单词</strong>。</p>
+<ul>
+<li>
+<p>单词从哪里来？词汇表。也就是说我们要从词汇表中找出一个最可能的词作为输出。</p>
+</li>
+<li>
+<p>但是 decoder block 目前的输出是一个shape为 <span class="arithmatex">\([L×d_{model}]\)</span> 的矩阵。</p>
+</li>
+</ul>
+<p>所以最后还有两个步骤：</p>
+<ul>
+<li>
+<p>使用 Linear 层映射到词汇表维度</p>
+</li>
+<li>
+<p>使用 Softmax 计算概率分布，选取最可能的单词</p>
+</li>
+</ul>
+<p><strong>【Linear Layer】</strong></p>
+<p>假设：</p>
+<ul>
+<li><strong>词汇表大小（Vocabulary Size）</strong>：<span class="arithmatex">\(V=30,000\)</span>（即 Transformer 需要在 30,000 个单词中选择一个）</li>
+<li><strong>隐藏层维度（Embedding 维度）</strong>：<span class="arithmatex">\(d_{model}=512\)</span></li>
+</ul>
+<p>显然现在的embedding feature数目不足以对应到词汇表的大小，所以需要一个线性变换层（Fully Connected Layer），将 <span class="arithmatex">\(d_{model}\)</span> 维度转化为词汇表大小 <span class="arithmatex">\(V\)</span>​。使得 Transformer Decoder 生成的最终隐藏状态<span class="arithmatex">\(O\)</span>对应到词汇表：</p>
+<p><img src="../assets/01-transformer/fig-24.png" alt="fig-24" width="50%" /></p>
+<ul>
+<li><span class="arithmatex">\(O\)</span> 的形状：<span class="arithmatex">\(R^{L×d_{model}}\)</span>​</li>
+<li><span class="arithmatex">\(W\)</span> 的形状：<span class="arithmatex">\(R^{V×d_{model}}\)</span></li>
+<li><span class="arithmatex">\(b\)</span> 的形状：<span class="arithmatex">\(R^{L}\)</span></li>
+<li><span class="arithmatex">\(Z\)</span> 的形状：<span class="arithmatex">\(R^{L×V}\)</span></li>
+</ul>
+<p><strong>【Softmax】（概率计算）</strong></p>
+<p>线性层输出 <span class="arithmatex">\(Z\)</span> 在经过线性层后还是未归一化的分数，需要通过 <strong>Softmax</strong> 转换为概率分布。</p>
+<p>最终，Decoder 选择概率最高的单词作为输出，不断迭代，直到生成结束标记（<code>&lt;EOS&gt;</code>）。</p>
+<p><img src="../assets/01-transformer/fig-25.png" alt="fig-25" width="20%" /></p>
+<h2 id="3">3. 一些衍生知识点<a class="headerlink" href="#3" title="Permanent link">&para;</a></h2>
+<h3 id="31">3.1 训练和推理<a class="headerlink" href="#31" title="Permanent link">&para;</a></h3>
+<p><strong>【训练时】</strong></p>
+<ul>
+<li>
+<p>输入序列：<code>["I", "like", "apples"]</code></p>
+</li>
+<li>
+<p>目标序列（需要预测的单词）：<code>["like", "apples", "&lt;END&gt;"]</code></p>
+</li>
+</ul>
+<p>在训练过程中，模型可以 <strong>并行计算</strong>，一次性输入整个句子作为 Input，随后使用 <strong>Mask 机制</strong> 模拟未知后续序列的情况。</p>
+<p><strong>【推理时】</strong></p>
+<p>推理时，模型没有完整的目标序列，只能 <strong>逐步预测下一个单词</strong>：</p>
+<ul>
+<li>
+<p>给定 <code>"I"</code>，模型预测 <code>"like"</code>。</p>
+</li>
+<li>
+<p>用 <code>"I like"</code> 作为输入，模型预测 <code>"apples"</code>。</p>
+</li>
+<li>
+<p>用 <code>"I like apples"</code> 作为输入，模型预测 <code>&lt;END&gt;</code>。</p>
+</li>
+</ul>
+<p>这种 <strong>自回归（Auto-Regressive）生成方式</strong> 会导致推理速度较慢，因为每个新 Token 需要依赖之前的预测结果。</p>
+<p>因此，为了提升推理效率，衍生出一系列推理加速方法。最主流的方法是 <strong>KV Cache（键值缓存）</strong>，因为它 不会影响生成质量，且可以大幅加速推理（适用于 ChatGPT / GPT-4 / LLaMA）。</p>
+<h3 id="32-encoderdecoder-only">3.2 Encoder/Decoder Only<a class="headerlink" href="#32-encoderdecoder-only" title="Permanent link">&para;</a></h3>
+<p>三种主流的架构：encoder-only，encoder-decoder，decoder-only</p>
+<ul>
+<li><strong>Encoder-Only</strong>（以 BERT 为代表），擅长理解任务，但生成能力天生不足</li>
+<li><strong>Encoder-Decoder</strong>（以 T5 和 BART 为代表），适用于需要输入输出匹配的任务（如翻译）。</li>
+<li><strong>Decoder-Only</strong>（以 GPT 系列 为代表），目前大模型的主流架构。</li>
+</ul>
+<p><strong>为何现在的大模型大部分是Decoder only结构？</strong></p>
+<ul>
+<li><strong>Encoder侧的低秩问题</strong></li>
+<li>低秩：针对encoder侧得到的编码信息矩阵，认为模型学习到的特征可能高度相关，表达能力降低。</li>
+<li>原因：在 Encoder 侧，每个 token 都可以关注整个输入序列，这意味着所有 token 共享相同的 Key/Value，这可能导致注意力分布趋于相似，最终形成一个低秩的表示。</li>
+<li><strong>Decoder-Only 更适合 Zero-Shot</strong></li>
+<li>Zero-Shot：零样本，不给reference sample（对应的概念还有one-shot / few-shot）</li>
+<li>原因：Decoder-Only 结构天然支持 Zero-Shot，因为它<strong>没有参考样本（Reference Sample）</strong>，而是直接基于输入预测输出。</li>
+<li><strong>KV-Cache 优势，提升推理效率</strong></li>
+<li>Decoder-only 支持一直复用 KV-Cache，对多轮对话更友好。</li>
+<li>原因：每个 Token 的表示之和它之前的输入有关，而 Encoder-Decoder就难以做到。</li>
+</ul>
+<h3 id="33-llama">3.3 LLama<a class="headerlink" href="#33-llama" title="Permanent link">&para;</a></h3>
+<p>LLaMA是目前为止，效果最好的开源 LLM 之一。它采用 <strong>Decoder-Only 结构</strong>，并对 Transformer 进行了关键改进，以提升训练稳定性、推理速度和长文本处理能力。</p>
+<p><strong>LLaMA 的核心优化点：</strong></p>
+<ul>
+<li>
+<p><strong>RMS Norm 归一化</strong>：Layer Norm 替换为 RMS Norm，去掉均值归一化，减少计算量。</p>
+</li>
+<li>
+<p><strong>SwiGLU 激活函数</strong>：在MLP中使用SwiGLU替代 ReLU，使梯度更平滑，提高训练效果。</p>
+</li>
+<li>
+<p><strong>RoPE 旋转位置编码</strong>：增强相对位置感知能力，提高长文本建模能力。</p>
+</li>
+<li><strong>与标准 Decoder-Only Transformer 的区别</strong>：</li>
+<li><strong>Norm 位置不同</strong>：LLaMA 采用 <strong>Pre-Norm</strong>（Norm -&gt; Add），而不是标准 Transformer 的 <strong>Post-Norm</strong>（Add -&gt; Norm）。</li>
+<li><strong>位置编码位置不同</strong>：RoPE 直接作用于 Multi-Head Attention（MHA），而不是在输入时加到 Embedding 上。</li>
+<li><strong>Decoder 侧的特殊处理</strong>：在最终输出时，LLaMA 先进行归一化（Norm），再投影到词汇表，而标准 Transformer 是 Projection -&gt; Softmax。</li>
+</ul>
+<p><strong>【Pre-Norm RMS】</strong></p>
+<p>传统 Transformer 采用 <strong>Post-Norm（对输出进行归一化）</strong>，但为了提高训练的稳定性， LLaMA 改用 <strong>Pre-Norm（对输入进行归一化）</strong>。</p>
+<p>同时，LLaMA使用 <strong>RMS Norm（Root Mean Square layer normalization）</strong> 来替代Layer Norm。</p>
+<p>主要区别：去掉了均值归一化部分。作者认为这种方式有助于减少计算量，可以减少约 7%∼64% 的计算时间。</p>
+<p><img src="../assets/01-transformer/fig-26.png" alt="fig-26" width="50%" /></p>
+<p><strong>【激活函数SwiGLU】</strong></p>
+<p>LLaMA 使用 <strong>SwiGLU</strong> 替代 ReLU 作为激活函数。论文《Swish: a Self-Gated Activation Function》提出了Swish，SwiGLU 是其增强版。相比 ReLU，SwiGLU <strong>梯度更平滑</strong>，可以改善训练稳定性。</p>
+<p><img src="https://pic4.zhimg.com/v2-0d644ecd419bbdfdae9be5a8c076b9f7_1440w.jpg" alt="img" width="30%" /></p>
+<p><strong>【 旋转位置编码RoPE】</strong></p>
+<p>RoPE 的 <strong>核心思想</strong> 是”通过<strong>绝对位置编码</strong>的方式实现<strong>相对位置编码</strong>”。</p>
+<p>优点：具备了绝对位置编码的方便性，同时可以表示不同 token 之间的相对位置关系，适配更长文本。</p>
+<p>不同于原始 Transformers 论文中，将 pos embedding 和 token embedding 进行相加，RoPE 是将位置编码和 query （或者 key） 进行相乘。具体如下：</p>
+<p><img src="https://pic1.zhimg.com/v2-befa6058db4177c657538775446ebfc8_1440w.jpg" alt="img" width="33%" /></p>
+<p>同时值得注意的是，RoPE 在LLaMa中位于MHA中。</p>
+<h2 id="4-transformer">4. 手写Transformer<a class="headerlink" href="#4-transformer" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>配套代码：<a href="../code/01-mini-llama.ipynb">本地 ipynb</a> ｜ <a href="https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link">Colab</a></p>
+</blockquote>
+<p>了解了以上内容，现在我们来手写一个Transformer。</p>
+<p>为了能够在面试中快速实现，我们采用一个<strong>极简的 LLaMA 版实现</strong>（这样我们只需要实现 Decoder 部分）。特别感谢我 Hugging Face 的朋友提供的指导！</p>
+<p>LLaMA 版的 Transformer 主要包含以下几个核心模块（从重要的部分开始）。</p>
+<p>当然，实际实现中还有一些模块，理论上可以手动编写，但为了简化，我们直接调用相关库函数，例如：</p>
+<ul>
+<li>RoPE编码：<code>rotary_embedding_torch.RotaryEmbedding</code></li>
+<li>RMSNorm归一化：<code>x_transformers.RMSNorm</code></li>
+</ul>
+<h3 id="41-multi-head-attention-mha">4.1 Multi-Head Attention (MHA) 实现<a class="headerlink" href="#41-multi-head-attention-mha" title="Permanent link">&para;</a></h3>
+<p>手写 MHA（Multi-Head Attention）是 Transformer 相关面试中常见的考点。</p>
+<p>LLaMA 版 MHA 与标准 MHA 的主要区别在于：</p>
+<ul>
+<li><strong>普通 MHA</strong>：位置编码（Position Embedding）通常在 Encoder 开头处理。</li>
+<li><strong>LLaMA MHA</strong>：采用 <strong>RoPE（Rotary Embedding）</strong>，将相对位置编码集成到 MHA 计算中。</li>
+</ul>
+<p>如果想实现普通 MHA，只需删除与 RoPE 相关的部分（共3句）。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rotary_embedding_torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">RotaryEmbedding</span>  <span class="c1"># 因为我不想手写RoPE</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">MultiHeadAttention</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="n">num_heads</span><span class="p">):</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">=</span> <span class="n">num_heads</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span> <span class="o">=</span> <span class="n">hidden_size</span> <span class="o">//</span> <span class="n">num_heads</span>  <span class="c1"># 每个头的维度</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="c1"># 定义投影的线性变换层</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">q_proj</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">k_proj</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">v_proj</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">out_proj</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">rope</span> <span class="o">=</span> <span class="n">RotaryEmbedding</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span><span class="p">)</span>  <span class="c1"># 直接使用 RoPE - LLaMa</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>        <span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>       <span class="c1"># batch_size, token_len, hidden_size</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>        <span class="c1"># 计算 Q, K, V</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        <span class="n">q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">q_proj</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># [batch_size, token_len, hidden_size]</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>        <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">k_proj</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>        <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_proj</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>        <span class="c1"># 拆分多头</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>        <span class="n">q</span> <span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># [B, num_heads, T, head_dim]</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>        <span class="n">k</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># [B, num_heads, T, head_dim]</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>        <span class="n">v</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># [B, num_heads, T, head_dim]</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>        <span class="c1"># 直接应用 RoPE - LLaMa</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>        <span class="n">q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rope</span><span class="p">(</span><span class="n">q</span><span class="p">)[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>        <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rope</span><span class="p">(</span><span class="n">k</span><span class="p">)[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>        <span class="c1"># QK计算，使用BMM，只对后两个维度做乘法</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>        <span class="n">attn_scores</span> <span class="o">=</span> <span class="p">(</span><span class="n">q</span> <span class="o">@</span> <span class="n">k</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span> <span class="o">**</span> <span class="mf">0.5</span><span class="p">)</span>  <span class="c1"># [B, num_heads, T, T]</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>        <span class="c1"># 应用 mask（可选）</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>        <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>          <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>      <span class="c1"># [B, T, T]扩展到 [B, 1, T, T]，自动broadcast到 [B, num_heads, T, T]</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>          <span class="n">attn_scores</span> <span class="o">=</span> <span class="n">attn_scores</span><span class="o">.</span><span class="n">masked_fill</span><span class="p">(</span><span class="n">mask</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;-inf&#39;</span><span class="p">))</span>
+<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>
+<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>        <span class="c1"># softmax / V计算</span>
+<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>        <span class="n">attn_weights</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">attn_scores</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># [B, num_heads, T, T]</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>        <span class="n">attn_output</span> <span class="o">=</span> <span class="n">attn_weights</span> <span class="o">@</span> <span class="n">v</span>                                  <span class="c1"># [B, num_heads, T, head_dim]</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>
+<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>        <span class="c1"># 合并多头</span>
+<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>        <span class="c1"># -&gt; [B, T, num_heads, head_dim] -&gt; 确保存储方式改变 -&gt; 自动合并reshape -&gt; [B, T, hidden_size]</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>        <span class="n">attn_output</span> <span class="o">=</span> <span class="n">attn_output</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>  
+<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>
+<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_proj</span><span class="p">(</span><span class="n">attn_output</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="42-feed-forward-mlp">4.2 Feed Forward (MLP) 的实现<a class="headerlink" href="#42-feed-forward-mlp" title="Permanent link">&para;</a></h3>
+<p>标准 Transformer 中，FFN 采用 <strong>线性升维-降维</strong> 结构（hidden_dim 通常设为 <code>4 * embedding_dim</code>）。</p>
+<p>但LLama版使用 <strong>SwiGLU</strong> 替代了 ReLU，SwiGLU 可以调用 <strong>SiLU</strong> 函数实现，它们的关系如下：</p>
+<p><strong>SiLU（Swish Linear Unit）的形式</strong></p>
+<p><img src="../assets/01-transformer/fig-27.png" alt="fig-27" width="50%" /></p>
+<p><strong>SwiGLU（Swish-Gated Linear Unit）</strong></p>
+<p>SwiGLU 是 GLU（Gated Linear Unit）的变体，由 <strong>SiLU + gating 机制</strong> 组成其定义如下：</p>
+<p><img src="../assets/01-transformer/fig-28.png" alt="fig-28" width="50%" /></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="sd">class SimpleMLP(nn.Module):</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="sd">    def __init__(self, dim, hidden_dim=None):</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="sd">        super().__init__()</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="sd">        hidden_dim = hidden_dim or 4 * dim</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="sd">        self.fc1 = nn.Linear(dim, hidden_dim, bias=False)  # hidden layer</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="sd">        self.fc2 = nn.Linear(hidden_dim, dim, bias=False)  # output layer</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="sd">    def forward(self, x):</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="sd">        x = F.relu(self.fc1(x))     # ReLU</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="sd">        x = self.fc2(x)                     # output</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="sd">        return x</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="k">class</span><span class="w"> </span><span class="nc">MLP</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>        <span class="n">hidden_dim</span> <span class="o">=</span> <span class="n">hidden_dim</span> <span class="ow">or</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">dim</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">gate_proj</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>     <span class="c1"># gate</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">up_proj</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>       <span class="c1"># up</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">out_proj</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>      <span class="c1"># 输出层</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>        <span class="n">x1</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">silu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gate_proj</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>  <span class="c1"># gate</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>        <span class="n">x2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">up_proj</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>                    <span class="c1"># up</span>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>        <span class="n">x</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">*</span> <span class="n">x2</span>                                         <span class="c1"># SwiGLU</span>
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_proj</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="43-decoder">4.3 Decoder侧的实现<a class="headerlink" href="#43-decoder" title="Permanent link">&para;</a></h3>
+<p>LLaMA 的 Decoder 侧与传统 Transformer 的主要区别：</p>
+<ul>
+<li>传统Transofrmer：Add -&gt; Norm</li>
+<li>LLaMa:Norm -&gt;Add。</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">DecoderBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="c1"># Attention -&gt; RMSNorm -&gt; Residual -&gt; MLP -&gt; RMSNorm -&gt; Residual </span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">num_heads</span><span class="o">=</span><span class="mi">8</span><span class="p">):</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">attn</span> <span class="o">=</span> <span class="n">MultiHeadAttention</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">num_heads</span><span class="p">)</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ffn</span> <span class="o">=</span> <span class="n">MLP</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">norm1</span> <span class="o">=</span> <span class="n">RMSNorm</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>  
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">norm2</span> <span class="o">=</span> <span class="n">RMSNorm</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">norm1</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">mask</span><span class="p">)</span>  
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ffn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">norm2</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>  
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>        <span class="k">return</span> <span class="n">x</span>
+</code></pre></div>
+<h3 id="46-llama">4.6 LLama的整体实现<a class="headerlink" href="#46-llama" title="Permanent link">&para;</a></h3>
+<p>标准 Transformer（如 GPT、BERT）采用 <code>final_proj -&gt; LayerNorm</code> 结构。</p>
+<p>LLaMA 采用 <code>RMSNorm -&gt; final_proj</code>，先归一化，再投影。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">MiniLlama</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab_size</span><span class="o">=</span><span class="mi">32000</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">num_heads</span><span class="o">=</span><span class="mi">8</span><span class="p">):</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">embed</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([</span><span class="n">DecoderBlock</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">num_heads</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">depth</span><span class="p">)])</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">norm</span> <span class="o">=</span> <span class="n">RMSNorm</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">final_proj</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>        <span class="c1"># embedding -&gt; decoder blocks -&gt; norm -&gt; projection</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>        <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span><span class="p">:</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>            <span class="n">x</span> <span class="o">=</span> <span class="n">block</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># 先做 RMSNorm</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">final_proj</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="_2"><strong>测试实现</strong><a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
+<p>可以运行测试代码，确保 <code>MiniLLaMA</code> 的输出形状正确！我写了一个test函数，你可以下载 <code>ipynb</code> 文件直接运行。</p>
+<p>好了！今天的内容就到这里，下期再见👋</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "toc.follow", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/katex.js"></script>
+      
+        <script src="https://unpkg.com/katex@0/dist/katex.min.js"></script>
+      
+        <script src="https://unpkg.com/katex@0/dist/contrib/auto-render.min.js"></script>
+      
+    
+  </body>
+</html>
