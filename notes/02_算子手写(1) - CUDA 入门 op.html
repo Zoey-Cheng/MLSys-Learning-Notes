@@ -13,6 +13,10 @@
         <link rel="canonical" href="https://zoey-cheng.github.io/MLSys-Learning-Notes/notes/02_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20op.html">
       
       
+        <link rel="prev" href="01_Transformer%20%E8%AF%A6%E8%A7%A3.html">
+      
+      
+        <link rel="next" href="03_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%280%29%20-%20%E8%83%8C%E6%99%AF%E7%9F%A5%E8%AF%86%28%E9%80%9A%E4%BF%A1%E5%8E%9F%E8%AF%AD%20%26%20NCCL%20%26%20%E5%8D%95%E5%8D%A1%E8%AE%A1%E7%AE%97%E6%B5%81%29.html">
       
       
         
@@ -23,7 +27,7 @@
     
     
       
-        <title>02-常见CUDA手写实现(with code) - MLSys 菜狗自学笔记</title>
+        <title>02-算子手写(1) - CUDA 入门 op - MLSys 菜狗自学笔记</title>
       
     
     
@@ -114,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              02-常见CUDA手写实现(with code)
+              02-算子手写(1) - CUDA 入门 op
             
           </span>
         </div>
@@ -313,17 +317,44 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="02_算子手写(1) - CUDA 入门 + 常见 op.md" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-算子手写(1) - CUDA 入门 op
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="02_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20op.html" class="md-nav__link md-nav__link--active">
         
   
   
   <span class="md-ellipsis">
     
   
-    02-算子手写(1) - CUDA 入门 + 常见 op
+    02-算子手写(1) - CUDA 入门 op
   
 
     
@@ -332,6 +363,387 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前言
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        说明
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-add" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Add
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Add">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-1d-vecadd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 1D vecAdd
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-1d-vecadd-float4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 1D vecAdd + Float4
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-2d-matadd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 2D matAdd
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-matmul" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. matMul 矩阵乘
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. matMul 矩阵乘">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-naive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 naive版矩阵乘
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-tiled-matmul-tiled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Tiled Matmul - tiled矩阵乘
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-transpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Transpose 转置
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-reduce-1d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Reduce 1D规约
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Reduce 1D规约">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-naive-atom" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 naive版-atom
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 block内折半归约
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-warp-shuffle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 warp shuffle 折半归约
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-warp-shuffle-float4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 warp shuffle + Float4
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-reduce-2d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Reduce 2D行/列规约
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Reduce 2D行/列规约">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-column-reduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Column Reduction 列规约
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-row-reduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Row Reduction 行规约
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-softmax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Softmax
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Softmax">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-2d-softmax-tiled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 2D Softmax Tiled
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-2d-softmax-tiled-float4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 2D Softmax Tiled + Float4
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-1d-softmax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 1D Softmax
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-conv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. conv
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. conv">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-1d-conv-naive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 1D conv - naive
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-1d-conv-tiled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 1D conv - Tiled
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-2d-conv-naive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 2D conv - naive
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#74-2d-conv-tiled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.4 2D conv - Tiled
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-layer-norm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Layer Norm
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Layer Norm">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-layer-norm-tiled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Layer Norm - Tiled
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -771,6 +1183,7 @@
 
 
 <h1 id="02-cudawith-code">02-常见CUDA手写实现(with code)<a class="headerlink" href="#02-cudawith-code" title="Permanent link">&para;</a></h1>
+<p><strong>[Quick Ref for 手写code]</strong>：一些基础CUDA算子 ｜ <a href="../code/02-cuda-ops.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link">Colab</a></p>
 <h2 id="_1">前言<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
 <p>本来第二部分准备写并行的，但是最近面试国内，就还是先复习一下CUDA好了！</p>
 <p>根据之前的经验，常见会问到的CUDA手写题包括：</p>
@@ -793,10 +1206,7 @@
 <li>NYU CSCI-GA.3033-077 Big Data and Machine Learning Systems 相关课件</li>
 <li>相关帖子：https://zhuanlan.zhihu.com/p/12661298743；https://zhuanlan.zhihu.com/p/678903537</li>
 </ul>
-<p>先准备这些常见的吧！我都加了 Test case，可以下载代码运行（CUDA 部分需要 GPU 环境）。</p>
-<blockquote>
-<p>配套代码：<a href="../code/02-cuda-ops.ipynb">本地 ipynb</a> ｜ <a href="https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link">Colab</a></p>
-</blockquote>
+<p>先准备这些常见的吧！我都加了 Test case，可以下载 <a href="../code/02-cuda-ops.ipynb">ipynb 文件</a>（或在 <a href="https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link">Colab</a> 上）运行（CUDA 部分需要 GPU 环境）。</p>
 <p>plus：频率是从面intern的角度来评价的。</p>
 <h2 id="_2">说明<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
 <p>面试时不会提供运行环境，也不会要求自己写test case运行，一般来说只要写出kernel函数和调用函数即可。</p>

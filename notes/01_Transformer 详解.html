@@ -16,7 +16,7 @@
         <link rel="prev" href="../index.html">
       
       
-        <link rel="next" href="03_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%280%29%20-%20%E8%83%8C%E6%99%AF%E7%9F%A5%E8%AF%86%28%E9%80%9A%E4%BF%A1%E5%8E%9F%E8%AF%AD%20%26%20NCCL%20%26%20%E5%8D%95%E5%8D%A1%E8%AE%A1%E7%AE%97%E6%B5%81%29.html">
+        <link rel="next" href="02_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20op.html">
       
       
         
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#transformer-with-code" class="md-skip">
+        <a href="#01-transformer-with-code" class="md-skip">
           跳转至
         </a>
       
@@ -622,14 +622,14 @@
   
   
     <li class="md-nav__item">
-      <a href="02_算子手写(1) - CUDA 入门 + 常见 op.md" class="md-nav__link">
+      <a href="02_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20op.html" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    02-算子手写(1) - CUDA 入门 + 常见 op
+    02-算子手写(1) - CUDA 入门 op
   
 
     
@@ -970,10 +970,11 @@
   
 
 
-<h1 id="transformer-with-code">Transformer详解 (with code)<a class="headerlink" href="#transformer-with-code" title="Permanent link">&para;</a></h1>
+<h1 id="01-transformer-with-code">01-Transformer详解 (with code)<a class="headerlink" href="#01-transformer-with-code" title="Permanent link">&para;</a></h1>
+<p><strong>[Quick Ref for 手写code]</strong>：mini Llama ｜ <a href="../code/01-mini-llama.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link">Colab</a></p>
 <div class="toc">
 <ul>
-<li><a href="#transformer-with-code">Transformer详解 (with code)</a><ul>
+<li><a href="#01-transformer-with-code">01-Transformer详解 (with code)</a><ul>
 <li><a href="#_1">前言</a></li>
 <li><a href="#1">1. 相关概念</a><ul>
 <li><a href="#11-embedding">1.1 词嵌入 Embedding</a></li>
@@ -1315,9 +1316,6 @@ O &amp;= \hat{A}V
 <p><img src="https://pic1.zhimg.com/v2-befa6058db4177c657538775446ebfc8_1440w.jpg" alt="img" width="50%" /></p>
 <p>同时值得注意的是，RoPE 在LLaMa中位于MHA中。</p>
 <h2 id="4-transformer">4. 手写Transformer<a class="headerlink" href="#4-transformer" title="Permanent link">&para;</a></h2>
-<blockquote>
-<p>配套代码：<a href="../code/01-mini-llama.ipynb">本地 ipynb</a> ｜ <a href="https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link">Colab</a></p>
-</blockquote>
 <p>了解了以上内容，现在我们来手写一个Transformer。</p>
 <p>为了能够在面试中快速实现，我们采用一个<strong>极简的 LLaMA 版实现</strong>（这样我们只需要实现 Decoder 部分）。特别感谢我 Hugging Face 的朋友提供的指导！</p>
 <p>LLaMA 版的 Transformer 主要包含以下几个核心模块（从重要的部分开始）。</p>
@@ -1471,7 +1469,7 @@ O &amp;= \hat{A}V
 <a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">final_proj</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="_2"><strong>测试实现</strong><a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
-<p>可以运行测试代码，确保 <code>MiniLLaMA</code> 的输出形状正确！我写了一个test函数，你可以下载 <code>ipynb</code> 文件直接运行。</p>
+<p>可以运行测试代码，确保 <code>MiniLLaMA</code> 的输出形状正确！我写了一个test函数，你可以下载 <a href="../code/01-mini-llama.ipynb"><code>ipynb</code> 文件</a>（或在 <a href="https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link">Colab</a> 上）直接运行。</p>
 <p>好了！今天的内容就到这里，下期再见👋</p>
 
 
