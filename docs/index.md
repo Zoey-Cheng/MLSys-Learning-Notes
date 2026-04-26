@@ -1,12 +1,14 @@
 # MLSys 菜狗自学笔记
 
-MLSys 自学笔记，知乎同步更新。
+MLSys 自学笔记，每篇尽量带可运行代码，知乎同步更新。
 
 **[Why write this?]**
 
-知乎好文很多，感觉没有特别系统性 + 从头形成逻辑闭环的，……所以想自己推一遍，每个 topic 从基础出发，补足细节，配上手写的可运行代码。
+知乎/Github 好资源很多，但感觉没有特别系统性 + 满足个人逻辑闭环的 + code demo 足够的，所以想自己推一遍，每个 topic 从基础出发，补足细节，配上手写的可运行代码 / 遇到过的面试题。
 
-计划覆盖 pre-training、post-training、inference、算子与异构计算，目前还在持续更新中。
+计划覆盖 pre-training、post-training、inference、算子与异构计算。
+
+qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 
 ## 笔记列表
 
@@ -20,7 +22,7 @@ MLSys 自学笔记，知乎同步更新。
 
 **[个人 Background]**
 
-偏 DL Compiler (算子) 方向。Master NG 菜狗
+暂时偏 DL Compiler (算子) 方向。Master NG 菜狗
 
 - **Intern**：ByteDance CN @ AML 科学计算 → NVIDIA CN @ cuTile → NVIDIA US @ XLA
 - **Fulltime**：ByteDance US @ AI Search, ML infra - 训练支持

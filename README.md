@@ -1,14 +1,16 @@
 # MLSys 菜狗自学笔记
 
-MLSys 自学笔记，知乎同步更新。
+MLSys 自学笔记，每篇尽量带可运行代码，知乎同步更新。
 
 📖 **网页版**：<https://zoey-cheng.github.io/MLSys-Learning-Notes/>
 
 **[Why write this?]**
 
-知乎和 github 上好资源很多，但感觉没有特别系统性 + 满足个人逻辑闭环的，所以想自己推一遍，每个 topic 从基础出发，补足逻辑细节，配上手写的可运行代码 / 遇到过的面试题。
+知乎/Github 好资源很多，但感觉没有特别系统性 + 满足个人逻辑闭环的 + code demo 足够的，所以想自己推一遍，每个 topic 从基础出发，补足细节，配上手写的可运行代码 / 遇到过的面试题。
 
-计划覆盖 pre-training、post-training、inference、算子与异构计算 — 其实 25 年就想写了，一直在拖，现在慢慢更新中。
+计划覆盖 pre-training、post-training、inference、算子与异构计算。
+
+qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 
 **[个人Background]**
 
