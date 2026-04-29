@@ -1,3 +1,4 @@
 mkdocs>=1.6
 mkdocs-material>=9.5
+mkdocs-awesome-pages-plugin>=2.9  # 让 nav 从文件结构 + .pages 文件自动派生
 jieba>=0.42  # 中文搜索分词

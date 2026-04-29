@@ -1,3 +1,7 @@
+---
+title: "01. Transformer 详解"
+---
+
 # 01-Transformer详解 (with code)
 
 **[Quick Ref for 手写code]**：mini Llama ｜ [ipynb](../code/01-mini-llama.ipynb) ｜ [Colab](https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link)

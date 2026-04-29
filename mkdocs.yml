@@ -38,11 +38,8 @@ theme:
         icon: material/weather-sunny
         name: 切换到亮色模式
 
-nav:
-  - 首页: index.md
-  - 01-Transformer 详解: notes/01_Transformer 详解.md
-  - 02-算子手写(1) - CUDA 入门 op: notes/02_算子手写(1) - CUDA 入门 op.md
-  - 03-分布式训练(0) - 背景知识: notes/03_分布式训练(0) - 背景知识(通信原语 & NCCL & 单卡计算流).md
+# nav 由 awesome-pages 插件根据文件结构 + .pages 文件 + 各 md 的 front-matter title 自动生成
+# 改文件名前缀只影响排序，不用动 mkdocs.yml；改文件 front-matter 的 title 直接反映到 nav
 
 markdown_extensions:
   - admonition
@@ -63,6 +60,7 @@ markdown_extensions:
 
 extra_javascript:
   - javascripts/katex.js
+  - javascripts/expand-first-topic-on-home.js
   - https://unpkg.com/katex@0/dist/katex.min.js
   - https://unpkg.com/katex@0/dist/contrib/auto-render.min.js
 
@@ -75,3 +73,4 @@ plugins:
       lang:
         - zh
         - en
+  - awesome-pages

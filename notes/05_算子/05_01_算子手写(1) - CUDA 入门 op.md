@@ -1,4 +1,8 @@
-# 02-常见CUDA手写实现(with code)
+---
+title: "01. 算子手写(1) - CUDA 入门 op"
+---
+
+# 01-常见CUDA手写实现(with code)
 
 **[Quick Ref for 手写code]**：一些基础CUDA算子 ｜ [ipynb](../code/02-cuda-ops.ipynb) ｜ [Colab](https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link)
 
