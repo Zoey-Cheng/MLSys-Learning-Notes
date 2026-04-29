@@ -30,24 +30,11 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 | RL | *coming soon* | | | |
 | 算子 | [01. 算子手写(1) - CUDA 入门 op](notes/05_算子/05_01_算子手写(1)%20-%20CUDA%20入门%20op.md) | [link](https://zhuanlan.zhihu.com/p/1892487783110644443) | [ipynb](code/02-cuda-ops.ipynb) ｜ [colab](https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link) | 一些基础CUDA算子 |
 
-## 结构
+## 更新历史
 
-```
-├── notes/                  # Markdown 笔记，按 topic 分目录，文件名 <topic>_<seq>_<title>.md
-│   ├── 01_模型基础/
-│   │   └── .pages          # 配置 nav 显示标题
-│   ├── 02_训练策略/
-│   ├── 03_推理优化/
-│   ├── 04_RL/
-│   └── 05_算子/
-├── docs/                   # MkDocs 站点根，topic 文件夹通过软链直接挂在这里
-│   ├── index.md
-│   ├── .pages              # nav 顺序：首页 + 其余 topic 自动包含
-│   └── 0X_xxx -> ../notes/0X_xxx
-├── code/                   # 配套手写代码
-└── assets/                 # 笔记里用到的图片
-```
-
-每篇 md 头部 front-matter 的 `title:` 决定 nav 显示文本；改文件名前缀只影响排序。
+- **04/25/2026**: 新开 GitHub repo，帖子迁移到网页版了！🎉
+- **04/20/2025**: 训练策略 → 01-分布式训练(0)-背景知识(通信原语/NCCL/单卡计算流)，发布在知乎
+- **04/06/2025**: 算子 → 01-常见CUDA手写实现，发布在知乎
+- **03/06/2025**: 模型结构 → 01-Transformer详解，发布在知乎
 
 

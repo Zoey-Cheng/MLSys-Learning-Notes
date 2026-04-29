@@ -28,3 +28,10 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 
 - **Intern**：ByteDance CN @ AML 科学计算 → NVIDIA CN @ cuTile → NVIDIA US @ XLA
 - **Fulltime**：ByteDance US @ AI Search, ML infra - 训练支持
+
+## 更新历史
+
+- **04/25/2026**: 新开 GitHub repo，帖子迁移到网页版了！🎉🎉
+- **04/20/2025**: 训练策略 → 01-分布式训练(0)-背景知识(通信原语/NCCL/单卡计算流) [[link]](02_训练策略/02_01_分布式训练(0) - 背景知识(通信原语 & NCCL & 单卡计算流).md)，发布在知乎
+- **04/06/2025**: 算子 → 01-常见CUDA手写实现 [[link]](05_算子/05_01_算子手写(1) - CUDA 入门 op.md)，发布在知乎
+- **03/06/2025**: 模型结构 → 01-Transformer详解 [[link]](01_模型基础/01_01_Transformer 详解.md)，发布在知乎
