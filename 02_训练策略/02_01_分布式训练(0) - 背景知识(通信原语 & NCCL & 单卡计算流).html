@@ -10,11 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://zoey-cheng.github.io/MLSys-Learning-Notes/notes/03_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%280%29%20-%20%E8%83%8C%E6%99%AF%E7%9F%A5%E8%AF%86%28%E9%80%9A%E4%BF%A1%E5%8E%9F%E8%AF%AD%20%26%20NCCL%20%26%20%E5%8D%95%E5%8D%A1%E8%AE%A1%E7%AE%97%E6%B5%81%29.html">
+        <link rel="canonical" href="https://zoey-cheng.github.io/MLSys-Learning-Notes/02_%E8%AE%AD%E7%BB%83%E7%AD%96%E7%95%A5/02_01_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%280%29%20-%20%E8%83%8C%E6%99%AF%E7%9F%A5%E8%AF%86%28%E9%80%9A%E4%BF%A1%E5%8E%9F%E8%AF%AD%20%26%20NCCL%20%26%20%E5%8D%95%E5%8D%A1%E8%AE%A1%E7%AE%97%E6%B5%81%29.html">
       
       
-        <link rel="prev" href="02_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20op.html">
+        <link rel="prev" href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_01_Transformer%20%E8%AF%A6%E8%A7%A3.html">
       
+      
+        <link rel="next" href="../05_%E7%AE%97%E5%AD%90/05_01_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20op.html">
       
       
         
@@ -25,7 +27,7 @@
     
     
       
-        <title>03-分布式训练(0) - 背景知识 - MLSys 菜狗自学笔记</title>
+        <title>01. 分布式训练(0) - 背景知识 - MLSys 菜狗自学笔记</title>
       
     
     
@@ -80,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#03-0-nccl" class="md-skip">
+        <a href="#01-0-nccl" class="md-skip">
           跳转至
         </a>
       
@@ -116,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              03-分布式训练(0) - 背景知识
+              01. 分布式训练(0) - 背景知识
             
           </span>
         </div>
@@ -290,15 +292,62 @@
   
   
   
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    模型基础
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    模型基础
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
-      <a href="01_Transformer%20%E8%AF%A6%E8%A7%A3.html" class="md-nav__link">
+      <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_01_Transformer%20%E8%AF%A6%E8%A7%A3.html" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    01-Transformer 详解
+    01. Transformer 详解
   
 
     
@@ -310,22 +359,43 @@
     </li>
   
 
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
     
       
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="02_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20op.html" class="md-nav__link">
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
   
   
   <span class="md-ellipsis">
     
   
-    02-算子手写(1) - CUDA 入门 op
+    训练策略
   
 
     
@@ -333,13 +403,22 @@
   
   
 
-      </a>
-    </li>
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    训练策略
   
 
-    
-      
-      
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
   
   
     
@@ -361,7 +440,7 @@
   <span class="md-ellipsis">
     
   
-    03-分布式训练(0) - 背景知识
+    01. 分布式训练(0) - 背景知识
   
 
     
@@ -372,14 +451,14 @@
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <a href="03_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%280%29%20-%20%E8%83%8C%E6%99%AF%E7%9F%A5%E8%AF%86%28%E9%80%9A%E4%BF%A1%E5%8E%9F%E8%AF%AD%20%26%20NCCL%20%26%20%E5%8D%95%E5%8D%A1%E8%AE%A1%E7%AE%97%E6%B5%81%29.html" class="md-nav__link md-nav__link--active">
+      <a href="02_01_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%280%29%20-%20%E8%83%8C%E6%99%AF%E7%9F%A5%E8%AF%86%28%E9%80%9A%E4%BF%A1%E5%8E%9F%E8%AF%AD%20%26%20NCCL%20%26%20%E5%8D%95%E5%8D%A1%E8%AE%A1%E7%AE%97%E6%B5%81%29.html" class="md-nav__link md-nav__link--active">
         
   
   
   <span class="md-ellipsis">
     
   
-    03-分布式训练(0) - 背景知识
+    01. 分布式训练(0) - 背景知识
   
 
     
@@ -640,6 +719,96 @@
     </ul>
   
 </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    算子
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    算子
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05_%E7%AE%97%E5%AD%90/05_01_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20op.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01. 算子手写(1) - CUDA 入门 op
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
       
     </li>
   
@@ -924,7 +1093,7 @@
   
 
 
-<h1 id="03-0-nccl">03-分布式训练(0)-背景知识(通信原语/NCCL/单卡计算流)<a class="headerlink" href="#03-0-nccl" title="Permanent link">&para;</a></h1>
+<h1 id="01-0-nccl">01-分布式训练(0)-背景知识(通信原语/NCCL/单卡计算流)<a class="headerlink" href="#01-0-nccl" title="Permanent link">&para;</a></h1>
 <p><strong>[Quick Ref for 手写code]</strong>：通信原语 + DDP demo ｜ <a href="../code/03-distributed-demo.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/15V25khFs8M8Ui3LW-_zDXUkquQytvBgq/view?usp=drive_link">Colab</a></p>
 <h2 id="_1">前言<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
 <p>LLM Infra的训练部分，<strong>分布式训练</strong>是重要知识点，仅读过相关系列的论文是远远不够的，还需要明白其中的细节和第一性原理。面试常问的问题包括但不限于：<strong>描述某种并行、并行策略设计、开销分析、手写并行代码</strong>。</p>
@@ -1797,6 +1966,9 @@
 
 
 
+  
+  
+
 
 
 
@@ -1851,6 +2023,8 @@
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
         <script src="../javascripts/katex.js"></script>
+      
+        <script src="../javascripts/expand-first-topic-on-home.js"></script>
       
         <script src="https://unpkg.com/katex@0/dist/katex.min.js"></script>
       
