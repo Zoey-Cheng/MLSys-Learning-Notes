@@ -1,12 +1,16 @@
 ---
-title: "01. Transformer 详解"
+title: "01. Transformer 架构详解:以 LLaMA 为例"
 ---
 
-# 01-Transformer详解 (with code)
+# 01-Transformer 架构详解:以 LLaMA 为例
 
-**[Quick Ref for 手写code]**：mini Llama ｜ [ipynb](../code/01-mini-llama.ipynb) ｜ [Colab](https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link)
+> **TL; DR**：从原版 Transformer 出发，串到 decoder-only 的工业界代表 **LLaMA**（Pre-Norm RMSNorm / SwiGLU / RoPE），并附一个极简 mini-LLaMA 手写实现。
 
-[toc]
+- **[Quick Ref for 手写code]**：mini Llama ｜ [ipynb](../code/01-mini-llama.ipynb) ｜ [Colab](https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link)
+
+- **[可能会考的面试手写题]**：FFN ｜ MLP ｜ 直接手写一个完整 Transformer（真遇到过 😠 ）
+
+
 
 ## 前言
 
@@ -432,6 +436,10 @@ RoPE 的 **核心思想** 是”通过**绝对位置编码**的方式实现**相
 了解了以上内容，现在我们来手写一个Transformer。
 
 为了能够在面试中快速实现，我们采用一个**极简的 LLaMA 版实现**（这样我们只需要实现 Decoder 部分）。特别感谢我 Hugging Face 的朋友提供的指导！
+
+LLaMA 一个 Decoder Block 的极简结构如下——`Input → RMSNorm → Attention →（残差）→ RMSNorm → MLP →（残差）`，整个网络由若干个这样的 Block 堆叠而成：
+
+<img src="../assets/01-transformer/fig-29.png" alt="fig-29" width="28%" />
 
 LLaMA 版的 Transformer 主要包含以下几个核心模块（从重要的部分开始）。
 

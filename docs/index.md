@@ -16,11 +16,11 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 
 | Topic | 笔记 | 知乎 | code link | code简介 |
 |---|------|------|-----------|----------|
-| 模型基础 | [01. Transformer 详解](01_模型基础/01_01_Transformer 详解.md) | [link](https://zhuanlan.zhihu.com/p/28364382951) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/01-mini-llama.ipynb) ｜ [colab](https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link) | mini Llama |
-| 训练策略 | [01. 分布式训练(0) - 背景知识(通信原语 & NCCL & 单卡计算流)](02_训练策略/02_01_分布式训练(0) - 背景知识(通信原语 & NCCL & 单卡计算流).md) | [link](https://zhuanlan.zhihu.com/p/1897578451143221835) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/03-distributed-demo.ipynb) ｜ [colab](https://drive.google.com/file/d/15V25khFs8M8Ui3LW-_zDXUkquQytvBgq/view?usp=drive_link) | 通信原语 + DDP demo |
+| 模型基础 | [01. Transformer 详解](01_模型基础/01_01_Transformer.md) | [link](https://zhuanlan.zhihu.com/p/28364382951) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/01-mini-llama.ipynb) ｜ [colab](https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link) | mini Llama |
+| 训练策略 | [01. 分布式训练(0) - 背景知识(通信原语 & NCCL & 单卡计算流)](02_训练策略/02_01_分布式训练基础.md) | [link](https://zhuanlan.zhihu.com/p/1897578451143221835) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/03-distributed-demo.ipynb) ｜ [colab](https://drive.google.com/file/d/15V25khFs8M8Ui3LW-_zDXUkquQytvBgq/view?usp=drive_link) | 通信原语 + DDP demo |
 | 推理优化 | *coming soon* | | | |
 | RL | *coming soon* | | | |
-| 算子 | [01. 算子手写(1) - CUDA 入门 op](05_算子/05_01_算子手写(1) - CUDA 入门 op.md) | [link](https://zhuanlan.zhihu.com/p/1892487783110644443) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/02-cuda-ops.ipynb) ｜ [colab](https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link) | 一些基础CUDA算子 |
+| 算子 | [01. 算子手写(1) - CUDA 入门 op](05_算子/05_01_CUDA入门.md) | [link](https://zhuanlan.zhihu.com/p/1892487783110644443) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/02-cuda-ops.ipynb) ｜ [colab](https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link) | 一些基础CUDA算子 |
 
 **[About Me]**
 
@@ -32,6 +32,6 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 ## 更新历史
 
 - **04/25/2026**: 新开 GitHub repo，帖子迁移到网页版了！🎉🎉
-- **04/20/2025**: 训练策略 → 01-分布式训练(0)-背景知识(通信原语/NCCL/单卡计算流) [[link]](02_训练策略/02_01_分布式训练(0) - 背景知识(通信原语 & NCCL & 单卡计算流).md)，发布在知乎
-- **04/06/2025**: 算子 → 01-常见CUDA手写实现 [[link]](05_算子/05_01_算子手写(1) - CUDA 入门 op.md)，发布在知乎
-- **03/06/2025**: 模型结构 → 01-Transformer详解 [[link]](01_模型基础/01_01_Transformer 详解.md)，发布在知乎
+- **04/20/2025**: 训练策略 → 01-分布式训练(0)-背景知识(通信原语/NCCL/单卡计算流) [[link]](02_训练策略/02_01_分布式训练基础.md)，发布在知乎
+- **04/06/2025**: 算子 → 01-常见CUDA手写实现 [[link]](05_算子/05_01_CUDA入门.md)，发布在知乎
+- **03/06/2025**: 模型结构 → 01-Transformer详解 [[link]](01_模型基础/01_01_Transformer.md)，发布在知乎
