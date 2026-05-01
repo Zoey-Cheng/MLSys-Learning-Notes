@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://zoey-cheng.github.io/MLSys-Learning-Notes/01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_01_Transformer%20%E8%AF%A6%E8%A7%A3.html">
+        <link rel="canonical" href="https://zoey-cheng.github.io/MLSys-Learning-Notes/01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_01_Transformer.html">
       
       
         <link rel="prev" href="../index.html">
       
       
-        <link rel="next" href="../02_%E8%AE%AD%E7%BB%83%E7%AD%96%E7%95%A5/02_01_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%280%29%20-%20%E8%83%8C%E6%99%AF%E7%9F%A5%E8%AF%86%28%E9%80%9A%E4%BF%A1%E5%8E%9F%E8%AF%AD%20%26%20NCCL%20%26%20%E5%8D%95%E5%8D%A1%E8%AE%A1%E7%AE%97%E6%B5%81%29.html">
+        <link rel="next" href="../02_%E8%AE%AD%E7%BB%83%E7%AD%96%E7%95%A5/02_01_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%E5%9F%BA%E7%A1%80.html">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>01. Transformer 详解 - MLSys 菜狗自学笔记</title>
+        <title>01. Transformer 架构详解:以 LLaMA 为例 - MLSys 菜狗自学笔记</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#01-transformer-with-code" class="md-skip">
+        <a href="#01-transformer-llama" class="md-skip">
           跳转至
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              01. Transformer 详解
+              01. Transformer 架构详解:以 LLaMA 为例
             
           </span>
         </div>
@@ -358,7 +358,7 @@
   <span class="md-ellipsis">
     
   
-    01. Transformer 详解
+    01. Transformer 架构详解:以 LLaMA 为例
   
 
     
@@ -369,14 +369,14 @@
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <a href="01_01_Transformer%20%E8%AF%A6%E8%A7%A3.html" class="md-nav__link md-nav__link--active">
+      <a href="01_01_Transformer.html" class="md-nav__link md-nav__link--active">
         
   
   
   <span class="md-ellipsis">
     
   
-    01. Transformer 详解
+    01. Transformer 架构详解:以 LLaMA 为例
   
 
     
@@ -726,7 +726,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../02_%E8%AE%AD%E7%BB%83%E7%AD%96%E7%95%A5/02_01_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%280%29%20-%20%E8%83%8C%E6%99%AF%E7%9F%A5%E8%AF%86%28%E9%80%9A%E4%BF%A1%E5%8E%9F%E8%AF%AD%20%26%20NCCL%20%26%20%E5%8D%95%E5%8D%A1%E8%AE%A1%E7%AE%97%E6%B5%81%29.html" class="md-nav__link">
+      <a href="../02_%E8%AE%AD%E7%BB%83%E7%AD%96%E7%95%A5/02_01_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%E5%9F%BA%E7%A1%80.html" class="md-nav__link">
         
   
   
@@ -808,7 +808,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../05_%E7%AE%97%E5%AD%90/05_01_%E7%AE%97%E5%AD%90%E6%89%8B%E5%86%99%281%29%20-%20CUDA%20%E5%85%A5%E9%97%A8%20op.html" class="md-nav__link">
+      <a href="../05_%E7%AE%97%E5%AD%90/05_01_CUDA%E5%85%A5%E9%97%A8.html" class="md-nav__link">
         
   
   
@@ -1137,44 +1137,18 @@
   
 
 
-<h1 id="01-transformer-with-code">01-Transformer详解 (with code)<a class="headerlink" href="#01-transformer-with-code" title="Permanent link">&para;</a></h1>
-<p><strong>[Quick Ref for 手写code]</strong>：mini Llama ｜ <a href="../code/01-mini-llama.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link">Colab</a></p>
-<div class="toc">
+<h1 id="01-transformer-llama">01-Transformer 架构详解:以 LLaMA 为例<a class="headerlink" href="#01-transformer-llama" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>TL; DR</strong>：从原版 Transformer 出发，串到 decoder-only 的工业界代表 <strong>LLaMA</strong>（Pre-Norm RMSNorm / SwiGLU / RoPE），并附一个极简 mini-LLaMA 手写实现。</p>
+</blockquote>
 <ul>
-<li><a href="#01-transformer-with-code">01-Transformer详解 (with code)</a><ul>
-<li><a href="#_1">前言</a></li>
-<li><a href="#1">1. 相关概念</a><ul>
-<li><a href="#11-embedding">1.1 词嵌入 Embedding</a></li>
-<li><a href="#11-self-attention">1.1 注意力机制 Self-Attention</a></li>
-<li><a href="#12-mha">1.2 多头注意力机制 MHA</a></li>
-<li><a href="#14-layer-norm">1.4 层归一化 Layer Norm</a></li>
-</ul>
+<li>
+<p><strong>[Quick Ref for 手写code]</strong>：mini Llama ｜ <a href="../code/01-mini-llama.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link">Colab</a></p>
 </li>
-<li><a href="#2-transformer">2. Transformer结构</a><ul>
-<li><a href="#21">2.1 输入</a></li>
-<li><a href="#22-encoder">2.2 Encoder</a></li>
-<li><a href="#23-decoder">2.3 Decoder</a></li>
-<li><a href="#24-linear-softmax">2.4 Linear + Softmax + 输出</a></li>
-</ul>
-</li>
-<li><a href="#3">3. 一些衍生知识点</a><ul>
-<li><a href="#31">3.1 训练和推理</a></li>
-<li><a href="#32-encoderdecoder-only">3.2 Encoder/Decoder Only</a></li>
-<li><a href="#33-llama">3.3 LLama</a></li>
-</ul>
-</li>
-<li><a href="#4-transformer">4. 手写Transformer</a><ul>
-<li><a href="#41-multi-head-attention-mha">4.1 Multi-Head Attention (MHA) 实现</a></li>
-<li><a href="#42-feed-forward-mlp">4.2 Feed Forward (MLP) 的实现</a></li>
-<li><a href="#43-decoder">4.3 Decoder侧的实现</a></li>
-<li><a href="#46-llama">4.6 LLama的整体实现</a></li>
-<li><a href="#_2">测试实现</a></li>
-</ul>
+<li>
+<p><strong>[可能会考的面试手写题]</strong>：FFN ｜ MLP ｜ 直接手写一个完整 Transformer（真遇到过 😠 ）</p>
 </li>
 </ul>
-</li>
-</ul>
-</div>
 <h2 id="_1">前言<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
 <p>Transformer 在 MLSys 相关面试中，已经成为了"过年的饺子"，被问到的概率极高。当然，也可能因为太基础而被跳过。但作为众多知识点的基石，熟悉 Transformer 是必不可少的——谁知道哪天面试官会让你手写一个 Transformer 呢？</p>
 <p>因此，我的自学笔记就从 Transformer 开始，以下内容是我从一个"半小白"的视角重新梳理和学习的过程，并结合自己的理解进行总结，欢迎指正。</p>
@@ -1485,6 +1459,8 @@ O &amp;= \hat{A}V
 <h2 id="4-transformer">4. 手写Transformer<a class="headerlink" href="#4-transformer" title="Permanent link">&para;</a></h2>
 <p>了解了以上内容，现在我们来手写一个Transformer。</p>
 <p>为了能够在面试中快速实现，我们采用一个<strong>极简的 LLaMA 版实现</strong>（这样我们只需要实现 Decoder 部分）。特别感谢我 Hugging Face 的朋友提供的指导！</p>
+<p>LLaMA 一个 Decoder Block 的极简结构如下——<code>Input → RMSNorm → Attention →（残差）→ RMSNorm → MLP →（残差）</code>，整个网络由若干个这样的 Block 堆叠而成：</p>
+<p><img src="../assets/01-transformer/fig-29.png" alt="fig-29" width="28%" /></p>
 <p>LLaMA 版的 Transformer 主要包含以下几个核心模块（从重要的部分开始）。</p>
 <p>当然，实际实现中还有一些模块，理论上可以手动编写，但为了简化，我们直接调用相关库函数，例如：</p>
 <ul>
