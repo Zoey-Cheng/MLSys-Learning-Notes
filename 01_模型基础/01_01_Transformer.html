@@ -779,7 +779,7 @@
   <span class="md-ellipsis">
     
   
-    算子
+    训练方法
   
 
     
@@ -792,6 +792,88 @@
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    训练方法
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_01_%E9%A2%84%E8%AE%AD%E7%BB%83Pretrain.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01. 预训练 Pretrain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    算子
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -808,7 +890,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../05_%E7%AE%97%E5%AD%90/05_01_CUDA%E5%85%A5%E9%97%A8.html" class="md-nav__link">
+      <a href="../06_%E7%AE%97%E5%AD%90/05_01_CUDA%E5%85%A5%E9%97%A8.html" class="md-nav__link">
         
   
   
@@ -1151,7 +1233,7 @@
 </ul>
 <h2 id="_1">前言<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
 <p>Transformer 在 MLSys 相关面试中，已经成为了"过年的饺子"，被问到的概率极高。当然，也可能因为太基础而被跳过。但作为众多知识点的基石，熟悉 Transformer 是必不可少的——谁知道哪天面试官会让你手写一个 Transformer 呢？</p>
-<p>因此，我的自学笔记就从 Transformer 开始，以下内容是我从一个"半小白"的视角重新梳理和学习的过程，并结合自己的理解进行总结，欢迎指正。</p>
+<p>因此，我的自学笔记就从 Transformer 开始，以下内容是我当年从一个"半小白"的视角重新梳理和学习的过程，并结合自己的理解进行总结，欢迎指正。</p>
 <h2 id="1">1. 相关概念<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>
 <p>首先需要理解这些概念：</p>
 <ul>
@@ -1460,7 +1542,7 @@ O &amp;= \hat{A}V
 <p>了解了以上内容，现在我们来手写一个Transformer。</p>
 <p>为了能够在面试中快速实现，我们采用一个<strong>极简的 LLaMA 版实现</strong>（这样我们只需要实现 Decoder 部分）。特别感谢我 Hugging Face 的朋友提供的指导！</p>
 <p>LLaMA 一个 Decoder Block 的极简结构如下——<code>Input → RMSNorm → Attention →（残差）→ RMSNorm → MLP →（残差）</code>，整个网络由若干个这样的 Block 堆叠而成：</p>
-<p><img src="../assets/01-transformer/fig-29.png" alt="fig-29" width="28%" /></p>
+<p><img src="../assets/01-transformer/fig-29.png" alt="fig-29" width="20%" /></p>
 <p>LLaMA 版的 Transformer 主要包含以下几个核心模块（从重要的部分开始）。</p>
 <p>当然，实际实现中还有一些模块，理论上可以手动编写，但为了简化，我们直接调用相关库函数，例如：</p>
 <ul>
@@ -1533,10 +1615,10 @@ O &amp;= \hat{A}V
 <p>标准 Transformer 中，FFN 采用 <strong>线性升维-降维</strong> 结构（hidden_dim 通常设为 <code>4 * embedding_dim</code>）。</p>
 <p>但LLama版使用 <strong>SwiGLU</strong> 替代了 ReLU，SwiGLU 可以调用 <strong>SiLU</strong> 函数实现，它们的关系如下：</p>
 <p><strong>SiLU（Swish Linear Unit）的形式</strong></p>
-<p><img src="../assets/01-transformer/fig-27.png" alt="fig-27" width="30%" /></p>
+<p><img src="../assets/01-transformer/fig-27.png" alt="fig-27" width="20%" /></p>
 <p><strong>SwiGLU（Swish-Gated Linear Unit）</strong></p>
 <p>SwiGLU 是 GLU（Gated Linear Unit）的变体，由 <strong>SiLU + gating 机制</strong> 组成其定义如下：</p>
-<p><img src="../assets/01-transformer/fig-28.png" alt="fig-28" width="40%" /></p>
+<p><img src="../assets/01-transformer/fig-28.png" alt="fig-28" width="30%" /></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>

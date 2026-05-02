@@ -172,3 +172,24 @@
 .md-typeset em {
   color: inherit;
 }
+
+/* --------- 侧边栏导航：长 doc 标题换行时"悬挂缩进" ---------
+   例如 "01. Transformer 架构详解:以 LLaMA 为例" 折行后，第二行对齐到 "Transformer..."
+   而不是回到 "01." 的顶头位置。
+
+   两层选择器配合使用：
+   1) 给 <a> 加 padding-left，腾出 1.6em 空间给挂悬指示
+   2) 给内层 <span class="md-ellipsis"> 加 text-indent:-1.6em + overflow:visible
+      Material 默认给 .md-ellipsis 设了 overflow:hidden，会把"01."这种序号 clip 掉，
+      要在嵌套 doc 链接里把这个 hidden 改成 visible，负 indent 才能正常露出来
+
+   只对"嵌套在章节里的 doc 链接"生效：
+   - 章节折叠按钮 (label.md-nav__link) 不匹配（不是 <a>）
+   - 顶级 leaf "首页" 不匹配（只在第一层 .md-nav 里，不在嵌套层）   */
+.md-nav .md-nav a.md-nav__link[href] {
+  padding-left: 1.6em;
+}
+.md-nav .md-nav a.md-nav__link[href] .md-ellipsis {
+  text-indent: -1.6em;
+  overflow: visible;
+}
