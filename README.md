@@ -26,12 +26,14 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 |---|------|------|-----------|----------|
 | 模型基础 | [01. Transformer 详解](notes/01_模型基础/01_01_Transformer.md) | [link](https://zhuanlan.zhihu.com/p/28364382951) | [ipynb](code/01-mini-llama.ipynb) ｜ [colab](https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link) | mini Llama |
 | 训练策略 | [01. 分布式训练(0) - 背景知识(通信原语 & NCCL & 单卡计算流)](notes/02_训练策略/02_01_分布式训练基础.md) | [link](https://zhuanlan.zhihu.com/p/1897578451143221835) | [ipynb](code/03-distributed-demo.ipynb) ｜ [colab](https://drive.google.com/file/d/15V25khFs8M8Ui3LW-_zDXUkquQytvBgq/view?usp=drive_link) | 通信原语 + DDP demo |
-| 推理优化 | *coming soon* | | | |
+| 训练方法 | [01. 预训练 Pretrain - 从原始数据到 base model](notes/03_训练方法/03_01_预训练Pretrain.md) | *待补* | [ipynb](code/04_mini_pretrain.ipynb) ｜ [colab](https://drive.google.com/file/d/1VUB1WrZx9KkHBrY9N8E3-Dfmql7aHnjw/view?usp=sharing) | mini pretrain |
 | RL | *coming soon* | | | |
-| 算子 | [01. 算子手写(1) - CUDA 入门 op](notes/05_算子/05_01_CUDA入门.md) | [link](https://zhuanlan.zhihu.com/p/1892487783110644443) | [ipynb](code/02-cuda-ops.ipynb) ｜ [colab](https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link) | 一些基础CUDA算子 |
+| 推理优化 | *coming soon* | | | |
+| 算子 | [01. 算子手写(1) - CUDA 入门 op](notes/06_算子/05_01_CUDA入门.md) | [link](https://zhuanlan.zhihu.com/p/1892487783110644443) | [ipynb](code/02-cuda-ops.ipynb) ｜ [colab](https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link) | 一些基础CUDA算子 |
 
 ## 更新历史
 
+- **05/02/2026**: 训练方法 → 01-预训练 Pretrain (从原始数据到 base model)
 - **04/25/2026**: 新开 GitHub repo，帖子迁移到网页版了！🎉
 - **04/20/2025**: 训练策略 → 01-分布式训练(0)-背景知识(通信原语/NCCL/单卡计算流)，发布在知乎
 - **04/06/2025**: 算子 → 01-常见CUDA手写实现，发布在知乎

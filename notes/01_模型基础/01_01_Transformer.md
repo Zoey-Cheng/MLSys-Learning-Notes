@@ -16,7 +16,7 @@ title: "01. Transformer 架构详解:以 LLaMA 为例"
 
 Transformer 在 MLSys 相关面试中，已经成为了"过年的饺子"，被问到的概率极高。当然，也可能因为太基础而被跳过。但作为众多知识点的基石，熟悉 Transformer 是必不可少的——谁知道哪天面试官会让你手写一个 Transformer 呢？
 
-因此，我的自学笔记就从 Transformer 开始，以下内容是我从一个"半小白"的视角重新梳理和学习的过程，并结合自己的理解进行总结，欢迎指正。
+因此，我的自学笔记就从 Transformer 开始，以下内容是我当年从一个"半小白"的视角重新梳理和学习的过程，并结合自己的理解进行总结，欢迎指正。
 
 
 
@@ -439,7 +439,7 @@ RoPE 的 **核心思想** 是”通过**绝对位置编码**的方式实现**相
 
 LLaMA 一个 Decoder Block 的极简结构如下——`Input → RMSNorm → Attention →（残差）→ RMSNorm → MLP →（残差）`，整个网络由若干个这样的 Block 堆叠而成：
 
-<img src="../assets/01-transformer/fig-29.png" alt="fig-29" width="28%" />
+<img src="../assets/01-transformer/fig-29.png" alt="fig-29" width="20%" />
 
 LLaMA 版的 Transformer 主要包含以下几个核心模块（从重要的部分开始）。
 
@@ -526,13 +526,13 @@ class MultiHeadAttention(nn.Module):
 
 **SiLU（Swish Linear Unit）的形式**
 
-<img src="../assets/01-transformer/fig-27.png" alt="fig-27" width="30%" />
+<img src="../assets/01-transformer/fig-27.png" alt="fig-27" width="20%" />
 
 **SwiGLU（Swish-Gated Linear Unit）**
 
 SwiGLU 是 GLU（Gated Linear Unit）的变体，由 **SiLU + gating 机制** 组成其定义如下：
 
-<img src="../assets/01-transformer/fig-28.png" alt="fig-28" width="40%" />
+<img src="../assets/01-transformer/fig-28.png" alt="fig-28" width="30%" />
 
 ```python
 import torch
@@ -628,8 +628,6 @@ class MiniLlama(nn.Module):
 ### **测试实现**
 
 可以运行测试代码，确保 `MiniLLaMA` 的输出形状正确！我写了一个test函数，你可以下载 [`ipynb` 文件](../code/01-mini-llama.ipynb)（或在 [Colab](https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link) 上）直接运行。
-
-
 
 好了！今天的内容就到这里，下期再见👋
 
