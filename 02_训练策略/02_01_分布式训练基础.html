@@ -27,7 +27,7 @@
     
     
       
-        <title>01. 分布式训练(0) - 背景知识 - MLSys 菜狗自学笔记</title>
+        <title>01-分布式训练(0) - 背景知识 - MLSys 菜狗自学笔记</title>
       
     
     
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              01. 分布式训练(0) - 背景知识
+              01-分布式训练(0) - 背景知识
             
           </span>
         </div>
@@ -347,7 +347,7 @@
   <span class="md-ellipsis">
     
   
-    01. Transformer 架构详解:以 LLaMA 为例
+    01-Transformer 架构详解:以 LLaMA 为例
   
 
     
@@ -440,7 +440,7 @@
   <span class="md-ellipsis">
     
   
-    01. 分布式训练(0) - 背景知识
+    01-分布式训练(0) - 背景知识
   
 
     
@@ -458,7 +458,7 @@
   <span class="md-ellipsis">
     
   
-    01. 分布式训练(0) - 背景知识
+    01-分布式训练(0) - 背景知识
   
 
     
@@ -793,7 +793,35 @@
   <span class="md-ellipsis">
     
   
-    01. 预训练 Pretrain
+    01-预训练 Pretrain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_02_SFT.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-监督微调 SFT
   
 
     
@@ -875,7 +903,7 @@
   <span class="md-ellipsis">
     
   
-    01. 算子手写(1) - CUDA 入门 op
+    01-算子手写(1) - CUDA 入门 op
   
 
     
@@ -1175,9 +1203,9 @@
   
 
 
-<h1 id="01-0-nccl">01-分布式训练(0)-背景知识(通信原语/NCCL/单卡计算流)<a class="headerlink" href="#01-0-nccl" title="Permanent link">&para;</a></h1>
+<h1 id="01-0-nccl">01-分布式训练(0)-背景知识(通信原语/NCCL/单卡计算流)</h1>
 <p><strong>[Quick Ref for 手写code]</strong>：通信原语 + DDP demo ｜ <a href="../code/03-distributed-demo.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/15V25khFs8M8Ui3LW-_zDXUkquQytvBgq/view?usp=drive_link">Colab</a></p>
-<h2 id="_1">前言<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<h2 id="_1">前言</h2>
 <p>LLM Infra的训练部分，<strong>分布式训练</strong>是重要知识点，仅读过相关系列的论文是远远不够的，还需要明白其中的细节和第一性原理。面试常问的问题包括但不限于：<strong>描述某种并行、并行策略设计、开销分析、手写并行代码</strong>。</p>
 <p>那么这个系列的通信细节，就以hugging face开源的 <strong>终极训练指南</strong>  为reference大纲，一一展开好了（但它讲的相对简略，所以我会随机搜索相关资料以保持基础知识和逻辑的连贯），相关link如下：</p>
 <ul>
@@ -1196,10 +1224,10 @@
 <li>Zero：数据并行的零冗余优化策略</li>
 </ul>
 <p>本节主要从通信原语，对应软硬件支持，以及单卡时模型本身的计算流（辅助后续分析多卡通信内容）展开，为后续的并行切分/通信开销计算作个铺垫。如有不专业之处，欢迎指正</p>
-<h2 id="1">1. 通信原语<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>
+<h2 id="1">1. 通信原语</h2>
 <p><strong>集体通信原语（collective communication primitives）</strong>源于HPC社区开发的 MPI （Message Passing Interface）中的一部分，在分布式训练中扮演着关键角色。</p>
 <p>在 MPI 中，除了点对点通信（如 <code>send/receive</code>），还定义了更高层次的集体通信，即多个进程协同参与的操作，如 广播（broadcast）、聚合（gather）、同步（sync） 等。集体通信具有<strong>同步性</strong>，即所有进程必须同时参与。</p>
-<h3 id="11">1.1 基本原语<a class="headerlink" href="#11" title="Permanent link">&para;</a></h3>
+<h3 id="11">1.1 基本原语</h3>
 <p>几种基础的集体通信操作如下：</p>
 <ul>
 <li><strong>Broadcast</strong>：进程0将数据广播复制到其他所有进程</li>
@@ -1210,7 +1238,7 @@
 <p>(图：scatter -&gt; Gather - &gt; Reduce)</p>
 <p><img src="../assets/03-distributed-training/fig-01.png" alt="fig-01" width="50%" /></p>
 <p><img src="../assets/03-distributed-training/fig-02.png" alt="fig-02" width="40%" /></p>
-<h3 id="12-reduce-scatter-all-gather">1.2 Reduce Scatter / All Gather<a class="headerlink" href="#12-reduce-scatter-all-gather" title="Permanent link">&para;</a></h3>
+<h3 id="12-reduce-scatter-all-gather">1.2 Reduce Scatter / All Gather</h3>
 <p>相比基础原语，<strong>Reduce Scatter</strong> 和 <strong>All Gather</strong> 更常用于优化大规模训练中的通信瓶颈。</p>
 <p><strong>【Reduce Scatter】</strong></p>
 <p>本质是一个跨节点的分片reduce操作。</p>
@@ -1283,7 +1311,7 @@
 <li>总通信量：(n-1)G</li>
 </ul>
 <p><img src="../assets/03-distributed-training/fig-04.png" alt="fig-04" width="30%" /></p>
-<h3 id="13-all-reduce">1.3 All Reduce<a class="headerlink" href="#13-all-reduce" title="Permanent link">&para;</a></h3>
+<h3 id="13-all-reduce">1.3 All Reduce</h3>
 <p><strong>【通信开销】</strong></p>
 <ul>
 <li><strong>All Reduce = Reduce Scatter + All Gather</strong></li>
@@ -1305,7 +1333,7 @@
 <p><img src="../assets/03-distributed-training/fig-06.png" alt="fig-06" width="30%" /></p>
 <p>一轮（n次）All Gather &amp; All Reduce结束：</p>
 <p><img src="../assets/03-distributed-training/fig-07.png" alt="fig-07" width="50%" /></p>
-<h2 id="2">2. 通信方式（软硬件）<a class="headerlink" href="#2" title="Permanent link">&para;</a></h2>
+<h2 id="2">2. 通信方式（软硬件）</h2>
 <p>为了对通信有一个更深入的认识，我们也来简单了解一下其自下而上的对应吧。依次为：</p>
 <ul>
 <li>NV硬件连接层：PCIe / NVLink / IB</li>
@@ -1322,7 +1350,7 @@
 <li><strong>单节点多GPU</strong>：一台服务器（节点）包含多块GPU（例如NVIDIA DGX H100每节点8卡）</li>
 <li><strong>多节点集群</strong>：多个节点互联，每节点 8 张 GPU，4 个节点共构成 32-GPU 训练系统</li>
 </ul>
-<h3 id="21-pcie-nvlink-ib">2.1 PCIe / NVLink / IB 硬件连接<a class="headerlink" href="#21-pcie-nvlink-ib" title="Permanent link">&para;</a></h3>
+<h3 id="21-pcie-nvlink-ib">2.1 PCIe / NVLink / IB 硬件连接</h3>
 <p>此部分可简单总结为：机器内GPU-GPU互联用NVLink，GPU和其他硬件（如CPU）互联用PCIe，跨机器互联可以使用IB (InfiniBand)作为硬件支持（也可以只用RoCE + 高速以太网）。</p>
 <p><strong>【PCIe】</strong> (Peripheral Component Interconnect Express)</p>
 <ul>
@@ -1372,7 +1400,7 @@
 </ul>
 </li>
 </ul>
-<h3 id="22-nccl">2.2 NCCL 通信软件库<a class="headerlink" href="#22-nccl" title="Permanent link">&para;</a></h3>
+<h3 id="22-nccl">2.2 NCCL 通信软件库</h3>
 <p>NCCL是Nvidia Collective multi-GPU Communication Library的简称（发音为"Nickel"），它是一个实现多GPU的collective communication通信（all-gather, reduce, broadcast）库。NV做了很多优化，以在PCIe、Nvlink、InfiniBand上实现较高的通信速度。</p>
 <p>NCCL实现了集体通信（collective communication）和点对点（point to point）发送/接收原语。主要有：</p>
 <ul>
@@ -1463,7 +1491,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="23-torchdistributed">2.3 torch.distributed 前端<a class="headerlink" href="#23-torchdistributed" title="Permanent link">&para;</a></h3>
+<h3 id="23-torchdistributed">2.3 torch.distributed 前端</h3>
 <p><code>Pytorch</code> 中通过 <code>torch.distributed</code> 包提供分布式支持，包括 <code>GPU</code> 和 <code>CPU</code> 的分布式训练支持。</p>
 <ul>
 <li>
@@ -1495,7 +1523,7 @@
 <li>Rank 秩：表示进程序号，用于进程间通讯，表征进程优先级。<code>rank = 0</code> 的主机为 <code>master</code> 节点，范围为[0, world_size -1]</li>
 <li>local_rank：进程内的GPU编号，非显式参数。例如：<code>rank = 3，local_rank = 0</code> 表示第 3 个进程内的第1块GPU</li>
 </ul>
-<h3 id="24-torchdistributed">2.4 Torch.distributed 实例<a class="headerlink" href="#24-torchdistributed" title="Permanent link">&para;</a></h3>
+<h3 id="24-torchdistributed">2.4 Torch.distributed 实例</h3>
 <p>在 PyTorch 中，使用 <code>torch.distributed</code> 进行分布式训练通常遵循以下基本流程（对应步骤已在代码中标注）：</p>
 <ol>
 <li><strong>初始化进程组</strong>
@@ -1571,7 +1599,7 @@
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>Rank<span class="w"> </span><span class="m">0</span>,<span class="w"> </span>Epoch<span class="w"> </span><span class="m">0</span>,<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.5726
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>Rank<span class="w"> </span><span class="m">0</span>,<span class="w"> </span>Epoch<span class="w"> </span><span class="m">1</span>,<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.8204
 </code></pre></div>
-<h2 id="3">3. 单卡训练计算流<a class="headerlink" href="#3" title="Permanent link">&para;</a></h2>
+<h2 id="3">3. 单卡训练计算流</h2>
 <p>此处假定你已经熟悉了一些训练的基础术语和流程，以下是部分关键概念的回顾：</p>
 <ul>
 <li><strong>常见术语</strong></li>
@@ -1588,7 +1616,7 @@
 <li>学习率 <span class="arithmatex">\(\eta\)</span> 小：稳定但慢，可能卡住不动</li>
 <li>调度器的作用：根据训练进度动态调整学习率</li>
 </ul>
-<h3 id="31">3.1 模型训练过程<a class="headerlink" href="#31" title="Permanent link">&para;</a></h3>
+<h3 id="31">3.1 模型训练过程</h3>
 <p>在扩展到多 GPU 之前，让我们先快速回顾在单卡 GPU 上训练模型的基本流程。单卡训练中，单层通常包括三步：</p>
 <ul>
 <li>前向传播（forward pass）：输入数据通过模型，得到输出</li>
@@ -1634,7 +1662,7 @@
 <li>学习率（<span class="arithmatex">\(\eta\)</span>）：通常由优化器（如 torch.optim.SGD）控制。</li>
 <li>优化器的作用：实际训练中可能使用更复杂的更新规则（如动量、Adam），但上面的公式表示的是最基础的 SGD</li>
 </ul>
-<h3 id="32-transformer">3.2 Transformer 中的显存使用<a class="headerlink" href="#32-transformer" title="Permanent link">&para;</a></h3>
+<h3 id="32-transformer">3.2 Transformer 中的显存使用</h3>
 <p><strong>【回顾：Model 计算流】</strong></p>
 <p>我们刚刚以简单的<code>batch_size = 1</code> 的 MLP 为例梳理了训练过程。实际上，无论是 MLP 还是 Transformer，其训练过程都可以抽象为以下阶段：</p>
 <ul>
@@ -1710,7 +1738,7 @@
 </ul>
 <p><img src="../assets/03-distributed-training/fig-17.png" alt="fig-17" width="50%" /></p>
 <p><img src="../assets/03-distributed-training/fig-18.png" alt="fig-18" width="60%" /></p>
-<h3 id="33-activation-">3.3 Activation优化 - 激活重计算<a class="headerlink" href="#33-activation-" title="Permanent link">&para;</a></h3>
+<h3 id="33-activation-">3.3 Activation优化 - 激活重计算</h3>
 <p>根据上一步我们发现，Activation对显存的影响很大！</p>
 <p>为应对激活值高占用的问题，可使用 <strong>激活重计算</strong> 技术（又称 Gradient Checkpointing 或 Rematerialization）。</p>
 <p>核心思想是：在前向传播时丢弃部分激活值，从而省显存；需要它们做反向传播时，再运行一次子前向过程把它们计算回来，换取多一些计算量来节省显存。</p>
@@ -1719,7 +1747,7 @@
 <li>启用重计算后：我们<strong>只保存少量关键位置的激活值</strong>；当反向传播需要时，再用已保存的进行部分前向运算重算出所需内容。</li>
 </ul>
 <p><img src="../assets/03-distributed-training/fig-19.png" alt="fig-19" width="33%" /></p>
-<h3 id="34-activation-">3.4 Activation优化 - 梯度累加<a class="headerlink" href="#34-activation-" title="Permanent link">&para;</a></h3>
+<h3 id="34-activation-">3.4 Activation优化 - 梯度累加</h3>
 <p>已知Activation还正比于 <code>batch_size</code> 所以还有一个节省Activation的技巧 —— <strong>梯度累加</strong>（Gradient accumulation），用于避免因过大 batch size 带来的显存爆炸。</p>
 <p>思路：把原本的一次大 batch，拆成多个更小的 micro-batch</p>
 <ul>
@@ -1731,14 +1759,14 @@
 <li>存储需求：只需要 micro-batch的activation + gradient</li>
 <li>缺点：每个优化步骤需要重复多次前后向，因此增加了计算量，放慢了训练速度🤔</li>
 </ul>
-<h2 id="4">4. 代码实现<a class="headerlink" href="#4" title="Permanent link">&para;</a></h2>
+<h2 id="4">4. 代码实现</h2>
 <p>本章节我们先来熟悉一下<code>torch.distributed</code> 的使用吧，在接下来的分布式代码详解中我都会使用这个库。</p>
 <p>不过值得注意的是：</p>
 <ul>
 <li><code>torch.distributed</code> 支持三种后端：nccl、mpi、gloo，正常的多GPU分布式应该用<strong>NCCL后端</strong>（在“2. 通信方式（软硬件）-&gt; torch.distributed 前端”部分也有讲解）</li>
 <li>但是由于我用的是免费的Google Colab（最多提供 1 个免费 GPU 😭），因此后续部分示例将使用 <strong>GLOO 后端+ CPU 模拟</strong>（不选 MPI 是因为配置略繁琐）</li>
 </ul>
-<h3 id="41">4.1 通信原语测试<a class="headerlink" href="#41" title="Permanent link">&para;</a></h3>
+<h3 id="41">4.1 通信原语测试</h3>
 <p><strong>【结构搭建】</strong></p>
 <p>在 PyTorch 中，使用 <code>torch.distributed</code> 进行分布式训练通常遵循以下基本流程（对应步骤已在代码中标注）：</p>
 <ol>
@@ -1916,7 +1944,7 @@
 <a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>[Rank 2] After Broadcast: tensor([1., 2., 3., 4., 5.])
 <a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>[Rank 0] After Broadcast: tensor([1., 2., 3., 4., 5.])
 </code></pre></div>
-<h3 id="42">4.2 自定义分布式训练测试<a class="headerlink" href="#42" title="Permanent link">&para;</a></h3>
+<h3 id="42">4.2 自定义分布式训练测试</h3>
 <p>同前面的“结构搭建”部分。</p>
 <p><strong>【我设置的对应setting函数】</strong></p>
 <p><strong>把共用的参数设置为了库函数：</strong></p>
@@ -2031,7 +2059,7 @@
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>
 </code></pre></div>
-<h2 id="_2">参考资料 &amp; 结语<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<h2 id="_2">参考资料 &amp; 结语</h2>
 <p><strong>【参考资料】</strong></p>
 <ul>
 <li>NYU CSCI-GA.3033-077 Big Data and Machine Learning Systems 相关课件</li>

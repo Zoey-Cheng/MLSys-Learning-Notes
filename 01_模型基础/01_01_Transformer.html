@@ -27,7 +27,7 @@
     
     
       
-        <title>01. Transformer 架构详解:以 LLaMA 为例 - MLSys 菜狗自学笔记</title>
+        <title>01-Transformer 架构详解:以 LLaMA 为例 - MLSys 菜狗自学笔记</title>
       
     
     
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              01. Transformer 架构详解:以 LLaMA 为例
+              01-Transformer 架构详解:以 LLaMA 为例
             
           </span>
         </div>
@@ -358,7 +358,7 @@
   <span class="md-ellipsis">
     
   
-    01. Transformer 架构详解:以 LLaMA 为例
+    01-Transformer 架构详解:以 LLaMA 为例
   
 
     
@@ -376,7 +376,7 @@
   <span class="md-ellipsis">
     
   
-    01. Transformer 架构详解:以 LLaMA 为例
+    01-Transformer 架构详解:以 LLaMA 为例
   
 
     
@@ -733,7 +733,7 @@
   <span class="md-ellipsis">
     
   
-    01. 分布式训练(0) - 背景知识
+    01-分布式训练(0) - 背景知识
   
 
     
@@ -815,7 +815,35 @@
   <span class="md-ellipsis">
     
   
-    01. 预训练 Pretrain
+    01-预训练 Pretrain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_02_SFT.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-监督微调 SFT
   
 
     
@@ -897,7 +925,7 @@
   <span class="md-ellipsis">
     
   
-    01. 算子手写(1) - CUDA 入门 op
+    01-算子手写(1) - CUDA 入门 op
   
 
     
@@ -1219,7 +1247,7 @@
   
 
 
-<h1 id="01-transformer-llama">01-Transformer 架构详解:以 LLaMA 为例<a class="headerlink" href="#01-transformer-llama" title="Permanent link">&para;</a></h1>
+<h1 id="01-transformer-llama">01-Transformer 架构详解:以 LLaMA 为例</h1>
 <blockquote>
 <p><strong>TL; DR</strong>：从原版 Transformer 出发，串到 decoder-only 的工业界代表 <strong>LLaMA</strong>（Pre-Norm RMSNorm / SwiGLU / RoPE），并附一个极简 mini-LLaMA 手写实现。</p>
 </blockquote>
@@ -1231,17 +1259,17 @@
 <p><strong>[可能会考的面试手写题]</strong>：FFN ｜ MLP ｜ 直接手写一个完整 Transformer（真遇到过 😠 ）</p>
 </li>
 </ul>
-<h2 id="_1">前言<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<h2 id="_1">前言</h2>
 <p>Transformer 在 MLSys 相关面试中，已经成为了"过年的饺子"，被问到的概率极高。当然，也可能因为太基础而被跳过。但作为众多知识点的基石，熟悉 Transformer 是必不可少的——谁知道哪天面试官会让你手写一个 Transformer 呢？</p>
 <p>因此，我的自学笔记就从 Transformer 开始，以下内容是我当年从一个"半小白"的视角重新梳理和学习的过程，并结合自己的理解进行总结，欢迎指正。</p>
-<h2 id="1">1. 相关概念<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>
+<h2 id="1">1. 相关概念</h2>
 <p>首先需要理解这些概念：</p>
 <ul>
 <li><strong>核心机制</strong>：Self Attention、Multi-head Attention</li>
 <li><strong>辅助模块</strong>：Word Embedding、Position Encoding、Add（残差连接）、Norm（Layer/Batch）、Feed Forward Network（FFN）、Softmax</li>
 </ul>
 <p><img src="../assets/01-transformer/fig-01.png" alt="fig-01" width="35%" /></p>
-<h3 id="11-embedding">1.1 词嵌入 Embedding<a class="headerlink" href="#11-embedding" title="Permanent link">&para;</a></h3>
+<h3 id="11-embedding">1.1 词嵌入 Embedding</h3>
 <p><strong>Embedding的概念</strong></p>
 <p>文本嵌入（Text Embedding）是将文本转换为固定维度的向量表示（例如 512 维）。简单来说，它是通过映射，将不同的词关联在一起，使得模型具备一定的语义理解和推理能力。例如：</p>
 <p>queen（皇后）= king（国王）- man（男人）+ woman（女人）</p>
@@ -1255,7 +1283,7 @@
 <p><img src="../assets/01-transformer/fig-03.png" alt="fig-03" width="30%" /></p>
 <p>在 Transformer 的输入处理过程中，最终的单词表示向量由 <strong>词嵌入（Word Embedding）</strong> 和 <strong>位置编码（Position Encoding）</strong> 相加，即：</p>
 <p>输入向量 = 初始化 Word Embedding + 位置编码 Position Embedding</p>
-<h3 id="11-self-attention">1.1 注意力机制 Self-Attention<a class="headerlink" href="#11-self-attention" title="Permanent link">&para;</a></h3>
+<h3 id="11-self-attention">1.1 注意力机制 Self-Attention</h3>
 <p>在处理序列数据时，传统方法如 RNN 由于<strong>顺序计算</strong>的特性，难以并行加速，计算效率较低。</p>
 <p><strong>Self-Attention 通过以下方式改进了这一点</strong>：</p>
 <ul>
@@ -1314,7 +1342,7 @@ O &amp;= \hat{A}V
 \]</div>
 <p>计算疑似youtube视频里的矩阵放反了，我手工调换了一下顺序</p>
 <p><img src="../assets/01-transformer/fig-08.png" alt="fig-08" width="40%" /></p>
-<h3 id="12-mha">1.2 多头注意力机制 MHA<a class="headerlink" href="#12-mha" title="Permanent link">&para;</a></h3>
+<h3 id="12-mha">1.2 多头注意力机制 MHA</h3>
 <p>Multi-head Attention (MHA) 在设计层可以理解为，多个head各自计算一部分Embedding Feature。</p>
 <ul>
 <li>注意力头的数量：<span class="arithmatex">\(H\)</span></li>
@@ -1336,7 +1364,7 @@ O &amp;= \hat{A}V
 <p>但是，多个注意力头计算出的结果可能彼此之间缺乏整合性。为了让模型能够更好地融合不同头的信息，我们需要 一个额外的线性变换进行信息融合。</p>
 <p><img src="../assets/01-transformer/fig-11.png" alt="fig-11" width="30%" /></p>
 <p>其中，<span class="arithmatex">\(W^O\)</span> 是一个可训练的投影矩阵，形状为 <span class="arithmatex">\(W^O \in \mathbb{R}^{d_{\text{model}} \times d_{\text{model}}}\)</span>。</p>
-<h3 id="14-layer-norm">1.4 层归一化 Layer Norm<a class="headerlink" href="#14-layer-norm" title="Permanent link">&para;</a></h3>
+<h3 id="14-layer-norm">1.4 层归一化 Layer Norm</h3>
 <p>Batch Norm 和 Layer Norm的选择使用也是一个常见的问题。</p>
 <p><strong>Norm操作的核心思想</strong>：</p>
 <ul>
@@ -1377,11 +1405,11 @@ O &amp;= \hat{A}V
 <li>此处就等于对每个feature，提取所有词的这个feature做一次正则化</li>
 </ul>
 <p>这样就很好理解了，对每个feature做norm（Batch Norm），相比对于一个token的所有feature做norm（Layer Norm）。Layer Norm更合理。</p>
-<h2 id="2-transformer">2. Transformer结构<a class="headerlink" href="#2-transformer" title="Permanent link">&para;</a></h2>
+<h2 id="2-transformer">2. Transformer结构</h2>
 <p><img src="../assets/01-transformer/fig-14.png" alt="fig-14" width="35%" /></p>
-<h3 id="21">2.1 输入<a class="headerlink" href="#21" title="Permanent link">&para;</a></h3>
+<h3 id="21">2.1 输入</h3>
 <p>输入的每个单词 Token 都需要进行 <strong>Embedding</strong> 处理，先通过 <strong>Word Embedding</strong> 转换为向量表示，再加上 <strong>Position Encoding</strong>，以提供位置信息。</p>
-<h3 id="22-encoder">2.2 Encoder<a class="headerlink" href="#22-encoder" title="Permanent link">&para;</a></h3>
+<h3 id="22-encoder">2.2 Encoder</h3>
 <p>Encoder 侧由多个 encoder block 组成。</p>
 <p><img src="../assets/01-transformer/fig-15.png" alt="fig-15" width="20%" /></p>
 <p><strong>【Add &amp; Norm】</strong></p>
@@ -1394,7 +1422,7 @@ O &amp;= \hat{A}V
 <p><strong>【Encoder Block 的整体结构</strong></p>
 <p>每个 <strong>Encoder Block</strong> 的输入是一个 <strong>word  embedding</strong> 矩阵 <span class="arithmatex">\([seq_len, d_{model}]\)</span>，多个 Block 叠加后，最终生成 <strong>编码信息矩阵 C</strong>，这一矩阵会被 <strong>Decoder</strong> 进一步利用。</p>
 <p><img src="../assets/01-transformer/fig-18.png" alt="fig-18" width="40%" /></p>
-<h3 id="23-decoder">2.3 Decoder<a class="headerlink" href="#23-decoder" title="Permanent link">&para;</a></h3>
+<h3 id="23-decoder">2.3 Decoder</h3>
 <p>Decoder 侧也由多个 decoder block 组成，但它会利用 <strong>Encoder侧最后生成的编码信息矩阵</strong>。</p>
 <p><img src="../assets/01-transformer/fig-19.png" alt="fig-19" width="20%" /></p>
 <p><strong>【第一个MHA】</strong>（Masked Self-Attention）</p>
@@ -1423,7 +1451,7 @@ O &amp;= \hat{A}V
 <p>第二个MHA的主要区别是，Self-Attention 的 <strong>K, V</strong> 矩阵不是使用 上一个 Decoder block 的输出计算的，而是使用 <strong>Encoder 的编码信息矩阵 C</strong> 计算的。并且这里不需要mask。</p>
 <p>为什么这样做？好处是在 Decoder 的时候，每一位单词都可以利用到 Encoder 侧所有单词的信息。</p>
 <p>当然，第一个 <strong>MHA</strong> 的信息没有丢失，它会在 <strong>Add &amp; Norm</strong> 阶段被整合。</p>
-<h3 id="24-linear-softmax">2.4 Linear + Softmax + 输出<a class="headerlink" href="#24-linear-softmax" title="Permanent link">&para;</a></h3>
+<h3 id="24-linear-softmax">2.4 Linear + Softmax + 输出</h3>
 <p>Decoder 侧 <strong>最终的目标：预测下一个单词</strong>。</p>
 <ul>
 <li>
@@ -1460,8 +1488,8 @@ O &amp;= \hat{A}V
 <p>线性层输出 <span class="arithmatex">\(Z\)</span> 在经过线性层后还是未归一化的分数，需要通过 <strong>Softmax</strong> 转换为概率分布。</p>
 <p>最终，Decoder 选择概率最高的单词作为输出，不断迭代，直到生成结束标记（<code>&lt;EOS&gt;</code>）。</p>
 <p><img src="../assets/01-transformer/fig-25.png" alt="fig-25" width="35%" /></p>
-<h2 id="3">3. 一些衍生知识点<a class="headerlink" href="#3" title="Permanent link">&para;</a></h2>
-<h3 id="31">3.1 训练和推理<a class="headerlink" href="#31" title="Permanent link">&para;</a></h3>
+<h2 id="3">3. 一些衍生知识点</h2>
+<h3 id="31">3.1 训练和推理</h3>
 <p><strong>【训练时】</strong></p>
 <ul>
 <li>
@@ -1487,7 +1515,7 @@ O &amp;= \hat{A}V
 </ul>
 <p>这种 <strong>自回归（Auto-Regressive）生成方式</strong> 会导致推理速度较慢，因为每个新 Token 需要依赖之前的预测结果。</p>
 <p>因此，为了提升推理效率，衍生出一系列推理加速方法。最主流的方法是 <strong>KV Cache（键值缓存）</strong>，因为它 不会影响生成质量，且可以大幅加速推理（适用于 ChatGPT / GPT-4 / LLaMA）。</p>
-<h3 id="32-encoderdecoder-only">3.2 Encoder/Decoder Only<a class="headerlink" href="#32-encoderdecoder-only" title="Permanent link">&para;</a></h3>
+<h3 id="32-encoderdecoder-only">3.2 Encoder/Decoder Only</h3>
 <p>三种主流的架构：encoder-only，encoder-decoder，decoder-only</p>
 <ul>
 <li><strong>Encoder-Only</strong>（以 BERT 为代表），擅长理解任务，但生成能力天生不足</li>
@@ -1506,7 +1534,7 @@ O &amp;= \hat{A}V
 <li>Decoder-only 支持一直复用 KV-Cache，对多轮对话更友好。</li>
 <li>原因：每个 Token 的表示之和它之前的输入有关，而 Encoder-Decoder就难以做到。</li>
 </ul>
-<h3 id="33-llama">3.3 LLama<a class="headerlink" href="#33-llama" title="Permanent link">&para;</a></h3>
+<h3 id="33-llama">3.3 LLama</h3>
 <p>LLaMA是目前为止，效果最好的开源 LLM 之一。它采用 <strong>Decoder-Only 结构</strong>，并对 Transformer 进行了关键改进，以提升训练稳定性、推理速度和长文本处理能力。</p>
 <p><strong>LLaMA 的核心优化点：</strong></p>
 <ul>
@@ -1538,7 +1566,7 @@ O &amp;= \hat{A}V
 <p>不同于原始 Transformers 论文中，将 pos embedding 和 token embedding 进行相加，RoPE 是将位置编码和 query （或者 key） 进行相乘。具体如下：</p>
 <p><img src="https://pic1.zhimg.com/v2-befa6058db4177c657538775446ebfc8_1440w.jpg" alt="img" width="50%" /></p>
 <p>同时值得注意的是，RoPE 在LLaMa中位于MHA中。</p>
-<h2 id="4-transformer">4. 手写Transformer<a class="headerlink" href="#4-transformer" title="Permanent link">&para;</a></h2>
+<h2 id="4-transformer">4. 手写Transformer</h2>
 <p>了解了以上内容，现在我们来手写一个Transformer。</p>
 <p>为了能够在面试中快速实现，我们采用一个<strong>极简的 LLaMA 版实现</strong>（这样我们只需要实现 Decoder 部分）。特别感谢我 Hugging Face 的朋友提供的指导！</p>
 <p>LLaMA 一个 Decoder Block 的极简结构如下——<code>Input → RMSNorm → Attention →（残差）→ RMSNorm → MLP →（残差）</code>，整个网络由若干个这样的 Block 堆叠而成：</p>
@@ -1549,7 +1577,7 @@ O &amp;= \hat{A}V
 <li>RoPE编码：<code>rotary_embedding_torch.RotaryEmbedding</code></li>
 <li>RMSNorm归一化：<code>x_transformers.RMSNorm</code></li>
 </ul>
-<h3 id="41-multi-head-attention-mha">4.1 Multi-Head Attention (MHA) 实现<a class="headerlink" href="#41-multi-head-attention-mha" title="Permanent link">&para;</a></h3>
+<h3 id="41-multi-head-attention-mha">4.1 Multi-Head Attention (MHA) 实现</h3>
 <p>手写 MHA（Multi-Head Attention）是 Transformer 相关面试中常见的考点。</p>
 <p>LLaMA 版 MHA 与标准 MHA 的主要区别在于：</p>
 <ul>
@@ -1611,7 +1639,7 @@ O &amp;= \hat{A}V
 <a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>
 <a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_proj</span><span class="p">(</span><span class="n">attn_output</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="42-feed-forward-mlp">4.2 Feed Forward (MLP) 的实现<a class="headerlink" href="#42-feed-forward-mlp" title="Permanent link">&para;</a></h3>
+<h3 id="42-feed-forward-mlp">4.2 Feed Forward (MLP) 的实现</h3>
 <p>标准 Transformer 中，FFN 采用 <strong>线性升维-降维</strong> 结构（hidden_dim 通常设为 <code>4 * embedding_dim</code>）。</p>
 <p>但LLama版使用 <strong>SwiGLU</strong> 替代了 ReLU，SwiGLU 可以调用 <strong>SiLU</strong> 函数实现，它们的关系如下：</p>
 <p><strong>SiLU（Swish Linear Unit）的形式</strong></p>
@@ -1654,7 +1682,7 @@ O &amp;= \hat{A}V
 <a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>        <span class="n">x</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">*</span> <span class="n">x2</span>                                         <span class="c1"># SwiGLU</span>
 <a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_proj</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="43-decoder">4.3 Decoder侧的实现<a class="headerlink" href="#43-decoder" title="Permanent link">&para;</a></h3>
+<h3 id="43-decoder">4.3 Decoder侧的实现</h3>
 <p>LLaMA 的 Decoder 侧与传统 Transformer 的主要区别：</p>
 <ul>
 <li>传统Transofrmer：Add -&gt; Norm</li>
@@ -1674,7 +1702,7 @@ O &amp;= \hat{A}V
 <a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ffn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">norm2</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>  
 <a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>        <span class="k">return</span> <span class="n">x</span>
 </code></pre></div>
-<h3 id="46-llama">4.6 LLama的整体实现<a class="headerlink" href="#46-llama" title="Permanent link">&para;</a></h3>
+<h3 id="46-llama">4.6 LLama的整体实现</h3>
 <p>标准 Transformer（如 GPT、BERT）采用 <code>final_proj -&gt; LayerNorm</code> 结构。</p>
 <p>LLaMA 采用 <code>RMSNorm -&gt; final_proj</code>，先归一化，再投影。</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">MiniLlama</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
@@ -1693,7 +1721,7 @@ O &amp;= \hat{A}V
 <a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># 先做 RMSNorm</span>
 <a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">final_proj</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="_2"><strong>测试实现</strong><a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
+<h3 id="_2"><strong>测试实现</strong></h3>
 <p>可以运行测试代码，确保 <code>MiniLLaMA</code> 的输出形状正确！我写了一个test函数，你可以下载 <a href="../code/01-mini-llama.ipynb"><code>ipynb</code> 文件</a>（或在 <a href="https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link">Colab</a> 上）直接运行。</p>
 <p>好了！今天的内容就到这里，下期再见👋</p>
 

@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://zoey-cheng.github.io/MLSys-Learning-Notes/06_%E7%AE%97%E5%AD%90/05_01_CUDA%E5%85%A5%E9%97%A8.html">
       
       
-        <link rel="prev" href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_01_Pretrain.html">
+        <link rel="prev" href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_02_SFT.html">
       
       
       
@@ -25,7 +25,7 @@
     
     
       
-        <title>01. 算子手写(1) - CUDA 入门 op - MLSys 菜狗自学笔记</title>
+        <title>01-算子手写(1) - CUDA 入门 op - MLSys 菜狗自学笔记</title>
       
     
     
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              01. 算子手写(1) - CUDA 入门 op
+              01-算子手写(1) - CUDA 入门 op
             
           </span>
         </div>
@@ -345,7 +345,7 @@
   <span class="md-ellipsis">
     
   
-    01. Transformer 架构详解:以 LLaMA 为例
+    01-Transformer 架构详解:以 LLaMA 为例
   
 
     
@@ -427,7 +427,7 @@
   <span class="md-ellipsis">
     
   
-    01. 分布式训练(0) - 背景知识
+    01-分布式训练(0) - 背景知识
   
 
     
@@ -509,7 +509,35 @@
   <span class="md-ellipsis">
     
   
-    01. 预训练 Pretrain
+    01-预训练 Pretrain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_02_SFT.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-监督微调 SFT
   
 
     
@@ -602,7 +630,7 @@
   <span class="md-ellipsis">
     
   
-    01. 算子手写(1) - CUDA 入门 op
+    01-算子手写(1) - CUDA 入门 op
   
 
     
@@ -620,7 +648,7 @@
   <span class="md-ellipsis">
     
   
-    01. 算子手写(1) - CUDA 入门 op
+    01-算子手写(1) - CUDA 入门 op
   
 
     
@@ -1429,9 +1457,9 @@
   
 
 
-<h1 id="01-cudawith-code">01-常见CUDA手写实现(with code)<a class="headerlink" href="#01-cudawith-code" title="Permanent link">&para;</a></h1>
+<h1 id="01-cudawith-code">01-常见CUDA手写实现(with code)</h1>
 <p><strong>[Quick Ref for 手写code]</strong>：一些基础CUDA算子 ｜ <a href="../code/02-cuda-ops.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link">Colab</a></p>
-<h2 id="_1">前言<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<h2 id="_1">前言</h2>
 <p>本来第二部分准备写并行的，但是最近面试国内，就还是先复习一下CUDA好了！</p>
 <p>根据之前的经验，常见会问到的CUDA手写题包括：</p>
 <ul>
@@ -1455,7 +1483,7 @@
 </ul>
 <p>先准备这些常见的吧！我都加了 Test case，可以下载 <a href="../code/02-cuda-ops.ipynb">ipynb 文件</a>（或在 <a href="https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link">Colab</a> 上）运行（CUDA 部分需要 GPU 环境）。</p>
 <p>plus：频率是从面intern的角度来评价的。</p>
-<h2 id="_2">说明<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<h2 id="_2">说明</h2>
 <p>面试时不会提供运行环境，也不会要求自己写test case运行，一般来说只要写出kernel函数和调用函数即可。</p>
 <p><strong>【通常是分3步走🤔】</strong></p>
 <ul>
@@ -1496,10 +1524,10 @@
 <li>PTX指令集（GPU底层指令）仅明确定义了<code>LDG.32</code>、<code>LDG.64</code> 和 <code>LDG.128</code>，128是最大的</li>
 <li>128是指 128 bits，float32 = 32 bits，128/32 = 4</li>
 </ul>
-<h2 id="1-add">1. Add<a class="headerlink" href="#1-add" title="Permanent link">&para;</a></h2>
+<h2 id="1-add">1. Add</h2>
 <p>考察频率：中。</p>
 <p>一般都直接上矩阵乘，简单的考Add反而少，but去年面NV考过。</p>
-<h3 id="11-1d-vecadd">1.1 1D vecAdd<a class="headerlink" href="#11-1d-vecadd" title="Permanent link">&para;</a></h3>
+<h3 id="11-1d-vecadd">1.1 1D vecAdd</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="cp"># define BLOCKSIZE 1024</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1">// input: A[N],B[N] -&gt; output: C[N]</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
@@ -1518,7 +1546,7 @@
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="12-1d-vecadd-float4">1.2 1D vecAdd + Float4<a class="headerlink" href="#12-1d-vecadd-float4" title="Permanent link">&para;</a></h3>
+<h3 id="12-1d-vecadd-float4">1.2 1D vecAdd + Float4</h3>
 <p>启用向量化合并访存。每个thread处理4个元素，因此<code>blockPerGrid</code>变少。</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="cp"># define BLOCKSIZE 1024</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
@@ -1544,7 +1572,7 @@
 <a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
 <a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="13-2d-matadd">1.3 2D matAdd<a class="headerlink" href="#13-2d-matadd" title="Permanent link">&para;</a></h3>
+<h3 id="13-2d-matadd">1.3 2D matAdd</h3>
 <p>逻辑和1D几乎没区别，就是row/col需要熟悉一下计算index</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="cp"># define BLOCKSIZE 32</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
@@ -1567,10 +1595,10 @@
 <a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
 <a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="p">}</span>
 </code></pre></div>
-<h2 id="2-matmul">2. matMul 矩阵乘<a class="headerlink" href="#2-matmul" title="Permanent link">&para;</a></h2>
+<h2 id="2-matmul">2. matMul 矩阵乘</h2>
 <p>考察频率：超级高。</p>
 <p>经典题嘛，当然有事没事就考它，建议被问直接上tiled版本。</p>
-<h3 id="21-naive">2.1 naive版矩阵乘<a class="headerlink" href="#21-naive" title="Permanent link">&para;</a></h3>
+<h3 id="21-naive">2.1 naive版矩阵乘</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="cp"># define BLOCKSIZE 32</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="c1">// A[M*K], B[K*N], C[M*N]</span>
 <a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
@@ -1597,7 +1625,7 @@
 <a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">    </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
 <a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="22-tiled-matmul-tiled">2.2 Tiled Matmul - tiled矩阵乘<a class="headerlink" href="#22-tiled-matmul-tiled" title="Permanent link">&para;</a></h3>
+<h3 id="22-tiled-matmul-tiled">2.2 Tiled Matmul - tiled矩阵乘</h3>
 <blockquote>
 <p>thread_tile 版</p>
 </blockquote>
@@ -1712,7 +1740,7 @@
 <a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">    </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
 <a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="p">}</span>
 </code></pre></div>
-<h2 id="3-transpose">3. Transpose 转置<a class="headerlink" href="#3-transpose" title="Permanent link">&para;</a></h2>
+<h2 id="3-transpose">3. Transpose 转置</h2>
 <p>考察频率：中。</p>
 <p>去年被问过一次，总之就是很简单。</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="cp"># define BLOCKSIZE 32</span>
@@ -1736,10 +1764,10 @@
 <a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">  </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
 <a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="p">}</span>
 </code></pre></div>
-<h2 id="4-reduce-1d">4. Reduce 1D规约<a class="headerlink" href="#4-reduce-1d" title="Permanent link">&para;</a></h2>
+<h2 id="4-reduce-1d">4. Reduce 1D规约</h2>
 <p>考察频率：高。</p>
 <p>以sum为代表，被问过sum和avg。建议被问直接上wrap shuffle版本。Reduce系列也适合上float4。</p>
-<h3 id="41-naive-atom">4.1 naive版-atom<a class="headerlink" href="#41-naive-atom" title="Permanent link">&para;</a></h3>
+<h3 id="41-naive-atom">4.1 naive版-atom</h3>
 <p>原子操作：该操作绝不会在执行完毕前被任何其他任务或事件打断，是最小的执行单位。CUDA的原子操作可以理解为对一个变量进行“读取-修改-写入”这三个操作的一个最小单位的执行过程 ==&gt; 不可并行</p>
 <p>相关操作：atomicAdd、atomicSub、atomicExch（交换操作）、atomicMin等。</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="cp"># define BLOCKSIZE 1024</span>
@@ -1761,7 +1789,7 @@
 <a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">  </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
 <a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="42-block">4.2 block内折半归约<a class="headerlink" href="#42-block" title="Permanent link">&para;</a></h3>
+<h3 id="42-block">4.2 block内折半归约</h3>
 <p>block内进行折半归约。需要：BLOCK_SIZE是2的幂。</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="cp"># define BLOCKSIZE 1024</span>
 <a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
@@ -1792,7 +1820,7 @@
 <a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">  </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
 <a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="43-warp-shuffle">4.3 warp shuffle 折半归约<a class="headerlink" href="#43-warp-shuffle" title="Permanent link">&para;</a></h3>
+<h3 id="43-warp-shuffle">4.3 warp shuffle 折半归约</h3>
 <p>在 warp 内进行折半归约。</p>
 <p>wrap是调度的最小单元，一个 warp 内的线程是同步的，所以以wrap为单位的折半不用 <code>__syncthreads()</code>，效率相对更高。</p>
 <p>同时，一个wrap中的线程交换数据可以通过Register寄存器（快） </p>
@@ -1859,7 +1887,7 @@
 <a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="w">  </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
 <a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="44-warp-shuffle-float4">4.4 warp shuffle + Float4<a class="headerlink" href="#44-warp-shuffle-float4" title="Permanent link">&para;</a></h3>
+<h3 id="44-warp-shuffle-float4">4.4 warp shuffle + Float4</h3>
 <ul>
 <li>每个线程一次性加载 4 个 <code>float</code>（<code>float4</code>），减少 75% 的全局内存访问次数</li>
 <li><code>BLOCKSIZE</code> 从 1024 改为 256（每个线程处理 4 个元素，总计算量不变，还是1024）</li>
@@ -1910,11 +1938,11 @@
 <a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="w">  </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
 <a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="p">}</span>
 </code></pre></div>
-<h2 id="5-reduce-2d">5. Reduce 2D行/列规约<a class="headerlink" href="#5-reduce-2d" title="Permanent link">&para;</a></h2>
+<h2 id="5-reduce-2d">5. Reduce 2D行/列规约</h2>
 <p>考察频率：中。</p>
 <p>有时候也会问这个（被问过怎么分配index），根据1D wrap版稍微改改就行，行/列的差别其实不是很大。</p>
 <p>这里就可以明显看出，在设计 <code>blockPerGrid</code>和<code>blockPerGrid</code>的时候，需要对index的顺序有一定理解（面试被问过这个dim和index怎么设计）。同时可以发现，row reduce可以用float4访存合并，col reduce不行。</p>
-<h3 id="51-column-reduction">5.1 Column Reduction 列规约<a class="headerlink" href="#51-column-reduction" title="Permanent link">&para;</a></h3>
+<h3 id="51-column-reduction">5.1 Column Reduction 列规约</h3>
 <blockquote>
 <p>特点：<code>threadPerBlock</code>的1D设计，不能直接float4合并访存（col数据在物理存储上不连续）</p>
 </blockquote>
@@ -1992,7 +2020,7 @@
 <a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="w">  </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
 <a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="52-row-reduction">5.2 Row Reduction 行规约<a class="headerlink" href="#52-row-reduction" title="Permanent link">&para;</a></h3>
+<h3 id="52-row-reduction">5.2 Row Reduction 行规约</h3>
 <blockquote>
 <p>特点：<code>threadPerBlock</code>的1D/2D都可以，可以float4合并访存（row数据在物理存储上连续）</p>
 </blockquote>
@@ -2037,7 +2065,7 @@
 <a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="w">  </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
 <a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a><span class="p">}</span>
 </code></pre></div>
-<h2 id="6-softmax">6. Softmax<a class="headerlink" href="#6-softmax" title="Permanent link">&para;</a></h2>
+<h2 id="6-softmax">6. Softmax</h2>
 <p>考察频率：低。</p>
 <p>是的我还没被面过这个题，但看别人的帖子说挺重要的，或许是intern的要求低一点？总之也需要准备，学习时借鉴了别人的帖子。</p>
 <p>学习后的结论：能写出来比较重要，面试时建议直接实现 <strong>基于Warp（线程束）的设计</strong>，被问及限制性的时候再说：大矩阵时使用两阶段reduce（如前面的wrap shuffle reduce）。</p>
@@ -2049,7 +2077,7 @@
 <li>softmax的计算分为三个步骤：最大值、求指数和、计算指数并归一化（因为避免溢出，要减去最大值）：</li>
 </ul>
 <p><img src="../assets/02-cuda-ops/fig-08.png" alt="fig-08" width="30%" /></p>
-<h3 id="61-2d-softmax-tiled">6.1 2D Softmax Tiled<a class="headerlink" href="#61-2d-softmax-tiled" title="Permanent link">&para;</a></h3>
+<h3 id="61-2d-softmax-tiled">6.1 2D Softmax Tiled</h3>
 <p>思路：rolwise reduce，每行分别计算softmax</p>
 <ul>
 <li>一个行开一个block，计算该行的softmax</li>
@@ -2115,7 +2143,7 @@
 <a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="w">    </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
 <a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="62-2d-softmax-tiled-float4">6.2 2D Softmax Tiled + Float4<a class="headerlink" href="#62-2d-softmax-tiled-float4" title="Permanent link">&para;</a></h3>
+<h3 id="62-2d-softmax-tiled-float4">6.2 2D Softmax Tiled + Float4</h3>
 <ul>
 <li>列数需要是4的倍数，不然写了向量化也不会明显加速</li>
 <li>每个warp处理 4*32 个元素</li>
@@ -2189,9 +2217,9 @@
 <a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a><span class="w">    </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
 <a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="63-1d-softmax">6.3 1D Softmax<a class="headerlink" href="#63-1d-softmax" title="Permanent link">&para;</a></h3>
+<h3 id="63-1d-softmax">6.3 1D Softmax</h3>
 <p>同上，除了<code>grid(1)</code> 和 <code>A[row * N + col]</code> 直接替换为 <code>A[idx]</code> 以外没有区别。</p>
-<h2 id="7-conv">7. conv<a class="headerlink" href="#7-conv" title="Permanent link">&para;</a></h2>
+<h2 id="7-conv">7. conv</h2>
 <p>考察频率：低。</p>
 <p>搜面经搜到了，我也还没被考过。但是学一下好了？但是其中很多参数设计是按我自己的理解写的（因为网上参考不多）。可以向量化优化但我觉得没必要（写累死了）</p>
 <p>首先来复习一下卷积操作（此处忽视stride）：</p>
@@ -2201,7 +2229,7 @@
 <li>Output (size = N - K + 1)</li>
 </ul>
 <p><img src="../assets/02-cuda-ops/fig-09.png" alt="fig-09" width="25%" /></p>
-<h3 id="71-1d-conv-naive">7.1 1D conv - naive<a class="headerlink" href="#71-1d-conv-naive" title="Permanent link">&para;</a></h3>
+<h3 id="71-1d-conv-naive">7.1 1D conv - naive</h3>
 <p>算法设计：</p>
 <ul>
 <li>让每一个thread处理一个 output 中的位置：读一部分数据 -&gt; 计算卷积 -&gt; 写入output</li>
@@ -2227,7 +2255,7 @@
 <a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="w">  </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
 <a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="72-1d-conv-tiled">7.2 1D conv - Tiled<a class="headerlink" href="#72-1d-conv-tiled" title="Permanent link">&para;</a></h3>
+<h3 id="72-1d-conv-tiled">7.2 1D conv - Tiled</h3>
 <p>算法设计：</p>
 <ul>
 <li>每个 block 的 thread 数量对应要读的元素数 = BLOCKSIZE</li>
@@ -2268,7 +2296,7 @@
 <a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a><span class="w">  </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
 <a id="__codelineno-33-9" name="__codelineno-33-9" href="#__codelineno-33-9"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="73-2d-conv-naive">7.3 2D conv - naive<a class="headerlink" href="#73-2d-conv-naive" title="Permanent link">&para;</a></h3>
+<h3 id="73-2d-conv-naive">7.3 2D conv - naive</h3>
 <p>算法设计：</p>
 <ul>
 <li>让每一个thread处理一个 output 中的位置</li>
@@ -2299,7 +2327,7 @@
 <a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a><span class="w">    </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
 <a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="74-2d-conv-tiled">7.4 2D conv - Tiled<a class="headerlink" href="#74-2d-conv-tiled" title="Permanent link">&para;</a></h3>
+<h3 id="74-2d-conv-tiled">7.4 2D conv - Tiled</h3>
 <p>算法设计（K &lt; 32才行）：</p>
 <ul>
 <li>每个 block 的 thread 数量对应要读的元素数 = BLOCKSIZE</li>
@@ -2349,12 +2377,12 @@
 <a id="__codelineno-37-12" name="__codelineno-37-12" href="#__codelineno-37-12"></a><span class="w">    </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
 <a id="__codelineno-37-13" name="__codelineno-37-13" href="#__codelineno-37-13"></a><span class="p">}</span>
 </code></pre></div>
-<h2 id="8-layer-norm">8. Layer Norm<a class="headerlink" href="#8-layer-norm" title="Permanent link">&para;</a></h2>
+<h2 id="8-layer-norm">8. Layer Norm</h2>
 <p>考察频率：低</p>
 <p>面经里好像没怎么见过问这个的，但听说我NV之前的组，面试考过别人这个（？）</p>
 <p>虽然不知道是校招还是社招总之准备一下好了。本质是个行规约，故此处是用和softmax一样的wrap reduce处理。</p>
 <p>向量化的添加，和softmax一样诚恳地建议3次vec4还是算了吧。</p>
-<h3 id="81-layer-norm-tiled">8.1 Layer Norm - Tiled<a class="headerlink" href="#81-layer-norm-tiled" title="Permanent link">&para;</a></h3>
+<h3 id="81-layer-norm-tiled">8.1 Layer Norm - Tiled</h3>
 <p>和假设 <code>input[NxK]</code>（大不了用pytorch reshape一下），然后以第一个维度为pivot做norm。步骤：</p>
 <ul>
 <li>

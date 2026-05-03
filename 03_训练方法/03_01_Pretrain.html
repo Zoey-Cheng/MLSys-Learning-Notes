@@ -16,7 +16,7 @@
         <link rel="prev" href="../02_%E8%AE%AD%E7%BB%83%E7%AD%96%E7%95%A5/02_01_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%E5%9F%BA%E7%A1%80.html">
       
       
-        <link rel="next" href="../06_%E7%AE%97%E5%AD%90/05_01_CUDA%E5%85%A5%E9%97%A8.html">
+        <link rel="next" href="03_02_SFT.html">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>01. 预训练 Pretrain - MLSys 菜狗自学笔记</title>
+        <title>01-预训练 Pretrain - MLSys 菜狗自学笔记</title>
       
     
     
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              01. 预训练 Pretrain
+              01-预训练 Pretrain
             
           </span>
         </div>
@@ -347,7 +347,7 @@
   <span class="md-ellipsis">
     
   
-    01. Transformer 架构详解:以 LLaMA 为例
+    01-Transformer 架构详解:以 LLaMA 为例
   
 
     
@@ -429,7 +429,7 @@
   <span class="md-ellipsis">
     
   
-    01. 分布式训练(0) - 背景知识
+    01-分布式训练(0) - 背景知识
   
 
     
@@ -522,7 +522,7 @@
   <span class="md-ellipsis">
     
   
-    01. 预训练 Pretrain
+    01-预训练 Pretrain
   
 
     
@@ -540,7 +540,7 @@
   <span class="md-ellipsis">
     
   
-    01. 预训练 Pretrain
+    01-预训练 Pretrain
   
 
     
@@ -779,6 +779,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="03_02_SFT.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-监督微调 SFT
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -847,7 +875,7 @@
   <span class="md-ellipsis">
     
   
-    01. 算子手写(1) - CUDA 入门 op
+    01-算子手写(1) - CUDA 入门 op
   
 
     
@@ -1119,7 +1147,14 @@
   
 
 
-<h1 id="01-pretrain">01-预训练 Pretrain<a class="headerlink" href="#01-pretrain" title="Permanent link">&para;</a></h1>
+<style>
+/* Pretrain 这页的 mermaid 比 SFT 大一档 */
+.md-typeset .mermaid {
+  max-width: 780px !important;
+}
+</style>
+
+<h1 id="01-pretrain">01-预训练 Pretrain</h1>
 <blockquote>
 <p><strong>TL; DR</strong>：完整走一遍预训练 pipeline - 数据 / tokenize / chunk → 模型怎么对齐 label 算 loss → lr 调度 + 训练监控 → 训完的 base model 能做什么</p>
 </blockquote>
@@ -1128,7 +1163,7 @@
 <li><strong>[常考面试点]</strong>：好像只有 tokenize</li>
 </ul>
 <p>模型结构和训练策略层面的内容分别见 Transformer 和“训练策略”（并行）系列。虽然面试点不多，但预训练流程是基石，知道全貌很必要。</p>
-<h2 id="_1">前言<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<h2 id="_1">前言</h2>
 <p>最近被 assign 去做了 SFT 框架迁移。想写SFT，但在进入 SFT 之前，感觉还是要先把预训练简单过一下。</p>
 <p>这篇笔记的范围：</p>
 <ul>
@@ -1143,11 +1178,10 @@
 <li>训完之后的 base model 能做什么</li>
 </ul>
 <p>整体顺序：原始数据 → Tensor → 模型 → Loss → 参数更新 → base model。</p>
-<hr />
-<h2 id="1-pretrain">1. Pretrain 位置<a class="headerlink" href="#1-pretrain" title="Permanent link">&para;</a></h2>
+<h2 id="1-pretrain">1. Pretrain 位置</h2>
 <p>LLM 训练经典的三阶段流程：</p>
 <pre class="mermaid"><code>flowchart LR
-    P("⭐ Pretrain&lt;br/&gt;&lt;br/&gt;海量无标注语料&lt;br/&gt;1T ~ 15T tokens&lt;br/&gt;自监督 (next token)&lt;br/&gt;lr ~ 1e-4&lt;br/&gt;训练几个月")
+    P("⭐ &lt;span style=color:#fff&gt;Pretrain&lt;br/&gt;&lt;br/&gt;海量无标注语料&lt;br/&gt;1T ~ 15T tokens&lt;br/&gt;自监督 (next token)&lt;br/&gt;lr ~ 1e-4&lt;br/&gt;训练几个月&lt;/span&gt;")
     S("SFT&lt;br/&gt;&lt;br/&gt;(prompt, response)&lt;br/&gt;1M ~ 10M 条&lt;br/&gt;监督 (response 监督)&lt;br/&gt;lr ~ 1e-5&lt;br/&gt;训练几天 ~ 几周")
     R("RLHF / DPO&lt;br/&gt;&lt;br/&gt;(prompt, chosen, rejected)&lt;br/&gt;100K ~ 1M 条&lt;br/&gt;RL / 比较学习&lt;br/&gt;lr ~ 5e-7&lt;br/&gt;训练几天")
     O("aligned model")
@@ -1156,23 +1190,19 @@
     S --&gt;| instruct model | R
     R --&gt; O
 
-    classDef highlight fill:#3f51b5,stroke:#1a237e,stroke-width:2px,color:#fff
-    classDef step fill:#e8eaf6,stroke:#3f51b5,stroke-width:1.5px,color:#1a237e
-    classDef out fill:#f5f5f5,stroke:#9e9e9e,stroke-width:1px,color:#424242
-
-    class P highlight
-    class S,R step
-    class O out</code></pre>
+    style P fill:#3f51b5,stroke:#1a237e,stroke-width:2px,color:#fff
+    style S fill:#e8eaf6,stroke:#3f51b5,stroke-width:1.5px,color:#1a237e
+    style R fill:#e8eaf6,stroke:#3f51b5,stroke-width:1.5px,color:#1a237e
+    style O fill:#f5f5f5,stroke:#9e9e9e,stroke-width:1px,color:#424242</code></pre>
 <p>Pretrain 训出来的就是所谓的 <strong>base model</strong>（GPT-3、Llama-3-Base、Qwen2.5-Base）——后面 SFT / RLHF 在它基础上调整行为习惯，不再注入新的世界知识。</p>
 <p>Pretrain 是最贵、最久、最关键的一步：</p>
 <ul>
 <li>算力消耗占 LLM 训练总成本的 &gt;99%</li>
 <li>后面所有能力（聊天、推理、代码）的天花板都在这一步被决定</li>
 </ul>
-<hr />
-<h2 id="2">2. 数据<a class="headerlink" href="#2" title="Permanent link">&para;</a></h2>
+<h2 id="2">2. 数据</h2>
 <p>预训练里最重要的一步是什么？模型结构大概率稳定了，真正决定 base model 能力上限的还得是<strong>洗数据</strong>。SFT / RLHF 救不回一份糟糕的预训练。</p>
-<h3 id="21">2.1 原始数据来源<a class="headerlink" href="#21" title="Permanent link">&para;</a></h3>
+<h3 id="21">2.1 原始数据来源</h3>
 <p>工业级预训练数据通常以 JSONL 存（每行一条文档），原始字段大致这样：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;中国的传统戏曲在其漫长的发展过程中，主要靠口传心授的传承方式...&quot;</span><span class="p">,</span>
@@ -1236,7 +1266,7 @@
 </tbody>
 </table>
 <p>混合配比（加多少代码、加多少中文、加多少书）是各家工程秘方，通常不公开。</p>
-<h3 id="22">2.2 预处理简单流程<a class="headerlink" href="#22" title="Permanent link">&para;</a></h3>
+<h3 id="22">2.2 预处理简单流程</h3>
 <p>主流程很短：<strong>Collect → Filter → Dedup → Tokenize</strong>。CommonCrawl 原始 ~PB 级、洗到最后剩约 1/10：</p>
 <pre class="mermaid"><code>flowchart LR
     C("Collect&lt;br/&gt;&lt;br/&gt;采集&lt;br/&gt;各种来源&lt;br/&gt;原始 ~PB")
@@ -1257,7 +1287,7 @@
 </ul>
 <p><strong>Dedup</strong>（去重）几乎所有大模型都做——重复数据会让训练效率暴跌（同样的算力反复学一个相似段落）。工业标配是 <strong>MinHash + LSH</strong>：MinHash 把每篇文档压成一组哈希指纹，保留近重复关系；LSH 把相似指纹直接桶到一起，避免万亿级 token 上 <span class="arithmatex">\(O(N^2)\)</span> 的两两比较。颗粒度可以选<strong>文档级</strong>（两篇网页基本一样）、<strong>段落级</strong>（导航栏 / 版权声明被复制粘贴）或 <strong>n-gram 级</strong>（连续若干 token 反复出现，如样板 footer）。</p>
 <p>Tokenize 放到 §3 跟 batch 拼接一起讲。</p>
-<h3 id="23-prepared">2.3 Prepared 后的数据<a class="headerlink" href="#23-prepared" title="Permanent link">&para;</a></h3>
+<h3 id="23-prepared">2.3 Prepared 后的数据</h3>
 <p>经过预处理之后，得到的 prepared 数据通常仍然是文本形式（还没 tokenize），但<strong>已经满足这些条件</strong>：</p>
 <ul>
 <li>每条记录是一个<strong>清洗过的文档</strong>（一篇网页正文、一本书的一章、一段代码、一个 Reddit 帖子等）</li>
@@ -1271,10 +1301,9 @@
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>└── shard_9999.jsonl
 </code></pre></div>
 <p><strong>这就是后面要喂给 tokenize 的输入</strong>。注意：到这一步文本仍然是变长的，每篇可能从几十字到几万字不等，接下来就把它转成模型实际使用的的定长 tensor。</p>
-<hr />
-<h2 id="3-input">3. 数据 -&gt; 模型 input<a class="headerlink" href="#3-input" title="Permanent link">&para;</a></h2>
+<h2 id="3-input">3. 数据 -&gt; 模型 input</h2>
 <p>这一节回答：清洗好的文本怎么变成模型实际使用的 tensor。</p>
-<h3 id="31-input">3.1 期望的 input<a class="headerlink" href="#31-input" title="Permanent link">&para;</a></h3>
+<h3 id="31-input">3.1 期望的 input</h3>
 <p>模型每个 step 吃进去的就是一个固定形状的 batch：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>input_ids:      shape = [batch_size, seq_len]    元素是 token ID (int)
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>labels:         shape = [batch_size, seq_len]    见 3.4
@@ -1282,7 +1311,7 @@
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>position_ids:   shape = [batch_size, seq_len]    [0, 1, ..., seq_len-1]
 </code></pre></div>
 <p>目标很明确：把变长的 prepared 文档，变成形状统一的 <code>[B, T]</code> int tensor。下面分两步：先 tokenize（文本 → token ID），再 batch（token ID 序列 → 定长 tensor）。</p>
-<h3 id="32-tokenize-token-id">3.2 Tokenize：文本 -&gt; token ID<a class="headerlink" href="#32-tokenize-token-id" title="Permanent link">&para;</a></h3>
+<h3 id="32-tokenize-token-id">3.2 Tokenize：文本 -&gt; token ID</h3>
 <p>为什么不能直接用字符或单词？</p>
 <ul>
 <li><strong>char-level</strong>：词表很小但序列爆长，long context 推不动</li>
@@ -1427,7 +1456,7 @@
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>            ↑ 9 个 token，比字符数少（中文常用词整词成 token）
 </code></pre></div>
 <p>prepared 数据集 tokenize 之后，每篇文档都是一段变长 int 序列。这时还不是定长 batch，下一步把这些变长序列拼接 + 切块。</p>
-<h3 id="33-batch">3.3 切 batch、保持文档连接<a class="headerlink" href="#33-batch" title="Permanent link">&para;</a></h3>
+<h3 id="33-batch">3.3 切 batch、保持文档连接</h3>
 <p>数据集里是上百万篇变长文档，模型要的是定长 tensor <code>[B, T]</code>。怎么转？</p>
 <p><strong>[Concat + Chunk：最简单的做法]</strong></p>
 <p>把所有 tokenized 文档<strong>首尾拼成一条长流</strong>，每篇尾部补 <code>&lt;eos&gt;</code> 标记边界，然后按 <code>block_size</code> 切——每个 chunk 就是一条训练样本。整个过程分三步：</p>
@@ -1474,7 +1503,7 @@
 <blockquote>
 <p>Llama 3、DeepSeek-V3 等现代大模型默认开 document mask。社区共识：跨文档 attention 是<strong>轻微但可避免的污染</strong>，做了 mask 收益稳定，工程开销几乎为零。</p>
 </blockquote>
-<h3 id="34-labels">3.4 Labels 怎么构造<a class="headerlink" href="#34-labels" title="Permanent link">&para;</a></h3>
+<h3 id="34-labels">3.4 Labels 怎么构造</h3>
 <p>Pretrain 的训练信号是 next-token prediction：<strong>用前 t 个 token 去预测第 t+1 个</strong>。所以"标签"其实就藏在输入序列自己里——把 <code>input_ids</code> 整体往左挪一位就是每个位置的目标。</p>
 <p>把这个 shift 画出来：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>位置:           0    1    2    3    4    5    6    7
@@ -1505,7 +1534,7 @@
 <a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>  labels:    [-100,  -100,  ..., -100, r_1, ..., r_m, &lt;eos&gt;]  ← 仅 response 算 loss
 </code></pre></div>
 <p>两阶段在数据 / loss 层面唯一的差异：是否把 prompt 部分 mask 成 <code>-100</code>。其他（shift、cross-entropy、optimizer）完全一样。</p>
-<h2 id="4-logits">4. 从 logits 到参数更新<a class="headerlink" href="#4-logits" title="Permanent link">&para;</a></h2>
+<h2 id="4-logits">4. 从 logits 到参数更新</h2>
 <p>按照 <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_01_Transformer.html">01_01_Transformer.md §4 手写Transformer</a> 里 MiniLlama 的实现，模型现在已经能吃 input_ids、吐出 logits ∈ ℝ^[B, T, V]——<strong>每个位置都是一个 V 维向量</strong>，代表词表上每个 token 的"得分"（未归一化）。</p>
 <p>剩下要做的事：</p>
 <ul>
@@ -1513,7 +1542,7 @@
 <li>gradient 配上 lr 沿链式法则反向更新各层 weight</li>
 <li>评估训得怎么样</li>
 </ul>
-<h3 id="41-logits-loss-gradient">4.1 logits → loss → gradient<a class="headerlink" href="#41-logits-loss-gradient" title="Permanent link">&para;</a></h3>
+<h3 id="41-logits-loss-gradient">4.1 logits → loss → gradient</h3>
 <p>拿到 logits ∈ ℝ^[B, T, V] 之后，每个位置 t 上的 V 维向量先过 <strong>softmax</strong> 归一化成合法的概率分布 p_t：
 $$
 p_t = \text{softmax}(\text{logits}<em t_i="t,i">t), \quad p</em>} = \frac{\exp(\text{logits<em t_j="t,j">{t,i})}{\sum_j \exp(\text{logits}</em>
@@ -1543,7 +1572,7 @@ $$
 <div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">loss</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">cross_entropy</span><span class="p">(</span><span class="n">logits</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">V</span><span class="p">),</span> <span class="n">labels</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">ignore_index</span><span class="o">=-</span><span class="mi">100</span><span class="p">)</span>
 </code></pre></div>
 <p>这个标量 <span class="arithmatex">\(\mathcal{L}\)</span> 就是反向传播的<strong>起点</strong>。从这里出发按链式法则一层层穿过 lm_head → final norm → 每层 transformer block → embedding，每个参数 W 拿到自己的 <code>W.grad</code>，再交给 <strong>AdamW</strong> 更新一次权重。</p>
-<h3 id="42-warmup-cosine-decay">4.2 学习率调度：Warmup + Cosine Decay<a class="headerlink" href="#42-warmup-cosine-decay" title="Permanent link">&para;</a></h3>
+<h3 id="42-warmup-cosine-decay">4.2 学习率调度：Warmup + Cosine Decay</h3>
 <p>每个参数 W 已经拿到自己的 <code>W.grad</code>，更新参数时还要乘上一个标量 <strong>lr（学习率）</strong>——大 lr 走得远但易跨过最优点，小 lr 稳但慢。LLM 预训练标配是：</p>
 <ul>
 <li><strong>Warmup</strong>：前 1%~3% steps 线性从 0 爬到 peak_lr</li>
@@ -1563,7 +1592,7 @@ $$
 <a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>   1%~3%  ↑                          end_lr
 <a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>        peak_lr                      (peak/10)
 </code></pre></div>
-<h3 id="43">4.3 评估：训得怎么样<a class="headerlink" href="#43" title="Permanent link">&para;</a></h3>
+<h3 id="43">4.3 评估：训得怎么样</h3>
 <p>loop 跑起来之后怎么判断模型有没有持续在变好？分两层看：(1) <strong>实时的 loss / PPL 曲线</strong>（廉价、每 step 都有）盯 loop 健不健康，(2) <strong>定期的 evaluate 验证</strong>（贵）反映真实能力。</p>
 <p><strong>[A. 实时监控：loss + PPL 曲线]</strong></p>
 <blockquote>
@@ -1715,8 +1744,7 @@ P(w_1, w_2, \ldots, w_n) = P(w_1) \cdot P(w_2 \mid w_1) \cdot P(w_3 \mid w_1, w_
 <blockquote>
 <p>同样这套 (a) + (b) 结构在 SFT / RLHF 也走一遍，只是换数据 / 换 benchmark。这部分留给后续笔记。</p>
 </blockquote>
-<hr />
-<h2 id="5-base-model">5. 训完的 base model<a class="headerlink" href="#5-base-model" title="Permanent link">&para;</a></h2>
+<h2 id="5-base-model">5. 训完的 base model</h2>
 <p>预训练完，<strong>它没有"对话"能力，只能做一件事——continue the text（续写）</strong>。不过从 logits 里挑下一个 token 的策略（greedy / top-k / top-p / temperature / beam search 等）是推理侧的事，留到推理优化系列展开。</p>
 <p><strong>能做什么</strong>：</p>
 <ul>
@@ -1731,8 +1759,7 @@ P(w_1, w_2, \ldots, w_n) = P(w_1) \cdot P(w_2 \mid w_1) \cdot P(w_3 \mid w_1, w_
 <li>稳定输出特定格式——除非 prompt 里给 few-shot</li>
 </ul>
 <p>这些都是 SFT / RLHF 解决的事。</p>
-<hr />
-<h2 id="6-pretrain">6. 代码实现：可跑的 pretrain<a class="headerlink" href="#6-pretrain" title="Permanent link">&para;</a></h2>
+<h2 id="6-pretrain">6. 代码实现：可跑的 pretrain</h2>
 <p>把 §1~§5 的概念串成最小可跑的版本——wikitext-2 + tiny Qwen2 配置（≈ 40M params），单 GPU / CPU 都能跑：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">chain</span>
