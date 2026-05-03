@@ -85,10 +85,6 @@
   background: transparent;
   color: var(--lapis-h2-text);
 }
-/* H2 蓝标签内不显示 ¶ 锚点（避免右侧多余 padding） */
-.md-typeset h2 .headerlink {
-  display: none;
-}
 
 /* --------- 图片居中 + 防超界 --------- */
 .md-typeset img {
@@ -143,7 +139,31 @@
   margin-bottom: 0;
 }
 
-/* --------- Table --------- */
+/* --------- Mermaid 流程图：缩小默认大小 + 居中 (v4)
+   v10+ mermaid 把 svg 放进 shadow-root, 外面 CSS 穿不进去
+   只能约束外层 <div class="mermaid">, 内层 svg width:100% 会跟着缩 --------- */
+.md-typeset .mermaid,
+.mermaid {
+  max-width: 650px !important;     /* 540 → 650, +20% */
+  margin: 1em auto !important;
+  text-align: center !important;
+}
+
+/* --------- Table 强制居中 (v4) --------- */
+/* Material 把 table 包在 .md-typeset__scrollwrap 里 (横向滚动响应式), 用 flex 居中里面的 table */
+.md-typeset__scrollwrap {
+  display: flex !important;
+  justify-content: center !important;
+}
+.md-typeset__table {
+  display: inline-block !important;
+}
+.md-typeset table:not([class]) {
+  display: table !important;
+  width: auto !important;
+  max-width: 100% !important;
+  margin: 0 !important;       /* 由外层 flex 处理居中 */
+}
 .md-typeset table:not([class]) th {
   color: var(--lapis-primary);
   background: transparent;
@@ -155,6 +175,7 @@
 .md-typeset table:not([class]) td {
   border: 1px solid var(--lapis-border);
   padding: 6px 12px;
+  text-align: center;          /* 单元格内文字居中 */
 }
 .md-typeset table:not([class]) tr:hover td {
   background-color: var(--lapis-block-bg);

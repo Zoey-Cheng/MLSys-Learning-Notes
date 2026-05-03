@@ -1,6 +1,13 @@
 ---
-title: "01. 预训练 Pretrain"
+title: "01-预训练 Pretrain"
 ---
+
+<style>
+/* Pretrain 这页的 mermaid 比 SFT 大一档 */
+.md-typeset .mermaid {
+  max-width: 780px !important;
+}
+</style>
 
 # 01-预训练 Pretrain
 
@@ -31,7 +38,7 @@ title: "01. 预训练 Pretrain"
 
 整体顺序：原始数据 → Tensor → 模型 → Loss → 参数更新 → base model。
 
----
+
 
 ## 1. Pretrain 位置
 
@@ -39,7 +46,7 @@ LLM 训练经典的三阶段流程：
 
 ```mermaid
 flowchart LR
-    P("⭐ Pretrain<br/><br/>海量无标注语料<br/>1T ~ 15T tokens<br/>自监督 (next token)<br/>lr ~ 1e-4<br/>训练几个月")
+    P("⭐ <span style=color:#fff>Pretrain<br/><br/>海量无标注语料<br/>1T ~ 15T tokens<br/>自监督 (next token)<br/>lr ~ 1e-4<br/>训练几个月</span>")
     S("SFT<br/><br/>(prompt, response)<br/>1M ~ 10M 条<br/>监督 (response 监督)<br/>lr ~ 1e-5<br/>训练几天 ~ 几周")
     R("RLHF / DPO<br/><br/>(prompt, chosen, rejected)<br/>100K ~ 1M 条<br/>RL / 比较学习<br/>lr ~ 5e-7<br/>训练几天")
     O("aligned model")
@@ -48,13 +55,10 @@ flowchart LR
     S -->| instruct model | R
     R --> O
 
-    classDef highlight fill:#3f51b5,stroke:#1a237e,stroke-width:2px,color:#fff
-    classDef step fill:#e8eaf6,stroke:#3f51b5,stroke-width:1.5px,color:#1a237e
-    classDef out fill:#f5f5f5,stroke:#9e9e9e,stroke-width:1px,color:#424242
-
-    class P highlight
-    class S,R step
-    class O out
+    style P fill:#3f51b5,stroke:#1a237e,stroke-width:2px,color:#fff
+    style S fill:#e8eaf6,stroke:#3f51b5,stroke-width:1.5px,color:#1a237e
+    style R fill:#e8eaf6,stroke:#3f51b5,stroke-width:1.5px,color:#1a237e
+    style O fill:#f5f5f5,stroke:#9e9e9e,stroke-width:1px,color:#424242
 ```
 
 Pretrain 训出来的就是所谓的 **base model**（GPT-3、Llama-3-Base、Qwen2.5-Base）——后面 SFT / RLHF 在它基础上调整行为习惯，不再注入新的世界知识。
@@ -63,8 +67,6 @@ Pretrain 是最贵、最久、最关键的一步：
 
 - 算力消耗占 LLM 训练总成本的 >99%
 - 后面所有能力（聊天、推理、代码）的天花板都在这一步被决定
-
----
 
 ## 2. 数据
 
@@ -146,8 +148,6 @@ prepared/
 ```
 
 **这就是后面要喂给 tokenize 的输入**。注意：到这一步文本仍然是变长的，每篇可能从几十字到几万字不等，接下来就把它转成模型实际使用的的定长 tensor。
-
----
 
 ## 3. 数据 -> 模型 input
 
@@ -373,8 +373,6 @@ SFT:
 
 两阶段在数据 / loss 层面唯一的差异：是否把 prompt 部分 mask 成 `-100`。其他（shift、cross-entropy、optimizer）完全一样。
 
-
-
 ## 4. 从 logits 到参数更新
 
 按照 [01_01_Transformer.md §4 手写Transformer](../01_模型基础/01_01_Transformer.md) 里 MiniLlama 的实现，模型现在已经能吃 input_ids、吐出 logits ∈ ℝ^[B, T, V]——**每个位置都是一个 V 维向量**，代表词表上每个 token 的"得分"（未归一化）。
@@ -539,8 +537,6 @@ $$
 
 > 同样这套 (a) + (b) 结构在 SFT / RLHF 也走一遍，只是换数据 / 换 benchmark。这部分留给后续笔记。
 
----
-
 ## 5. 训完的 base model
 
 预训练完，**它没有"对话"能力，只能做一件事——continue the text（续写）**。不过从 logits 里挑下一个 token 的策略（greedy / top-k / top-p / temperature / beam search 等）是推理侧的事，留到推理优化系列展开。
@@ -558,8 +554,6 @@ $$
 - 稳定输出特定格式——除非 prompt 里给 few-shot
 
 这些都是 SFT / RLHF 解决的事。
-
----
 
 ## 6. 代码实现：可跑的 pretrain
 

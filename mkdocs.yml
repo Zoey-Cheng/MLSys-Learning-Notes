@@ -59,7 +59,7 @@ markdown_extensions:
   - md_in_html
   - tables
   - toc:
-      permalink: true
+      permalink: false         # 不要 ¶ 锚点（heading id 仍然会生成，右侧 TOC 跳转正常）
       marker: '[toc]'          # 兼容 Typora 风格的小写 marker
 
 extra_javascript:

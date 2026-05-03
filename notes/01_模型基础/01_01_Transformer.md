@@ -1,5 +1,5 @@
 ---
-title: "01. Transformer 架构详解:以 LLaMA 为例"
+title: "01-Transformer 架构详解:以 LLaMA 为例"
 ---
 
 # 01-Transformer 架构详解:以 LLaMA 为例
