@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://zoey-cheng.github.io/MLSys-Learning-Notes/02_%E8%AE%AD%E7%BB%83%E7%AD%96%E7%95%A5/02_01_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%E5%9F%BA%E7%A1%80.html">
       
       
-        <link rel="prev" href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_01_Transformer.html">
+        <link rel="prev" href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_02_MoE.html">
       
       
         <link rel="next" href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_01_Pretrain.html">
@@ -348,6 +348,34 @@
     
   
     01-Transformer 架构详解:以 LLaMA 为例
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_02_MoE.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-MoE 架构详解: 从基础版到 DeepSeek / Qwen3
   
 
     
@@ -1204,7 +1232,7 @@
 
 
 <h1 id="01-0-nccl">01-分布式训练(0)-背景知识(通信原语/NCCL/单卡计算流)</h1>
-<p><strong>[Quick Ref for 手写code]</strong>：通信原语 + DDP demo ｜ <a href="../code/03-distributed-demo.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/15V25khFs8M8Ui3LW-_zDXUkquQytvBgq/view?usp=drive_link">Colab</a></p>
+<p><strong>[Quick Ref for 手写code]</strong>：通信原语 + DDP demo ｜ <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/03-distributed-demo.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/15V25khFs8M8Ui3LW-_zDXUkquQytvBgq/view?usp=drive_link">Colab</a></p>
 <h2 id="_1">前言</h2>
 <p>LLM Infra的训练部分，<strong>分布式训练</strong>是重要知识点，仅读过相关系列的论文是远远不够的，还需要明白其中的细节和第一性原理。面试常问的问题包括但不限于：<strong>描述某种并行、并行策略设计、开销分析、手写并行代码</strong>。</p>
 <p>那么这个系列的通信细节，就以hugging face开源的 <strong>终极训练指南</strong>  为reference大纲，一一展开好了（但它讲的相对简略，所以我会随机搜索相关资料以保持基础知识和逻辑的连贯），相关link如下：</p>
