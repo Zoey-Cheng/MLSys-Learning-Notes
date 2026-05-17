@@ -24,7 +24,8 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 
 | Topic | 笔记 | 知乎 | code link | code简介 |
 |---|------|------|-----------|----------|
-| 模型基础 | [01-Transformer 详解](notes/01_模型基础/01_01_Transformer.md) | [link](https://zhuanlan.zhihu.com/p/28364382951) | [ipynb](code/01-mini-llama.ipynb) ｜ [colab](https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link) | mini Llama |
+| 模型基础 | [01-Transformer 详解 (Llama为例)](notes/01_模型基础/01_01_Transformer.md) | [link](https://zhuanlan.zhihu.com/p/28364382951) | [ipynb](code/01-mini-llama.ipynb) ｜ [colab](https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link) | mini Llama |
+|  | [02-MoE 详解 (DeepSeek V1 / Qwen3为例)](notes/01_模型基础/01_02_MoE.md) | TBD | [ipynb](code/06_mini_moe_qwen3.ipynb) ｜ [colab](https://drive.google.com/file/d/19DwqNBulYpXuyedOMbglgauXsB183Oil/view?usp=sharing) | mini MoE Qwen3 |
 | 训练策略 | [01-分布式训练(0) - 背景知识(通信原语 & NCCL & 单卡计算流)](notes/02_训练策略/02_01_分布式训练基础.md) | [link](https://zhuanlan.zhihu.com/p/1897578451143221835) | [ipynb](code/03-distributed-demo.ipynb) ｜ [colab](https://drive.google.com/file/d/15V25khFs8M8Ui3LW-_zDXUkquQytvBgq/view?usp=drive_link) | 通信原语 + DDP demo |
 | 训练方法 | [01-预训练 Pretrain](notes/03_训练方法/03_01_Pretrain.md) | [link](https://zhuanlan.zhihu.com/p/2033923074630870192) | [ipynb](code/04_mini_pretrain.ipynb) ｜ [colab](https://drive.google.com/file/d/1VUB1WrZx9KkHBrY9N8E3-Dfmql7aHnjw/view?usp=sharing) | mini pretrain |
 |  | [02-监督微调 SFT](notes/03_训练方法/03_02_SFT.md) | TBD | [ipynb](code/05_mini_lora_sft.ipynb) ｜ [colab](https://drive.google.com/file/d/1NrDWiGrWPoRrk2yszFXIkDe-DeyKW7B0/view?usp=drive_link) | mini lora SFT |
@@ -34,6 +35,7 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 
 ## 更新历史
 
+- **05/16/2026**: 模型基础 → 02-MoE详解 [[link]](notes/01_模型基础/01_02_MoE.md)，网页版发布
 - **05/03/2026**: 训练方法 → 02-SFT [[link]](notes/03_训练方法/03_02_SFT.md)，网页版和知乎同步发布
 - **05/02/2026**: 训练方法 → 01-Pretrain [[link]](https://zhuanlan.zhihu.com/p/2033923074630870192)，网页版和知乎同步发布
 - **04/25/2026**: 新开 GitHub repo，帖子迁移到网页版了！🎉

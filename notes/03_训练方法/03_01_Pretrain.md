@@ -13,7 +13,7 @@ title: "01-预训练 Pretrain"
 
 > **TL; DR**：完整走一遍预训练 pipeline - 数据 / tokenize / chunk → 模型怎么对齐 label 算 loss → lr 调度 + 训练监控 → 训完的 base model 能做什么
 
-- **[Quick Ref for 手写code]**：mini-pretrain ｜ [ipynb](../code/04_mini_pretrain.ipynb) ｜ [Colab](https://drive.google.com/file/d/1VUB1WrZx9KkHBrY9N8E3-Dfmql7aHnjw/view?usp=sharing)
+- **[Quick Ref for 手写code]**：mini-pretrain ｜ [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/04_mini_pretrain.ipynb) ｜ [Colab](https://drive.google.com/file/d/1VUB1WrZx9KkHBrY9N8E3-Dfmql7aHnjw/view?usp=sharing)
 - **[常考面试点]**：好像只有 tokenize
 
 模型结构和训练策略层面的内容分别见 Transformer 和“训练策略”（并行）系列。虽然面试点不多，但预训练流程是基石，知道全貌很必要。

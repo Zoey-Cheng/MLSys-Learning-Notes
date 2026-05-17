@@ -6,7 +6,7 @@ title: "01-Transformer 架构详解:以 LLaMA 为例"
 
 > **TL; DR**：从原版 Transformer 出发，串到 decoder-only 的工业界代表 **LLaMA**（Pre-Norm RMSNorm / SwiGLU / RoPE），并附一个极简 mini-LLaMA 手写实现。
 
-- **[Quick Ref for 手写code]**：mini Llama ｜ [ipynb](../code/01-mini-llama.ipynb) ｜ [Colab](https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link)
+- **[Quick Ref for 手写code]**：mini Llama ｜ [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/01-mini-llama.ipynb) ｜ [Colab](https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link)
 
 - **[可能会考的面试手写题]**：FFN ｜ MLP ｜ 直接手写一个完整 Transformer（真遇到过 😠 ）
 
