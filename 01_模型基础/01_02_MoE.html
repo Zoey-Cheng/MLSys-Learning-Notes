@@ -1523,11 +1523,7 @@ y = \sum_{i=1}^{N} G(x)_i \cdot E_i(x)
 <p><img src="../assets/06-moe/fig-01.png" alt="image-20260516181456244" style="zoom:50%;" /></p>
 <p><code>capacity_factor</code> 就是调这个 C 的旋钮，大小都不对，只能在 drop / padding 之间二选一——所以叫"半解"。 JAX/XLA 由于不吃动态 shape，所以这部分今天主要残留在 TPU + JAX/XLA 大规模训练中</p>
 <p><strong>[解法B：动态dispatch（PyTorch通解），上面再叠 block-sparse GEMM 优化]</strong></p>
-<p>解 B 分两层，别混：</p>
-<ul>
-<li><strong>朴素层（够用）</strong>：动态 dispatch——按 expert 把 token 聚一起，每个 expert 实际收几个算几个。代码就是个 per-expert for-loop（N 次独立 dense GEMM），不 drop 不 padding。Mixtral / 早期实现就是这个，§2.3 / §3 的代码都是它。注意这一层 <strong>PyTorch 看到的只是 N 次 GEMM 发射，不是 block-sparse</strong></li>
-<li><strong>kernel 优化层（更快）</strong>：直到 2022 年 Megablocks 才把那 N 个变长 GEMM 真正融成<strong>一次 block-sparse GEMM</strong>——自定义 kernel 吃变长 block，省掉 N-1 次 kernel launch。这才是"block-sparse GEMM"本体，PyTorch 算子不自带</li>
-</ul>
+<p>改成动态dispatch到 per-expert的计算，相对 per-token 其实pytorch层并没有造成收益，看起来N 个变长 GEMM 在 PyTorch 里仍是 N 次独立 kernel launch。真正提速靠 <strong>融合成单个 kernel的 Block Sparse GEMM</strong></p>
 <p>……具体怎么算反正很复杂，稀疏性矩阵乘，建议到kernel篇再详细说。但反正记住当代MoE + N卡都用这套逻辑就可以了。</p>
 <p>But 学术解 ≠ 工程可用，主流框架把解 B 消化成 import 即用又花了 1~2 年，所以这才出现了24年初我们还不知道怎么处理batch process的情况orz</p>
 <h3 id="13">1.3 一条时间线：成功案例</h3>
