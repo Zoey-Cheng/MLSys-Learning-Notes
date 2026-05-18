@@ -214,3 +214,20 @@
   text-indent: -1.6em;
   overflow: visible;
 }
+
+/* 访客地图 (MapMyVisitors) 移动端自适应：
+   w=a 只让挂件按容器算，但它常注入写死宽度的子元素，手机上仍会横向溢出，
+   这里强制容器内所有子元素不超过容器宽度。 */
+#mmv-holder {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  overflow-x: hidden;
+}
+#mmv-holder * {
+  max-width: 100% !important;
+}
+#mmv-holder img,
+#mmv-holder svg {
+  height: auto !important;
+}
