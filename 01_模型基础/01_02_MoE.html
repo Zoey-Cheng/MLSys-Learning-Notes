@@ -575,21 +575,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#32-topk-softmax" class="md-nav__link">
+  <a href="#32" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.2 topk 与 softmax 的先后
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#33" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.3 简化版代码
+        3.2 简化版代码
       
     </span>
   </a>
@@ -1229,21 +1218,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#32-topk-softmax" class="md-nav__link">
+  <a href="#32" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.2 topk 与 softmax 的先后
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#33" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.3 简化版代码
+        3.2 简化版代码
       
     </span>
   </a>
@@ -1448,15 +1426,15 @@
 <ul>
 <li><strong>[Quick Ref for 手写 code]</strong>：mini MoE Qwen3 ｜ <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/06_mini_moe_qwen3.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/19DwqNBulYpXuyedOMbglgauXsB183Oil/view?usp=sharing">Colab</a><ul>
 <li>doc 每节后都有简化版手写代码：BasicMoE / Mixtral / DeepSeek V1 / Qwen3-MoE</li>
-<li>可跑代码取 Qwen3-MoE 的 block + Qwen3 MHA 拼成完整一层、与 HF 版对齐；选它是因 block 代码最精简——相对 §2.2 BasicMoE 只多一个 <code>norm_topk_prob</code> 开关，细粒度专家只是配置（专家多、<code>moe_intermediate_size</code> 小、top_k 大），不是 block 改动</li>
+<li>可运行代码取 Qwen3-MoE， MoE部分（手写）+ Qwen3 MHA（调用） 拼成完整一层，与 HF 版对齐验证正确性；选它是因 block 代码最精简——相对 §2.2 BasicMoE 只多 <code>norm_topk_prob</code> 开关 + 细粒度专家（都是小改动）</li>
 </ul>
 </li>
-<li><strong>[常考面试点]</strong>：嗯反正全是考点，结构、batch process、Parallel部分也是考点</li>
+<li><strong>[常考面试点]</strong>：嗯反正全是考点，大概率结构、batch process、Parallel部分</li>
 </ul>
 <p>本笔记只展开 MoE 模型本身——<strong>Expert Parallelism (EP)</strong> 的通信细节 和 <strong>相关算子</strong> 在后续训练系列里单独写</p>
 <h2 id="_1">前言</h2>
-<p>读完 <a href="01_01_Transformer.html">01-Transformer.md</a> 知道 LLaMA Block：每层 Self-Attention → FFN，配 RMSNorm + 残差。FFN 是参数大头，~70% 参数都在这。</p>
-<p>很自然会想：每个 token 真有必要过完整张 FFN 吗？<strong>MoE（Mixture of Experts）</strong> 的答案是不必——把 FFN 拆成一组 expert，每个 token 只走 router 选中的 Top-K 个。这样<strong>参数容量和单次 FLOPs 就解耦了</strong>。</p>
+<p>读完 <a href="01_01_Transformer.html">01-Transformer.md</a> 知道 LLaMA Block：每层的主要结构是 Self-Attention → FFN (MLP)。其中FFN 是参数大头，占~70%。</p>
+<p>很自然会想：单个 token 真有必要过完整张 FFN 吗？<strong>MoE（Mixture of Experts）</strong> 的答案是不必——可以把 大FFN 拆成多组小的FFN（expert），每个 token 只走 router 选中的 Top-K 个。</p>
 <p>本篇顺序（从概念到 real-world 简化版，同 <a href="01_01_Transformer.html">01-Transformer.md</a> 思路）：</p>
 <ul>
 <li><strong>1. 什么是 MoE</strong>：结构 / 公式 / 1991 起源 / batch process 这个早期工程墙</li>
@@ -1495,7 +1473,7 @@
 y = \sum_{i=1}^{N} G(x)_i \cdot E_i(x)
 \]</div>
 <p>其中 <span class="arithmatex">\(G(x)\)</span> 是 N 维权重向量，<strong>只有 K 个位置非零</strong>（其余被 topk 置 0）——这就是「<strong>稀疏激活</strong>」。</p>
-<p>核心 insight：省 FLOPs，不省显存。FFN层可以达到：</p>
+<p>核心 insight：<strong>省 FLOPs（计算），不省显存（存储）</strong>。FFN层可以达到：</p>
 <ul>
 <li>N倍参数容量：N 个 FFN</li>
 <li>K倍计算成本：每次计算时只要激活K个FFN</li>
@@ -1503,7 +1481,7 @@ y = \sum_{i=1}^{N} G(x)_i \cdot E_i(x)
 </ul>
 <h3 id="12-blocker-batch-process">1.2 早期 blocker: Batch Process</h3>
 <p>1991 年就有的想法，为什么这两年才火起来？还记得24年春天的时候，我们MLsys课的大作业还有一个选项：给MoE加batch process，小组几个人兴致勃勃地研究了一晚上选择了换个题目lol（由此可见业界当时还没有很有名的解法</p>
-<p>卡点不在算法，在工程：<strong>MoE 的稀疏路由打破了 GPU 喜欢的"大、规整、密集" GEMM</strong>（大规模矩阵乘），而<strong>原生MoE设计不适合batch process</strong>。</p>
+<p>卡点不在算法，在工程：<strong>GPU 喜欢大规模矩阵乘，原生MoE设计不适合batch process，所以不能当作单次、大规模的GEMM</strong>。</p>
 <p>dense FFN 时一个 batch 的 token（eg: batch_size = 8） 一起喂给同一个 FFN，这是一次干净 GEMM。而MoE 把这件事拆掉了——同 batch 的 token 可能去往不同 expert：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>batch 里 8 个 token 的路由结果:
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  token_0, 2, 4, 7 ─► Expert A    ──► Expert A 收到 4 个 token
@@ -1513,17 +1491,19 @@ y = \sum_{i=1}^{N} G(x)_i \cdot E_i(x)
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>                                        其他 expert 收到 0 个
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>                                  ↑ 非常不均匀, 且每次 batch 都不一样
 </code></pre></div>
-<p>只能按 per-token loop 实现，每次都是 batch=1 的 GEMM，GPU 利用率 ~5%。</p>
+<p>只能按 per-token loop 实现，每次都是 batch=1 的 GEMM，GPU 利用率 ~5%。所以后来怎么解决的呢？</p>
 <p><strong>[解法A：静态capacity-based dispatch] - JAX 还在用</strong></p>
-<p><strong>Shazeer 2017 给出"半解"——Dispatch / Combine + Capacity</strong>：把 token 按 expert 重排，并强行把每个 expert 收到的token数量切成统一的长度 C，这样所有的 expert 就是一次规整 GEMM。问题是 C 是定死的，而实际每个 expert 收多少不一定：</p>
+<p><strong>Shazeer 2017 给出"半解"——Dispatch / Combine + Capacity</strong>：把 token 按 expert 重排，并强行把每个 expert 收到的token数量切成统一的长度 C，这样所有的 expert 就是一次规整 GEMM。但C切到多少都不完美：</p>
 <ul>
 <li>C 切小了（实际超了）：多出的 token 丢掉 → <strong>drop</strong>，训练信号丢失</li>
 <li>C 切大了（实际不够）：用 0 补满 → <strong>padding</strong>，浪费计算</li>
 </ul>
 <p><img src="../assets/06-moe/fig-01.png" alt="image-20260516181456244" style="zoom:50%;" /></p>
-<p><code>capacity_factor</code> 就是调这个 C 的旋钮，大小都不对，只能在 drop / padding 之间二选一——所以叫"半解"。 JAX/XLA 由于不吃动态 shape，所以这部分今天主要残留在 TPU + JAX/XLA 大规模训练中</p>
+<p><code>capacity_factor</code> 就是调这个 C 的旋钮，只能在 drop / padding 之间二选一——所以叫"半解"。</p>
+<p>看起来确实不够好，所以pytorch已经不用它了；但 JAX/XLA 由于是静态图不吃动态 shape，所以今天 TPU + JAX/XLA 大规模训练中还残留这这个解法。</p>
 <p><strong>[解法B：动态dispatch（PyTorch通解），上面再叠 block-sparse GEMM 优化]</strong></p>
-<p>改成动态dispatch到 per-expert的计算，相对 per-token 其实pytorch层并没有造成收益，看起来N 个变长 GEMM 在 PyTorch 里仍是 N 次独立 kernel launch。真正提速靠 <strong>融合成单个 kernel的 Block Sparse GEMM</strong></p>
+<p>这个解法其实想法和上面一样，也是dispatch到 per-expert。但Pytorch是动态图，不需要预先定义可接受的token长度C。</p>
+<p>但其实加速的并不是Pytorch层的算法，看code仍然是N个变长 GEMM。真正提速靠的是kernel层的发明：将多个变长GEMM<strong>融合成单个 kernel的 Block Sparse GEMM</strong>（吃动态shape！）</p>
 <p>……具体怎么算反正很复杂，稀疏性矩阵乘，建议到kernel篇再详细说。但反正记住当代MoE + N卡都用这套逻辑就可以了。</p>
 <p>But 学术解 ≠ 工程可用，主流框架把解 B 消化成 import 即用又花了 1~2 年，所以这才出现了24年初我们还不知道怎么处理batch process的情况orz</p>
 <h3 id="13">1.3 一条时间线：成功案例</h3>
@@ -1541,7 +1521,7 @@ y = \sum_{i=1}^{N} G(x)_i \cdot E_i(x)
 <tr>
 <td>1991</td>
 <td>Jacobs et al.</td>
-<td>MoE 雏形（局部专家 + 门控网络）</td>
+<td>MoE 雏形</td>
 <td>玩具规模</td>
 </tr>
 <tr>
@@ -1553,7 +1533,7 @@ y = \sum_{i=1}^{N} G(x)_i \cdot E_i(x)
 <tr>
 <td>2021</td>
 <td>Switch Transformer</td>
-<td>Top-1 + capacity_factor + <strong>Switch aux loss</strong>——MoE 标准化</td>
+<td><strong>Switch aux loss</strong>——MoE 标准化</td>
 <td>1.6T</td>
 </tr>
 <tr>
@@ -1577,25 +1557,27 @@ y = \sum_{i=1}^{N} G(x)_i \cdot E_i(x)
 <tr>
 <td>2024.03</td>
 <td>Qwen1.5-MoE-A2.7B</td>
-<td>Qwen 系列第一个 MoE（细粒度 + 共享，近 DeepSeek 路线）</td>
+<td>Qwen 系列第一个 MoE（近 DeepSeek 路线）</td>
 <td>14B / 2.7B 激活</td>
 </tr>
 <tr>
 <td>2025</td>
 <td><strong>Qwen3-MoE</strong></td>
-<td>细粒度 + 去 shared + 间隔层——最简约的"教科书"解法</td>
+<td>反而简化了？最简约的"教科书"解法</td>
 <td>多档</td>
 </tr>
 </tbody>
 </table>
-<p>后面三章各挑一个代表展开：<strong>§3 Mixtral</strong>（最简版）→ <strong>§4 DeepSeek-MoE</strong>（细粒度 + 共享专家路线）→ <strong>§5 Qwen3-MoE</strong>。其中 Qwen3-MoE 是这条线上最"教科书"的简约解法，所以最终的可运行代码 demo 以它为准。</p>
+<p><strong>Mixtral</strong> 是第一个知名开源MoE，在它之前，batch process的两个解、AUX Loss的出现都是里程碑。</p>
+<p><strong>DeepSeek系列</strong>则是开创了当代MoE走上应用的先河，V1 - V4逐渐复杂；<strong>Qwen</strong> 则是开始和Deepseek很像，但是往后却走了简化路线。</p>
+<p>接下来从：Basic Moe -&gt; Mixtral -&gt; DeepSeek系列 -&gt; Qwen逐一展开。</p>
 <h2 id="2-moe">2. 手写一个最基本的 MoE</h2>
 <blockquote>
-<p>目的：看看「FFN → MoE」到底改了哪几行；以及绕不开的两个工程问题（batch process + 负载均衡 aux loss）。</p>
+<p>目的：看看「FFN → MoE」到底改了哪几行；以及两个工程问题（batch process + 负载均衡 aux loss）。</p>
 </blockquote>
 <h3 id="21-llama-ffn">2.1 改动 LLaMA FFN</h3>
 <p>前面说了MoE是通过修改普通FFN得到的，那不妨先回忆一下传统的Llama Decoder Block里的FFN结构。</p>
-<p>回顾 <a href="01_01_Transformer.html">01-Transformer.md §4.2</a>：FFN 采用 “线性升维-降维结构”（hidden_dim 通常设为 <code>4 * embedding_dim</code>）；LLaMA 版用 <strong>SwiGLU</strong> 替代了 ReLU ()，SwiGLU 可以调用 <strong>SiLU</strong> 函数实现：</p>
+<p>回顾 <a href="01_01_Transformer.html">01-Transformer.md §4.2</a>：FFN 采用 “升维-降维 结构”（hidden_dim 通常设为 <code>4 * embedding_dim</code>）；LLaMA 版用 <strong>SwiGLU</strong> 替代了 ReLU ()，SwiGLU 可以调用 <strong>SiLU</strong> 函数实现：</p>
 <p><img src="../assets/06-moe/fig-02.png" alt="image-20260505234432666" style="zoom:33%;" /></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">BasicExpert</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>       <span class="c1"># 或者叫 SwiGLU 也行</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -1641,7 +1623,7 @@ y = \sum_{i=1}^{N} G(x)_i \cdot E_i(x)
 <a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>        <span class="n">topk_weights</span> <span class="o">=</span> <span class="n">topk_weights</span> <span class="o">/</span> <span class="n">topk_weights</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>    <span class="c1"># 在 K 个之间重新归一化</span>
 <a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>        <span class="k">return</span> <span class="n">logits</span><span class="p">,</span> <span class="n">topk_weights</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span> <span class="n">topk_idx</span>                       <span class="c1"># logits 留给 aux loss</span>
 </code></pre></div>
-<p>再拼成 BasicMoE：默认走 <strong>per-expert dispatch</strong>（per-token 双层 for 注释保留作参考），还没有 aux loss：</p>
+<p>再拼成 BasicMoE：默认走 <strong>per-expert dispatch</strong>（per-token 双层 for 注释保留作参考）：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">BasicMoE</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">num_experts</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
@@ -1679,13 +1661,13 @@ y = \sum_{i=1}^{N} G(x)_i \cdot E_i(x)
 </code></pre></div>
 <p>这个 BasicMoE（router + per-expert dispatch）就是后面所有真实模型的<strong>公共最小核</strong>——后面每个 = BasicMoE + 一点增量：</p>
 <ul>
-<li>vs <strong>Mixtral（§3）</strong>：MoE block 层面<strong>没有算法区别</strong>——Mixtral 就是 BasicMoE 的真实规模版。它的意义是"第一个被广泛使用的开源 MoE"这个历史地位，不是结构增量</li>
+<li>vs <strong>Mixtral（§3）</strong>：MoE block 层面<strong>没有算法区别</strong>——Mixtral 就是 BasicMoE 的真实规模版</li>
 <li>vs <strong>DeepSeek-MoE（§4）</strong>：再加 <strong>细粒度专家 + 共享专家 + device-level balance loss</strong></li>
 <li>vs <strong>Qwen3-MoE（§5）</strong>：MoE 层只加 <strong>细粒度专家 + <code>norm_topk_prob</code> 开关</strong>（间隔层 / q,k norm 在 decoder/attention 层，不在这个 block）</li>
 </ul>
 <p>两点说明：</p>
 <ul>
-<li><strong>dispatch 写法</strong>：per-token 双层 for 是原始 / 教学版，per-expert 是实际用的版。但它真正的性能收益其实落在<strong>算子层面的加速</strong>→ <strong>§2.3</strong> 详细解读</li>
+<li><strong>dispatch 写法</strong>：per-token 双层 for 是原始版，per-expert 是实际用的版。但它真正的性能收益其实落在<strong>算子层面的加速</strong>→ <strong>§2.3</strong></li>
 <li>前向 code 看不出 loss 计算的特点，还需要 <strong>aux loss → §2.4</strong></li>
 </ul>
 <h3 id="23-batch-process">2.3 进阶：batch process</h3>
@@ -1699,7 +1681,7 @@ y = \sum_{i=1}^{N} G(x)_i \cdot E_i(x)
 <p>per-expert 相对 per-token 其实pytorch层并没有造成收益，看起来N 个变长 GEMM 在 PyTorch 里仍是 N 次独立 kernel launch。真正提速靠<strong>融合 kernel</strong>——block-sparse / grouped GEMM（Megablocks），让它只要一次kernel launch。</p>
 <h3 id="24-aux-loss-expert-balance">2.4 进阶：Aux Loss - Expert Balance</h3>
 <p>前向code看不出Loss计算的特点，所以单独开一小节。</p>
-<p>均衡有两种粒度，device均衡到后面说：</p>
+<p>均衡有两种粒度，device均衡到后面说。如果不想了解数学部分，可以浅看一下定义然后跳过这一小节：</p>
 <table>
 <thead>
 <tr>
@@ -1716,7 +1698,7 @@ y = \sum_{i=1}^{N} G(x)_i \cdot E_i(x)
 </tr>
 <tr>
 <td><strong>Device 粒度</strong></td>
-<td>EP 时 GPU 0 干完在等 GPU 1，wall-clock 被拖累</td>
+<td>EP 时 GPU 0 干完在等 GPU 1，不高效</td>
 <td>DeepSeek 2024 device-level loss（§4.5）</td>
 </tr>
 </tbody>
@@ -1763,29 +1745,20 @@ L_{aux} = \alpha \cdot N \cdot \sum_{i=1}^{N} f_i \cdot P_i
 <a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="n">loss</span> <span class="o">=</span> <span class="n">task_loss</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span> <span class="o">+</span> <span class="n">switch_aux_loss</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">moe</span><span class="o">.</span><span class="n">top_k</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
 </code></pre></div>
 <blockquote>
-<p><strong>历史归属</strong>：负载均衡 + aux loss 概念是 <strong>Shazeer 2017</strong>提出；GShard 2020 合并；<strong>Switch 2021</strong> 简化定型为 <span class="arithmatex">\(\sum f_i \cdot P_i\)</span>。<strong>DeepSeek-MoE V1</strong> 沿用，加了 device-level（§4.5）；<strong>V3</strong> 又换成动态 router bias，叫 aux-loss-free（§4.7）。</p>
+<p><strong>Loss侧的历史归属</strong>：负载均衡 + aux loss 概念是 <strong>Shazeer 2017</strong>提出；<strong>DeepSeek-MoE V1</strong> 沿用，加了 device-level（§4.5）；<strong>V2/V3</strong> 又加了额外的loss设计用于约束通信量。</p>
 </blockquote>
 <h2 id="3-mixtral-87b">3. Mixtral 8×7B 简化版</h2>
-<p>Mixtral（Mistral AI, 2023.12）是第一个被广泛使用的开源 MoE。主流推理框架（vLLM / TGI / llama.cpp）很快都做了适配，把 MoE 这个概念从论文带进了开发者的日常。</p>
+<p>Mixtral（Mistral AI, 2023.12）是第一个被广泛使用的开源 MoE。把 MoE 这个概念从论文带进了开发者的日常。</p>
 <h3 id="31">3.1 配置</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>FFN:          MoE
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>FFN (MoE层):          
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>  num_experts:       8
 <a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>  top_k:             2
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>  expert hidden_dim: 14336        (单 expert ≈ 7B 等价 FFN)
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>  router:            Linear(4096, 8)
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>总参数:        ~46.7B
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>激活参数:      ~12.9B / token     (2/8 个 expert + 全部 attention)
-<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>context:       32K
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>总参数:        ~46.7B
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>激活参数:      ~12.9B / token     (2/8 个 expert + 全部 attention)
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>context:       32K
 </code></pre></div>
 <p>为什么叫 "8×7B" 但不是 8×7=56B？attention 和 embedding 在 8 个 expert 间是共享的，只有 FFN 是 8 份，加起来 ~47B。<strong>显存按 47B 算，FLOPs 按 ~13B 算</strong>（top 2）——是 MoE "参数容量大、推理便宜"的典型画像。</p>
-<h3 id="32-topk-softmax">3.2 topk 与 softmax 的先后</h3>
-<p>代码里能见到两种写法：</p>
-<ul>
-<li>「softmax → topk → renorm」（HF Mixtral、BasicMoE、DeepSeek-MoE、Qwen3 都是这种）</li>
-<li>「topk → 仅在 K 上 softmax」（原始 Mistral 参考仓）。两者 forward / backward 逐位恒等，是同一个函数、不是设计差异。所以本文统一按「softmax → topk → renorm」写。</li>
-</ul>
-<p>（真正的设计旋钮是 renorm 与否，即 <code>norm_topk_prob</code>——不 renorm 时权重是全局 softmax 概率、和 &lt; 1，那才是个真实选择；DeepSeek / Qwen 默认开。）</p>
-<h3 id="33">3.3 简化版代码</h3>
+<h3 id="32">3.2 简化版代码</h3>
 <p>和 §2.2 BasicMoE 算法上几乎一样。但我们的 BasicMoE 并不是照着 Mixtral 抄的——只是把经典设计加到一个基础 MoE 上，它就和 Mixtral 长一样了🤔。</p>
 <p>代码里只有 dispatch 的<strong>写法</strong>不同（换成更标准的 <code>expert_mask</code> + <code>index_add_</code>），简单看看就得了，下面和 §2.2 不一样的行都用 <code># ≠§2.2</code> 标出来：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">MixtralExpert</span><span class="p">(</span><span class="n">SwiGLU</span><span class="p">):</span>
@@ -1831,7 +1804,7 @@ L_{aux} = \alpha \cdot N \cdot \sum_{i=1}^{N} f_i \cdot P_i
 <h2 id="4-deepseek-moe">4. DeepSeek-MoE 简化版</h2>
 <p>DeepSeek 2024.01 发表 <em>DeepSeekMoE</em>，配套发布 16B / 145B 两个规模的模型。它定义了之后 MoE 的"中国学派"路线——Qwen2-MoE、Kimi-K2、DeepSeek-V2/V3 都沿用过（Qwen3-MoE 是反例，详见 §5）。</p>
 <h3 id="41-moe">4.1 经典 MoE 的两个问题</h3>
-<p>DeepSeek-MoE 论文先指出 Mixtral / Switch 这种"少量大 expert + Top-K"的设计有两个问题：</p>
+<p>DeepSeek-MoE 论文先指出 Mixtral 这种"少量大 expert + Top-K"的设计有两个问题：</p>
 <ul>
 <li><strong>Knowledge Hybridity（知识混杂）</strong>：N 太小 → 单个 expert 必须装"数学 + 代码 + 自然语言 + ..."，没法真正专业化</li>
 <li><strong>Knowledge Redundancy（知识冗余）</strong>：通用知识（语法、常识）每个 expert 都要重复存储一份</li>
@@ -1933,7 +1906,7 @@ $$}(\text{router})} g_j \cdot E^{(r)</p>
 $$
 L_{ExpBal} = \alpha_1 \cdot \sum_{i=1}^{N_r} f_i \cdot P_i
 $$</p>
-<p>**新增的 Device-Level Balance：只到 expert 级别还不够，用 EP（把 <span class="arithmatex">\(N_r\)</span> 个 routed expert 摊到 D 张 GPU 上）时会出现：</p>
+<p><strong>新增的 Device-Level Balance</strong>：只到 expert 级别还不够，用 EP（把 <span class="arithmatex">\(N_r\)</span> 个 routed expert 摊到 D 张 GPU 上）时会出现：</p>
 <ul>
 <li>Device 0（4 个 expert）：token 路由后总和 eg. 390</li>
 <li>Device 1（4 个 expert）：token 路由后总和 eg. 320</li>
@@ -1973,11 +1946,11 @@ L = L_{task} + \alpha_1 L_{ExpBal} + \alpha_2 L_{DevBal}
 <h3 id="47-v2-v3-v4">4.7 后续演进：V2 / V3 / V4</h3>
 <p>V1 之后这条路线还在继续加东西，这里只列<strong>改了什么</strong>，细节留到对应专题（等我慢慢学orz）：</p>
 <p><img src="../assets/06-moe/fig-08.png" alt="image-20260515234420006" style="zoom:50%;" /></p>
-<p>每条按 <strong>〔针对什么〕→ 改了什么 → 目的</strong> 来读：</p>
+<p>每条按 <strong>〔针对什么〕→ 改了什么 → 目的</strong> 来读（jusf for ref，不想看就跳过）：</p>
 <p><strong>DeepSeek-V2（2024.05）——主攻"推理省显存 + 限制通信量"</strong></p>
 <ul>
 <li><strong>MLA</strong>〔针对 KV cache〕：把 KV cache 联合压成一个低秩隐向量、用时再还原，KV cache 显存大降。本质是 attention 优化</li>
-<li><strong>Device-Limited Routing</strong>〔针对通信·发送端〕<strong>——硬路由约束，不是 loss</strong>：forward 里直接限制每个 token 只能从 Top-M 个 device（M=3）里选 expert（先按 device 聚 logits 选 Top-M device，再在其中选 Top-K expert）。<strong>物理砍掉路由选项</strong>，发送量天然 ≤ <code>M × expert_size</code>，免得 All-to-All 爆炸</li>
+<li><strong>Device-Limited Routing</strong>〔针对通信·发送端〕<strong>——硬路由约束，不是 loss</strong>：forward 里直接限制每个 token 只能从 Top-M 个 device（M=3）里选 expert。免得 All-to-All 爆炸</li>
 <li><strong>Comm Balance Loss</strong>〔针对通信·接收端〕<strong>——loss新增项</strong>：Device-Limited 只硬性管住了发送上界、没管接收；这项加进总 loss，靠梯度<strong>鼓励</strong> router 让每张卡<strong>收到</strong>的 token 数也均衡，避免某张卡网卡被打爆</li>
 </ul>
 <blockquote>
@@ -2046,9 +2019,9 @@ L = L_{task} + \alpha_1 L_{ExpBal} + \alpha_2 L_{DevBal}
 </table>
 <p>逐代看：</p>
 <ul>
-<li><strong>Qwen1.5-MoE vs DeepSeek V1</strong>：基本照搬 DeepSeek；唯一实质区别是初始化用 <strong>upcycling</strong>（拿训好的稠密 Qwen-1.8B 的 FFN 复制成 expert 再继续训），DeepSeek-MoE 是 from scratch</li>
-<li><strong>Qwen2-MoE vs Qwen1.5-MoE</strong>：规模放大；shared expert 上加了一个 sigmoid 门控 <code>shared_expert_gate</code>（<code>σ(Wx)·shared(x)</code>），DeepSeek 是无条件恒加，这里让 shared 的贡献也可调</li>
-<li><strong>Qwen3-MoE vs Qwen2-MoE</strong>：砍掉 shared expert + 门控；attention 加 <span class="arithmatex">\(q_{norm}\)</span> / <span class="arithmatex">\(k_{norm}\)</span>（同 LLaMA-4）；RoPE 动态频率。这一代是减法，只保留细粒度 + 动态 dispatch + Switch aux loss</li>
+<li><strong>Qwen1.5-MoE</strong>：基本照搬 DeepSeek V1；唯一实质区别是初始化用 <strong>upcycling</strong>（拿训好的稠密 Qwen-1.8B 的 FFN 复制成 expert 再继续训），DeepSeek-MoE 是 from scratch</li>
+<li><strong>Qwen2-MoE</strong>：相比上一代规模放大；shared expert 上加了一个 sigmoid 门控 <code>shared_expert_gate</code>（<code>σ(Wx)·shared(x)</code>），DeepSeek 是无条件恒加，这里让 shared 的贡献也可调</li>
+<li><strong>Qwen3-MoE</strong>：走了简化路线，只保留细粒度 + 动态 dispatch + Switch aux loss；Attention 侧倒是加 <span class="arithmatex">\(q_{norm}\)</span> / <span class="arithmatex">\(k_{norm}\)</span>（同 LLaMA-4），RoPE 动态频率。</li>
 </ul>
 <blockquote>
 <p>shared expert 留不留并不是 Qwen 的固定立场（后续多模态 Qwen-3.5 又把它加了回来）——VLM 不在本篇范围，留到 VLM 篇。</p>
@@ -2133,25 +2106,25 @@ L = L_{task} + \alpha_1 L_{ExpBal} + \alpha_2 L_{DevBal}
 <p>一条线串起来：</p>
 <ul>
 <li><strong>基础 MoE（§2）</strong>：FFN → N 个 expert + Router，选 Top-K 加权求和，使用per-expert dispatch（最经典的公共backbone）</li>
-<li><strong>Mixtral（§3）</strong>：第一个被广泛使用的开源 MoE。算法上就是 BasicMoE 的真实规模版（8 expert + Top-2），没有结构增量</li>
+<li><strong>Mixtral（§3）</strong>：第一个被广泛使用的开源 MoE。算法上就是 BasicMoE 的真实规模版（8 expert + Top-2）</li>
 <li><strong>DeepSeek 系列（§4）</strong>：V1 三个核心改动——细粒度Expert（提容量）+ 共享专家（降冗余）+ device-level balance loss（通信balance约束）；V2/V3/V4 一路加（MoE 本体没大改，工程件越来越多）</li>
-<li><strong>Qwen 系列（§5）</strong>：反向演化——砍掉 shared expert 的简约设计。胜在档位齐全（0.6B–235B、dense+MoE）+ 生态易用</li>
+<li><strong>Qwen 系列（§5）</strong>：反向演化——只留了细粒度expert 的简约设计。胜在档位齐全（0.6B–235B、dense+MoE）+ 生态易用</li>
 </ul>
 <p>贯穿全篇的两个核心问题：</p>
 <ul>
 <li><strong>batch process（怎么让稀疏路由跑在 GPU 上）</strong>：Shazeer capacity 是带 drop/padding 的半解，JAX/XLA 由于静态图特性还残留 capacity_factor；PyTorch 的默认解收敛到动态 dispatch，真正提速在算子层的 block-sparse / grouped GEMM（MoE 由此兴起）</li>
-<li><strong>负载均衡（怎么不让 expert 死掉）</strong>：基础解是 Switch expert-level aux loss（§2.4）；DeepSeek 在上面叠 device / comm balance（V1/V2），V3 换成 aux-loss-free 动态 bias；Qwen 停在 expert-level 不再加</li>
+<li><strong>负载均衡（怎么不让 expert 死掉）</strong>：基础解是 Switch expert-level aux loss（§2.4）；DeepSeek 在上面叠 device / comm balance（V1/V2），V3 换成 aux-loss-free 动态 bias；Qwen 停在基础 aux loss 不再加</li>
 </ul>
 <p>EP 和相关 block-sparse GEMM 算子，后面再说吧（</p>
 <h2 id="7">7. 代码实现</h2>
-<p>可跑代码取 Qwen3-MoE 的 block，再配上 Qwen3 的 MHA，拼成完整可跑的一层。选 Qwen3-MoE 是因为它的 block 代码最精简：相对 §2.2 BasicMoE 只多一个 <code>norm_topk_prob</code> 开关，且没有 shared expert、没有 device/comm balance loss。它相对基础版还有"细粒度专家"，但那是配置层面（专家数多、<code>moe_intermediate_size</code> 小、top_k 大），block 代码不变；本 demo 用小号配置（8 experts / top-2），没拉到真实细粒度规模。</p>
-<p>doc 里手写的三块展开成代码后，拷 HF 权重、同输入和HF调用版逐元素对齐：</p>
+<p>可跑代码取 Qwen3-MoE 的 block，再配上 Qwen3 的 MHA，拼成完整可跑的一层。和直接调HF版结果对齐，验证了正确性：</p>
+<p>选 Qwen3-MoE 是因为它的 block 代码最精简，相对 §2.2 BasicMoE 只多：(1) <code>norm_topk_prob</code> 开关，(2)细粒度专家。</p>
 <ul>
 <li>MoE block（§5.2 / §2.2）↔ <code>Qwen3MoeSparseMoeBlock</code></li>
 <li>aux loss（§2.4）↔ HF <code>load_balancing_loss_func</code></li>
 <li>MHA（§5.1 的 q_norm/k_norm + RoPE + GQA）↔ <code>Qwen3MoeAttention</code></li>
 </ul>
-<p>MHA 笔记没展开，notebook 按 Qwen3 风格补了一份。单 GPU可跑，不下载数据。</p>
+<p>MHA 部分不是重点，直接调用没展开。单 GPU可跑，不下载数据。</p>
 <p>你可以下载 <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/06_mini_moe_qwen3.ipynb">ipynb</a> 或在 <a href="https://drive.google.com/file/d/19DwqNBulYpXuyedOMbglgauXsB183Oil/view?usp=sharing">Colab</a> 上选 T4 直接运行。</p>
 
 
