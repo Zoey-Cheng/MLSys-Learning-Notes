@@ -1448,7 +1448,7 @@
 <ul>
 <li><strong>[Quick Ref for 手写 code]</strong>：mini MoE Qwen3 ｜ <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/06_mini_moe_qwen3.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/19DwqNBulYpXuyedOMbglgauXsB183Oil/view?usp=sharing">Colab</a><ul>
 <li>doc 每节后都有简化版手写代码：BasicMoE / Mixtral / DeepSeek V1 / Qwen3-MoE</li>
-<li>Qwen3-MoE 已是最精简的 MoE，可跑代码就取它 + Qwen3 MHA 拼成完整一层，与 HF 版对齐</li>
+<li>可跑代码取 Qwen3-MoE 的 block + Qwen3 MHA 拼成完整一层、与 HF 版对齐；选它是因 block 代码最精简——相对 §2.2 BasicMoE 只多一个 <code>norm_topk_prob</code> 开关，细粒度专家只是配置（专家多、<code>moe_intermediate_size</code> 小、top_k 大），不是 block 改动</li>
 </ul>
 </li>
 <li><strong>[常考面试点]</strong>：嗯反正全是考点，结构、batch process、Parallel部分也是考点</li>
@@ -2148,7 +2148,7 @@ L = L_{task} + \alpha_1 L_{ExpBal} + \alpha_2 L_{DevBal}
 </ul>
 <p>EP 和相关 block-sparse GEMM 算子，后面再说吧（</p>
 <h2 id="7">7. 代码实现</h2>
-<p>Qwen3-MoE 已经是最精简的 MoE（router + per-expert，无 shared expert），所以可跑代码直接用它，再配上 Qwen3 的 MHA，拼成完整可跑的一层。</p>
+<p>可跑代码取 Qwen3-MoE 的 block，再配上 Qwen3 的 MHA，拼成完整可跑的一层。选 Qwen3-MoE 是因为它的 block 代码最精简：相对 §2.2 BasicMoE 只多一个 <code>norm_topk_prob</code> 开关，且没有 shared expert、没有 device/comm balance loss。它相对基础版还有"细粒度专家"，但那是配置层面（专家数多、<code>moe_intermediate_size</code> 小、top_k 大），block 代码不变；本 demo 用小号配置（8 experts / top-2），没拉到真实细粒度规模。</p>
 <p>doc 里手写的三块展开成代码后，拷 HF 权重、同输入和HF调用版逐元素对齐：</p>
 <ul>
 <li>MoE block（§5.2 / §2.2）↔ <code>Qwen3MoeSparseMoeBlock</code></li>
@@ -2223,6 +2223,8 @@ L = L_{task} + \alpha_1 L_{ExpBal} + \alpha_2 L_{DevBal}
         <script src="../javascripts/katex.js"></script>
       
         <script src="../javascripts/expand-first-topic-on-home.js"></script>
+      
+        <script src="../javascripts/mmv.js"></script>
       
         <script src="https://unpkg.com/katex@0/dist/katex.min.js"></script>
       
