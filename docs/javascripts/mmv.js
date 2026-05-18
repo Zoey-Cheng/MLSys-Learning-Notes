@@ -7,8 +7,9 @@
  *  - 其它页：无该 holder → 用隐藏容器，只计数不显示。
  *  - 自排除：自己浏览器访问任意页加 ?mmv=off 一次 → 本浏览器不再计数（?mmv=on 撤销）。
  *  - 改颜色 / 换 map：只改下面 MMV_SRC 这一行。
+ *  - 宽度：用 w=a（自适应容器宽度，手机不溢出）；显示大小由 index.md 里 #mmv-holder 的 max-width 控制。
  */
-var MMV_SRC = 'https://mapmyvisitors.com/map.js?cl=ffffff&w=450&t=tt&d=EfUBl7UoAf5BWBOhnJoHtZqt8azTQNAA2gx2CQs0wL4&co=4870ac&ct=ffffff&cmo=f5bb4e&cmn=fc7777';
+var MMV_SRC = 'https://mapmyvisitors.com/map.js?cl=ffffff&w=a&t=tt&d=EfUBl7UoAf5BWBOhnJoHtZqt8azTQNAA2gx2CQs0wL4&co=4870ac&ct=ffffff&cmo=f5bb4e&cmn=fc7777';
 
 (function () {
   try {

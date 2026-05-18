@@ -44,4 +44,4 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 
 ## 访客地图
 
-<div id="mmv-holder" style="text-align:center"></div>
+<div id="mmv-holder" style="width:100%;max-width:480px;margin:0 auto;text-align:center"></div>
