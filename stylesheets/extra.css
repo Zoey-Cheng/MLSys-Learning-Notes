@@ -7,8 +7,27 @@
    - code block / inline code / blockquote 等都做了亮暗双适配
    ========================================================================== */
 
-/* 加载思源宋体（仅用于标题） */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&display=swap');
+/* 标题思源宋体（Noto Serif SC）改由 javascripts/heading-font.js 异步选源加载
+   （国外 Google / 国内镜像），不再用阻塞首屏的 CSS @import。
+   下方标题的 font-family 仍保留 'Noto Serif SC' 在最前、系统宋体兜底。 */
+
+/* ---------- 自托管正文/代码字体（替代 Material 默认从 Google Fonts 拉 Roboto）----------
+   theme.font: false 关掉了 Material 注入的 Google Fonts <link>。这里用同源 woff2 + display:swap：
+   字体没到先用系统字体显示，到了再无缝替换，绝不阻塞首屏。文件在 stylesheets/fonts/ 下。 */
+@font-face { font-family: "Roboto"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("fonts/roboto-400.woff2") format("woff2"); }
+@font-face { font-family: "Roboto"; font-style: italic; font-weight: 400; font-display: swap;
+  src: url("fonts/roboto-400i.woff2") format("woff2"); }
+@font-face { font-family: "Roboto"; font-style: normal; font-weight: 700; font-display: swap;
+  src: url("fonts/roboto-700.woff2") format("woff2"); }
+@font-face { font-family: "Roboto Mono"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("fonts/roboto-mono-400.woff2") format("woff2"); }
+@font-face { font-family: "Roboto Mono"; font-style: normal; font-weight: 700; font-display: swap;
+  src: url("fonts/roboto-mono-700.woff2") format("woff2"); }
+:root {
+  --md-text-font: "Roboto";
+  --md-code-font: "Roboto Mono";
+}
 
 /* --------- Lapis 配色变量：亮色模式 --------- */
 [data-md-color-scheme="default"] {
