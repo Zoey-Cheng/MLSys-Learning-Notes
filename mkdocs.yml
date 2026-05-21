@@ -13,6 +13,7 @@ watch:
 
 theme:
   name: material
+  font: false                 # 不从 fonts.googleapis.com 拉 Roboto（大陆被墙）；改用 extra.css 里自托管的 woff2
   language: zh
   features:
     - navigation.instant
@@ -63,14 +64,15 @@ markdown_extensions:
       marker: '[toc]'          # 兼容 Typora 风格的小写 marker
 
 extra_javascript:
+  - javascripts/heading-font.js   # 标题思源宋体按可达性选源：国外走 Google，国内回落镜像
   - javascripts/katex.js
   - javascripts/expand-first-topic-on-home.js
   - javascripts/mmv.js
-  - https://unpkg.com/katex@0/dist/katex.min.js
-  - https://unpkg.com/katex@0/dist/contrib/auto-render.min.js
+  - katex/katex.min.js                       # 自托管 KaTeX 0.16.47（原 unpkg），大陆无需第三方 CDN
+  - katex/auto-render.min.js
 
 extra_css:
-  - https://unpkg.com/katex@0/dist/katex.min.css
+  - katex/katex.min.css                       # 字体在 katex/fonts/，CSS 内相对引用
   - stylesheets/extra.css
 
 plugins:
