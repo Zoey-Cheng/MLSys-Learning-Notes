@@ -25,9 +25,7 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 | 推理优化 | *coming soon* | | | |
 | 算子 | [01-算子手写(1) - CUDA 入门 op](06_算子/05_01_CUDA入门.md) | [link](https://zhuanlan.zhihu.com/p/1892487783110644443) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/02-cuda-ops.ipynb) ｜ [colab](https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link) | 一些基础CUDA算子 |
 
-**[About Me]**
-
-Master NG 菜狗
+**[About Me]** 26 Master NG 菜狗
 
 - **Intern**：ByteDance CN @ AML 科学计算 → NVIDIA CN @ cuTile → NVIDIA US @ XLA
 - **Fulltime**：ByteDance US @ AI Search, ML infra - 训练支持

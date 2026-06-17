@@ -12,9 +12,7 @@ MLSys 自学笔记，每篇尽量带可运行代码，知乎同步更新。
 
 qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 
-**[About Me]**
-
-Master NG 菜狗
+**[About Me]** 26 Master NG 菜狗
 - **Intern**：ByteDance CN @ AML 科学计算 → NVIDIA CN @ cuTile → NVIDIA US @ XLA
 - **Fulltime**：ByteDance US @ AI Search, ML infra - 训练支持
 
