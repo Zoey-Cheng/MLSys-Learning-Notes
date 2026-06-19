@@ -95,10 +95,18 @@
   color: var(--lapis-h2-text);
   padding: 2px 14px;
   border-radius: 4px;
-  margin-top: 2em;
-  margin-bottom: 1em;
+  margin-top: 1.6em;
+  margin-bottom: 0.4em;       /* 收紧 H2 到正文的空隙 */
   border: none;
   font-weight: 700;
+}
+/* H2 紧随其后的段落/列表/表格再压一点 top margin */
+.md-typeset h2 + p,
+.md-typeset h2 + ul,
+.md-typeset h2 + ol,
+.md-typeset h2 + table,
+.md-typeset h2 + .md-typeset__scrollwrap {
+  margin-top: 0.4em;
 }
 .md-typeset h2 code {
   background: transparent;
@@ -232,6 +240,15 @@
 .md-nav .md-nav a.md-nav__link[href] .md-ellipsis {
   text-indent: -1.6em;
   overflow: visible;
+}
+
+/* 移动端 drawer：给抽屉容器加横向 padding，避免 title / item 顶住屏幕左边 */
+@media screen and (max-width: 76.1875em) {
+  .md-nav--primary > .md-nav__title,
+  .md-nav--primary > .md-nav__list {
+    padding-left: 0.8rem;
+    padding-right: 0.4rem;
+  }
 }
 
 /* 访客地图 (MapMyVisitors) 移动端自适应：
