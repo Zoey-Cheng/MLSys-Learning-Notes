@@ -19,6 +19,7 @@ theme:
     - navigation.instant
     - navigation.tracking
     - navigation.top
+    - navigation.expand        # 左侧目录默认全展开
     - toc.follow               # 右侧 TOC 跟随阅读位置
     - search.suggest
     - search.highlight
@@ -66,7 +67,7 @@ markdown_extensions:
 extra_javascript:
   - javascripts/heading-font.js   # 标题思源宋体按可达性选源：国外走 Google，国内回落镜像
   - javascripts/katex.js
-  - javascripts/expand-first-topic-on-home.js
+  # - javascripts/expand-first-topic-on-home.js   # 改用 navigation.expand 全展开后不再需要；保留文件以备回退
   - javascripts/mmv.js
   - katex/katex.min.js                       # 自托管 KaTeX 0.16.47（原 unpkg），大陆无需第三方 CDN
   - katex/auto-render.min.js
