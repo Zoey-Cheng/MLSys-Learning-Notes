@@ -1545,17 +1545,17 @@
 <ul>
 <li>
 <p>宏定义：ceilling函数 / 全局定义BLOCKSIZE / float4向量化访问</p>
-</li>
-<li>
-<p><code>&amp;(value)</code> 取得 <code>value</code> 的内存地址，<code>reinterpret_cast&lt;float4*&gt;</code> 将该地址强制转换为 <code>float4*</code> 类型的指针</p>
-</li>
-<li>
-<p>最终将 <code>value</code> 的内存当作 <code>float4</code> 对象使用，四个元素依次用 <code>x,y,z,w</code> 访问</p>
-</li>
+<ul>
+<li><code>&amp;(value)</code> 取得 <code>value</code> 的内存地址，<code>reinterpret_cast&lt;float4*&gt;</code> 将该地址强制转换为 <code>float4*</code> 类型的指针</li>
+</ul>
+<ul>
+<li>最终将 <code>value</code> 的内存当作 <code>float4</code> 对象使用，四个元素依次用 <code>x,y,z,w</code> 访问</li>
 </ul>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="cp"># define CEIL(a, b) ((a + b - 1) / (b))</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="cp">#define FLOAT4(value) (reinterpret_cast&lt;float4*&gt;(&amp;(value))[0])</span>
 </code></pre></div>
+</li>
+</ul>
 <ul>
 <li>实现调用函数 - threadPerBlock, blockPerGrid, &lt;&lt;&lt;&gt;&gt;&gt;, cudaDeviceSynchronize</li>
 <li>实现kernel函数（定义一个block里的每个thread要做什么）</li>
@@ -1563,22 +1563,24 @@
 <p><strong>【为什么kernel函数是定义每个block的呢？】</strong>这涉及到 <strong>SM 如何调度线程执行</strong>：</p>
 <ul>
 <li>Block是逻辑调度单元：一个block分配给一个SM，SM内部按warp调度。</li>
-<li>
-<p>Warp：每个warp包含32个线程，SM以warp为最小单位进行调度。</p>
-</li>
+<li>Warp：每个warp包含32个线程，SM以warp为最小单位进行调度。</li>
+</ul>
+<ul>
 <li>
 <p><strong>重要的一点：关于Idx的顺序，threadIdx.y对应tensor中的row，threadIdx.y对应tensor中的col。</strong></p>
-</li>
-</ul>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">threadIdx</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">width</span><span class="p">;</span><span class="w">  </span><span class="c1">// 本质是col</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">threadIdx</span><span class="p">.</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">threadIdx</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">width</span><span class="p">;</span><span class="w">  </span><span class="c1">// 本质是row</span>
 </code></pre></div>
+</li>
+</ul>
 <p><strong>【float4类型合并访存】</strong></p>
 <ul>
 <li>使用float4类型访存，用向量化的LDG.128和STG.128指令从DRAM一次读4个元素，以减少指令数（读ptx层就能看到这些指令）</li>
-<li>为什么是float4？</li>
+<li>为什么是float4？<ul>
 <li>PTX指令集（GPU底层指令）仅明确定义了<code>LDG.32</code>、<code>LDG.64</code> 和 <code>LDG.128</code>，128是最大的</li>
 <li>128是指 128 bits，float32 = 32 bits，128/32 = 4</li>
+</ul>
+</li>
 </ul>
 <h2 id="1-add">1. Add</h2>
 <p>考察频率：中。</p>
@@ -1690,16 +1692,18 @@
 <p><strong>【思路和原理】</strong></p>
 <p>GPU 上各种内存的访问速度为 Global memory &lt;&lt; shared memory。其中：</p>
 <ul>
-<li><strong>Global memory</strong> - 所有thread可访问</li>
+<li><strong>Global memory</strong> - 所有thread可访问<ul>
 <li>对应到硬件上为DRAM</li>
-<li>
-<p>它不在芯片上，通过高带宽总线连接（DDR/GDDR）连接  -&gt; 最慢</p>
+<li>它不在芯片上，通过高带宽总线连接（DDR/GDDR）连接  -&gt; 最慢</li>
+</ul>
 </li>
-<li>
-<p><strong>shared memory</strong> - per-block</p>
-</li>
+</ul>
+<ul>
+<li><strong>shared memory</strong> - per-block<ul>
 <li>同一个block中的所有thread可共享</li>
 <li>ON CHIP！对应到硬件是SM 内部的 SRAM，物理上是和L1 cache share的</li>
+</ul>
+</li>
 </ul>
 <p><img src="../assets/02-cuda-ops/fig-01.png" alt="fig-01" width="50%" /></p>
 <p>Global memory 大而慢， shared memory 小而快，因此减少内存访问延迟的一个常见的策略就是 Tiling —— 将数据分片，然后将每个小分片缓存到 shared memory 中。</p>
@@ -1714,26 +1718,26 @@
 <ul>
 <li>
 <p>Naive Matmul</p>
-</li>
-<li>
-<p>each C element: <span class="arithmatex">\(m\)</span> - load</p>
-</li>
+<ul>
+<li>each C element: <span class="arithmatex">\(m\)</span> - load</li>
 <li>Total: <span class="arithmatex">\(n*p\)</span> - elements</li>
 <li>Total Load + store: <span class="arithmatex">\(2mnp\)</span></li>
 </ul>
 <p><img src="../assets/02-cuda-ops/fig-04.png" alt="fig-04" width="45%" /></p>
+</li>
+</ul>
 <ul>
 <li>
 <p>Tiled Matmul</p>
-</li>
-<li>
-<p>Tiled Size: <span class="arithmatex">\(d*d\)</span></p>
-</li>
+<ul>
+<li>Tiled Size: <span class="arithmatex">\(d*d\)</span></li>
 <li>each C sub matrix: <span class="arithmatex">\(n/d\)</span> - loads of <span class="arithmatex">\(d*d\)</span> = <span class="arithmatex">\(nd\)</span></li>
 <li>Total: <span class="arithmatex">\(m*p/d^2\)</span>​ - elements</li>
 <li>Total Load + store: <span class="arithmatex">\(2mnp/d\)</span></li>
 </ul>
 <p><img src="../assets/02-cuda-ops/fig-05.png" alt="fig-05" width="40%" /></p>
+</li>
+</ul>
 <p>结论：load/store相差了一个d的倍数。</p>
 <p><strong>【实现】</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="cp"># define BLOCKSIZE 32</span>
@@ -1891,12 +1895,10 @@
 </ul>
 <p>一个 warp 内的线程是同步的，相比于以 block 为单位进行折半，以 warp 为单位进行每次折半时不需要 <code>__syncthreads()</code>，所以并行性更高。</p>
 <ul>
-<li>
-<p>流程：wrap内reduce -&gt; wrap_sum存入SMEM -&gt; wrap0启用block level reduce。</p>
-</li>
-<li>
-<p>由于我设定的是BLOCKSIZE = WARPSIZE * WARPSIZE，所以第二次SMEM不会超过WARPSIZE</p>
-</li>
+<li>流程：wrap内reduce -&gt; wrap_sum存入SMEM -&gt; wrap0启用block level reduce。</li>
+</ul>
+<ul>
+<li>由于我设定的是BLOCKSIZE = WARPSIZE * WARPSIZE，所以第二次SMEM不会超过WARPSIZE</li>
 </ul>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="cp"># define BLOCKSIZE 1024</span>
 <a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="cp"># define WARPSIZE 32</span>
@@ -2003,35 +2005,37 @@
 <p>特点：<code>threadPerBlock</code>的1D设计，不能直接float4合并访存（col数据在物理存储上不连续）</p>
 </blockquote>
 <ul>
-<li>基础idea：每个block处理一个列！然后在kernel内部就是对这个element进行一维的reduce啦</li>
-</ul>
+<li>
+<p>基础idea：每个block处理一个列！然后在kernel内部就是对这个element进行一维的reduce啦</p>
 <p><img src="../assets/02-cuda-ops/fig-06.png" alt="fig-06" width="40%" /></p>
+</li>
+</ul>
 <ul>
 <li>
 <p>Naive的设计（❌）：</p>
-</li>
-<li>
-<p><code>dim3 col_threadPerBlock(1, BLOCKSIZE);</code></p>
-</li>
+<ul>
+<li><code>dim3 col_threadPerBlock(1, BLOCKSIZE);</code></li>
 <li><code>dim3 col_blockPerGrid(N, CEIL(M,BLOCKSIZE));</code></li>
 <li>值得注意的是，分配的row和col相比正常矩阵顺序是反过来的，详见前面的“说明”部分</li>
-<li>
-<p>可以吗？不可以！<strong>线程束（Warp）效率低下</strong></p>
-<ul>
+<li>可以吗？不可以！<strong>线程束（Warp）效率低下</strong><ul>
 <li>CUDA 的线程束由连续的 <code>threadIdx.x</code> 组成，<code>(1, )</code>导致每个线程束仅包含 1个有效线程</li>
 <li>实际31/32是浪费的</li>
 </ul>
 </li>
+</ul>
+</li>
+</ul>
+<ul>
 <li>
 <p>正确的配置</p>
-</li>
-<li>
-<p><code>dim3 col_threadPerBlock(BLOCKSIZE);</code></p>
-</li>
+<ul>
+<li><code>dim3 col_threadPerBlock(BLOCKSIZE);</code></li>
 <li><code>dim3 col_blockPerGrid(N, CEIL(M,BLOCKSIZE));</code></li>
 <li>需要注意index的计算<ul>
 <li><code>int col = blockIdx.x</code></li>
 <li><code>int row = blockIdx.y * blockDim.x + threadIdx.x</code></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -2130,21 +2134,29 @@
 </ul>
 <p><img src="../assets/02-cuda-ops/fig-07.png" alt="fig-07" width="25%" /></p>
 <ul>
-<li>softmax的计算分为三个步骤：最大值、求指数和、计算指数并归一化（因为避免溢出，要减去最大值）：</li>
-</ul>
+<li>
+<p>softmax的计算分为三个步骤：最大值、求指数和、计算指数并归一化（因为避免溢出，要减去最大值）：</p>
 <p><img src="../assets/02-cuda-ops/fig-08.png" alt="fig-08" width="30%" /></p>
+</li>
+</ul>
 <h3 id="61-2d-softmax-tiled">6.1 2D Softmax Tiled</h3>
 <p>思路：rolwise reduce，每行分别计算softmax</p>
 <ul>
 <li>一个行开一个block，计算该行的softmax</li>
-<li>Step1：求行最大值</li>
+<li>Step1：求行最大值<ul>
 <li><code>lane_id</code> 循环获得 <code>idx%32 == lane_id</code> 处的 <code>max_val</code></li>
 <li>Wrap内规约得到整行最大值 -&gt; 写入SMEM，sync</li>
-<li>Step2：求该行的exp指数和</li>
+</ul>
+</li>
+<li>Step2：求该行的exp指数和<ul>
 <li><code>lane_id</code> 循环叠加 <code>idx%32 == lane_id</code> 处的 <code>exp(A[row][col] - M)</code></li>
 <li>Wrap内规约得到整行<code>exp_sum</code> -&gt; 写入SMEM，sync</li>
-<li>Step3：elementwise 地计算每个output</li>
+</ul>
+</li>
+<li>Step3：elementwise 地计算每个output<ul>
 <li><code>lane_id</code> 循环获得 <code>idx%32 == lane_id</code> 处，计算最终softmax数值</li>
+</ul>
+</li>
 </ul>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="cp"># define WARPSIZE 32</span>
 <a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>
@@ -2441,17 +2453,17 @@
 <h3 id="81-layer-norm-tiled">8.1 Layer Norm - Tiled</h3>
 <p>和假设 <code>input[NxK]</code>（大不了用pytorch reshape一下），然后以第一个维度为pivot做norm。步骤：</p>
 <ul>
-<li>
-<p>Step1：计算sum -&gt; 得到 <span class="arithmatex">\(\mu\)</span></p>
-</li>
-<li>
-<p>Step2：计算 <span class="arithmatex">\(\sigma^2 = \frac{1}{K} \sum_{k=1}^{K} (x_k - \mu)^2 + \epsilon\)</span></p>
-</li>
+<li>Step1：计算sum -&gt; 得到 <span class="arithmatex">\(\mu\)</span></li>
+</ul>
+<ul>
+<li>Step2：计算 <span class="arithmatex">\(\sigma^2 = \frac{1}{K} \sum_{k=1}^{K} (x_k - \mu)^2 + \epsilon\)</span></li>
+</ul>
+<ul>
 <li>
 <p>Step3：elementwise process -&gt; Norm (aX + b, epsilon)</p>
+<p><img src="../assets/02-cuda-ops/fig-10.png" alt="fig-10" width="30%" /></p>
 </li>
 </ul>
-<p><img src="../assets/02-cuda-ops/fig-10.png" alt="fig-10" width="30%" /></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="cp"># define WARPSIZE 32</span>
 <a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>
 <a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a><span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">layerNormKernel</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="o">*</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="o">*</span><span class="n">B</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">K</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">epsilon</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">b</span><span class="p">){</span>

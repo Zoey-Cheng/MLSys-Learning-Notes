@@ -1272,9 +1272,11 @@
 <p>此外，对经典论文的讲解也必不可少。因此，在上述训练指南的基础上，我将同步穿插分析相关<strong>代表性论文</strong>。后续的内容规划如下（每完成一个章节我会附上对应链接）：</p>
 <ul>
 <li>数据并行（ Data Parallism）: DP / DDP / FSDP</li>
-<li>模型并行（Model Parallism）</li>
+<li>模型并行（Model Parallism）<ul>
 <li>张量并行（Tensor Parallisim）: Megatron</li>
 <li>流水线并行（ Pipeline Parallelism）: GPipe, PipeStream</li>
+</ul>
+</li>
 <li>上下文并行（Context Parallelism）: DeepSpeed Ulysses, Ring-Attention</li>
 <li>专家并行（Expert parallelism）</li>
 <li>Zero：数据并行的零冗余优化策略</li>
@@ -1328,35 +1330,35 @@
 </tr>
 </tbody>
 </table>
-</li>
-</ul>
 <p><strong>Step 1: Reduce</strong></p>
 <p>对相同位置元素做加法（加法是最常见的 Reduce 操作）：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>[1+10+100+1000, 2+20+200+2000, 3+30+300+3000, 4+40+400+4000] = [1111, 2222, 3333, 4444]
 </code></pre></div>
+</li>
+</ul>
 <ul>
 <li>
 <p><strong>Step 2: Scatter</strong></p>
-</li>
-<li>
-<p>N0 拿到 [1111]</p>
-</li>
+<ul>
+<li>N0 拿到 [1111]</li>
 <li>N1 拿到 [2222]</li>
 <li>N2 拿到 [3333]</li>
-<li>
-<p>N3 拿到 [4444]</p>
+<li>N3 拿到 [4444]</li>
+</ul>
 </li>
-<li>
-<p>常用通信方法：Ring Reduce Scatter</p>
-</li>
+</ul>
+<ul>
+<li>常用通信方法：Ring Reduce Scatter</li>
+</ul>
+<ul>
 <li>
 <p>通信量：</p>
-</li>
-<li>
-<p>每个node数据量：G</p>
-</li>
+<ul>
+<li>每个node数据量：G</li>
 <li>每个node发出：G * (n-1)/n</li>
 <li>总通信量：(n-1)G</li>
+</ul>
+</li>
 </ul>
 <p><strong>【All Gather】</strong></p>
 <p>每个进程都向所有其他进程广播自己的数据，最终每个进程都有全部数据。</p>
@@ -1371,15 +1373,19 @@
 <p><strong>【通信开销】</strong></p>
 <ul>
 <li><strong>All Reduce = Reduce Scatter + All Gather</strong></li>
-<li>通信开销 = Cost（Reduce Scatter）+ Cost（All Gather）= 2(n-1)G</li>
+<li>通信开销 = Cost（Reduce Scatter）+ Cost（All Gather）= 2(n-1)G<ul>
 <li>假设每个node数据量：G</li>
+</ul>
+</li>
 </ul>
 <p><img src="https://engineering.fb.com/wp-content/uploads/2021/07/FSDP-graph-2a.png" alt="img" width="40%" /></p>
 <p><strong>【通信方式 - Ring All Reduce】</strong></p>
 <p>All Reduce 的实现方式不止一种。例如：</p>
 <ul>
-<li><strong>集中式 All Reduce</strong>：先 gather 到一个节点计算，再广播（PyTorch DDP 的早期实现）</li>
+<li><strong>集中式 All Reduce</strong>：先 gather 到一个节点计算，再广播（PyTorch DDP 的早期实现）<ul>
 <li>缺点：通信带宽瓶颈，其他节点资源利用率不高</li>
+</ul>
+</li>
 <li><strong>Ring All Reduce</strong>：各节点只与相邻节点通信，所有节点并行工作，充分利用带宽资源（PyTorch DDP 默认）</li>
 <li><strong>Tree All Reduce</strong>：以树形结构分层聚合与广播，通信延迟更低，适用于节点数量较多的场景</li>
 </ul>
@@ -1419,31 +1425,39 @@
 <ul>
 <li>NVLink 是一种由 NVIDIA 开发的高速互连协议技术，可实现 GPU 之间的直接通信</li>
 <li>NVLink 可以提供比普通 PCIe 更高的带宽和更低的延迟，NVSwitch是基于NVLink的交换设备</li>
-<li>硬件设计：</li>
+<li>硬件设计：<ul>
 <li>GPU 同时具备 NVLink 接口和 PCIe 接口</li>
 <li><strong>NVLink 专用于 GPU-GPU 直连，PCIe 用于连接 CPU、网卡、存储等</strong></li>
+</ul>
+</li>
 </ul>
 <p><img src="../assets/03-distributed-training/fig-09.png" alt="fig-09" width="50%" /></p>
 <p><strong>【IB】</strong>（InfiniBand）</p>
 <ul>
 <li>一种高带宽、低延迟的网络通信协议</li>
 <li>支持 RDMA（远程直接内存访问），适用于分布式训练场景</li>
-<li>NV生态：</li>
+<li>NV生态：<ul>
 <li>GPUDirect RDMA：允许IB网卡直接访问GPU显存，加速跨节点GPU通信（如分布式训练）</li>
 <li>NCCL优化：NCCL库优先选择InfiniBand路径，实现高效的跨节点集合通信</li>
 </ul>
+</li>
+</ul>
 <p>【<strong>实例分析：机器内/间通信</strong>】</p>
 <ul>
-<li><strong>机器内通信</strong></li>
+<li><strong>机器内通信</strong><ul>
 <li>相关通信硬件：PCIe / NVLink</li>
 <li>硬件配置（以 NVIDIA DGX H100 为例）<ul>
 <li>设备：2 CPU + 8 GPU</li>
-<li>互连方式：</li>
+<li>互连方式：<ul>
 <li>GPU-GPU：通过 NVLink 4.0 全互连（每 GPU 有 18 条 NVLink 通道）</li>
 <li>GPU-CPU/其他设备：通过 PCIe 5.0 x16 连接</li>
 </ul>
 </li>
-<li><strong>机器间通信</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>机器间通信</strong><ul>
 <li>相关通信硬件：使用IB / 不用IB</li>
 <li>硬件配置<ul>
 <li>单节点配置（共4个）：2 CPU + 8 GPU</li>
@@ -1456,25 +1470,25 @@
 </ul>
 </li>
 </ul>
+</li>
+</ul>
 <h3 id="22-nccl">2.2 NCCL 通信软件库</h3>
 <p>NCCL是Nvidia Collective multi-GPU Communication Library的简称（发音为"Nickel"），它是一个实现多GPU的collective communication通信（all-gather, reduce, broadcast）库。NV做了很多优化，以在PCIe、Nvlink、InfiniBand上实现较高的通信速度。</p>
 <p>NCCL实现了集体通信（collective communication）和点对点（point to point）发送/接收原语。主要有：</p>
 <ul>
 <li>
 <p><strong>Collective Operations</strong>（与第 1 节中通信原语对应）</p>
+<ul>
+<li>AllReduce, Broadcast, Reduce, AllGather, ReduceScatter...</li>
+<li>它们做了hardware awareness的优化，实现高效通信</li>
+</ul>
 </li>
-<li>
-<p>AllReduce, Broadcast, Reduce, AllGather, ReduceScatter...</p>
-</li>
-<li>
-<p>它们做了hardware awareness的优化，实现高效通信</p>
-</li>
+</ul>
+<ul>
 <li>
 <p><strong>Group Calls</strong></p>
-</li>
-<li>
-<p>多 GPU 在单线程中操作时，需要通过 group call 保证同步性与死锁避免</p>
-</li>
+<ul>
+<li>多 GPU 在单线程中操作时，需要通过 group call 保证同步性与死锁避免</li>
 <li>核心函数：<code>ncclGroupStart()</code> 和 <code>ncclGroupEnd()</code>，用于将多个通信操作合并为原子性执行组</li>
 <li>用途：<ul>
 <li>多 GPU 单线程管理，避免死锁</li>
@@ -1484,19 +1498,21 @@
 </li>
 </ul>
 <p><img src="../assets/03-distributed-training/fig-10.png" alt="fig-10" width="55%" /></p>
+</li>
+</ul>
 <ul>
 <li>
 <p><strong>Point-To-Point Communication</strong></p>
-</li>
-<li>
-<p>核心函数：<code>ncclSend()</code> 和 <code>ncclRecv()</code>，需成对调用且参数一致</p>
-</li>
+<ul>
+<li>核心函数：<code>ncclSend()</code> 和 <code>ncclRecv()</code>，需成对调用且参数一致</li>
 <li>举例：<ul>
 <li>Sendrecv：两个 Rank 同时发送和接收数据</li>
 <li>One-to-All：单 Rank 向所有其他 Rank 分发数据（Scatter）</li>
 <li>All-to-One：所有 Rank 向单 Rank 聚合数据（Gather）</li>
 <li>All-to-All：每个 Rank 与其他所有 Rank 交换数据</li>
 <li>Neighbor Exchange：在网格拓扑中与相邻 Rank 通信</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -1550,12 +1566,10 @@
 <h3 id="23-torchdistributed">2.3 torch.distributed 前端</h3>
 <p><code>Pytorch</code> 中通过 <code>torch.distributed</code> 包提供分布式支持，包括 <code>GPU</code> 和 <code>CPU</code> 的分布式训练支持。</p>
 <ul>
-<li>
-<p><a href="https://pytorch.org/tutorials/beginner/dist_overview.html">Official Tutorial</a></p>
-</li>
-<li>
-<p><a href="https://pytorch.org/docs/stable/distributed.html">Official Doc</a></p>
-</li>
+<li><a href="https://pytorch.org/tutorials/beginner/dist_overview.html">Official Tutorial</a></li>
+</ul>
+<ul>
+<li><a href="https://pytorch.org/docs/stable/distributed.html">Official Doc</a></li>
 </ul>
 <p><strong>【部分并行API】</strong></p>
 <ul>
@@ -1658,19 +1672,25 @@
 <h2 id="3">3. 单卡训练计算流</h2>
 <p>此处假定你已经熟悉了一些训练的基础术语和流程，以下是部分关键概念的回顾：</p>
 <ul>
-<li><strong>常见术语</strong></li>
+<li><strong>常见术语</strong><ul>
 <li>Batch Size：每次前向和反向传播处理的数据样本数</li>
 <li>1 Iteration = 处理 1 个 Batch 并完成一次参数更新</li>
 <li>1 Epoch：表示完整遍历一次所有训练数据</li>
 <li>Learning rate：weight在某方向上改变的步长，$ W' = W - \eta * f(\nabla W)$</li>
-<li><strong>优化器 optimizer</strong> - <span class="arithmatex">\(f(\nabla W)\)</span> </li>
+</ul>
+</li>
+<li><strong>优化器 optimizer</strong> - <span class="arithmatex">\(f(\nabla W)\)</span> <ul>
 <li>SGD （随机梯度下降），默认不包含动量；在 PyTorch 中可通过 <code>momentum</code> 参数开启</li>
 <li>RMSProp（自适应梯度缩放），简言之引入了norm（通过梯度平方的指数移动平均自适应调整学习率）</li>
 <li>Adam（Adam = Momentum + RMSProp 的结合体）</li>
-<li><strong>Learning Rate Scheduler 学习率调度器</strong></li>
+</ul>
+</li>
+<li><strong>Learning Rate Scheduler 学习率调度器</strong><ul>
 <li>学习率 <span class="arithmatex">\(\eta\)</span> 大：收敛快，但可能跳过最优点</li>
 <li>学习率 <span class="arithmatex">\(\eta\)</span> 小：稳定但慢，可能卡住不动</li>
 <li>调度器的作用：根据训练进度动态调整学习率</li>
+</ul>
+</li>
 </ul>
 <h3 id="31">3.1 模型训练过程</h3>
 <p>在扩展到多 GPU 之前，让我们先快速回顾在单卡 GPU 上训练模型的基本流程。单卡训练中，单层通常包括三步：</p>
@@ -1687,29 +1707,37 @@
 <p><img src="../assets/03-distributed-training/fig-11.png" alt="fig-11" width="40%" /></p>
 <ul>
 <li>Linear Layer 计算公式：<span class="arithmatex">\(X @ W= Y\)</span></li>
-<li>存储需求：</li>
+<li>存储需求：<ul>
 <li>weight (W, b)：必须存储</li>
 <li>Activation (X - 上一层的output，Y - 本层的output)：<strong>存储视后向的计算需求而定（后面会详细讲）</strong></li>
 <li>注意：PyTorch 中偏置项 <span class="arithmatex">\(b\)</span> 的加法自动广播至 batch 维度，无需显式扩展</li>
+</ul>
+</li>
 </ul>
 <p><strong>【所有Forward结束后 - 计算Loss】</strong></p>
 <ul>
 <li>Loss 的本质：损失函数的作用是衡量模型最终输出与真实标签之间的差距</li>
 <li>反向传播的起点：Loss 是反向传播的起点，计算 Loss 后，通过链式法则（自动微分）逐层回传梯度，最终更新所有层的参数</li>
-<li>常见 Loss 类型：</li>
+<li>常见 Loss 类型：<ul>
 <li>分类任务：交叉熵损失（Cross-Entropy Loss）</li>
 <li>回归任务：均方误差（MSE Loss）、L1 Loss</li>
-<li>计算公式：</li>
+</ul>
+</li>
+<li>计算公式：<ul>
 <li>$ L = Loss(Y)$ - 使用真实label计算</li>
 <li><span class="arithmatex">\(\nabla Y = \frac{\partial L}{\partial Y}\)</span> - 反向第一步梯度计算</li>
+</ul>
+</li>
 </ul>
 <p><strong>【Backward Pass】</strong></p>
 <p><img src="../assets/03-distributed-training/fig-12.png" alt="fig-12" width="45%" /></p>
 <ul>
 <li>根据链式法则，计算对所有input和weight的权重</li>
-<li>Linear Layer 计算公式：</li>
+<li>Linear Layer 计算公式：<ul>
 <li><span class="arithmatex">\(\nabla W = X^T @ \nabla Y\)</span> （用于更新W）</li>
 <li>$ \nabla X = \nabla Y @ W^T$ （用于辅助前一层的计算）</li>
+</ul>
+</li>
 </ul>
 <p><strong>【Weight Updates】</strong></p>
 <p><img src="../assets/03-distributed-training/fig-13.png" alt="fig-13" width="30%" /></p>
@@ -1724,11 +1752,13 @@
 <ul>
 <li>一个Model由多层组成，执行：</li>
 <li>Forward 前向传播（多层） -&gt; 计算loss -&gt; 开始后向</li>
-<li>Backward后向传播</li>
+<li>Backward后向传播<ul>
 <li>每层计算对input的gradient，以用于传给上一层</li>
 <li>每层计算对weight参数的gradient，以用于更新weight<ul>
 <li>使用计算出的gradient，选择optimizer，更新weight</li>
 <li>$ W' = W - \eta * f(\nabla W)$</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -1739,17 +1769,21 @@
 <li><strong>模型权重</strong> (weights, <span class="arithmatex">\(W\)</span>)</li>
 <li><strong>模型梯度</strong> (gradients, <span class="arithmatex">\(\nabla W\)</span>)</li>
 <li><strong>优化器状态</strong> (optimizer states)：如动量、方差等</li>
-<li>用于反向传播的<strong>激活值</strong> (activations, <span class="arithmatex">\(X\)</span> &amp; <span class="arithmatex">\(Y\)</span>​)</li>
+<li>用于反向传播的<strong>激活值</strong> (activations, <span class="arithmatex">\(X\)</span> &amp; <span class="arithmatex">\(Y\)</span>​)<ul>
 <li>大小和batch size 成正比（实际是<span class="arithmatex">\(BX\)</span> &amp; <span class="arithmatex">\(BY\)</span>​）</li>
 <li>需要临时计算并存储它们的Gradient（<span class="arithmatex">\(\nabla X\)</span> &amp; <span class="arithmatex">\(\nabla Y\)</span>）</li>
 <li>可选择性保留或动态释放</li>
 </ul>
+</li>
+</ul>
 <p>这些需要存储的项目以Tensor的形式存在，不同Tensor有不同的 <strong>形状（shape）</strong>和 **精度（precision），直接影响其内存占用：</p>
 <ul>
 <li><strong>形状</strong>：由例如 batch size、序列长度、模型隐层维度、注意力头数、词表大小，以及是否进行模型切分等超参数决定</li>
-<li><strong>精度</strong>：对应 FP32、BF16 或 FP8 等格式，会影响每个元素所占的字节数（4、2 或 1 字节）</li>
+<li><strong>精度</strong>：对应 FP32、BF16 或 FP8 等格式，会影响每个元素所占的字节数（4、2 或 1 字节）<ul>
 <li>混合精度训练就是其优化的一个方向</li>
 <li>也有的优化保存两份weight（高精度+低精度），低精度用于优化计算，同时高精度的保存又能尽量减少精度损失</li>
+</ul>
+</li>
 </ul>
 <p><strong>【分析显存使用】</strong></p>
 <p>借助 PyTorch 的 profiler 工具，我们可以查看训练过程中不同阶段的显存分配。</p>
@@ -1765,7 +1799,7 @@
 <ul>
 <li>
 <p>相对固定的3个</p>
-</li>
+<ul>
 <li>
 <p>模型权重 <span class="arithmatex">\(N\)</span>​​：</p>
 <ul>
@@ -1773,9 +1807,11 @@
 </ul>
 <p><img src="../assets/03-distributed-training/fig-16.png" alt="fig-16" width="50%" /></p>
 </li>
-<li>
-<p>梯度亦然：<span class="arithmatex">\(m_{grad} = 4*N\)</span></p>
-</li>
+</ul>
+<ul>
+<li>梯度亦然：<span class="arithmatex">\(m_{grad} = 4*N\)</span></li>
+</ul>
+<ul>
 <li>
 <p>优化器状态：</p>
 <ul>
@@ -1783,17 +1819,21 @@
 <li><span class="arithmatex">\(m_{opt} = (4+4)*N\)</span></li>
 </ul>
 </li>
+</ul>
+</li>
+</ul>
+<ul>
 <li>
 <p><strong>激活值占用</strong>：</p>
-</li>
-<li>
-<p>重点：随 <code>batch_size</code>, <code>seq_len</code> 线性增长</p>
-</li>
+<ul>
+<li>重点：随 <code>batch_size</code>, <code>seq_len</code> 线性增长</li>
 <li>在计算图中随时变化，周期性分配和释放</li>
 <li><strong>对于大输入 tokens（即大 batch size/长序列），激活值会成为主要的显存负担。</strong></li>
 </ul>
 <p><img src="../assets/03-distributed-training/fig-17.png" alt="fig-17" width="50%" /></p>
 <p><img src="../assets/03-distributed-training/fig-18.png" alt="fig-18" width="60%" /></p>
+</li>
+</ul>
 <h3 id="33-activation-">3.3 Activation优化 - 激活重计算</h3>
 <p>根据上一步我们发现，Activation对显存的影响很大！</p>
 <p>为应对激活值高占用的问题，可使用 <strong>激活重计算</strong> 技术（又称 Gradient Checkpointing 或 Rematerialization）。</p>

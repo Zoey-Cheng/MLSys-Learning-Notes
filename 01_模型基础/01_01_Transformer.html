@@ -1308,12 +1308,10 @@
 <p><strong>TL; DR</strong>：从原版 Transformer 出发，串到 decoder-only 的工业界代表 <strong>LLaMA</strong>（Pre-Norm RMSNorm / SwiGLU / RoPE），并附一个极简 mini-LLaMA 手写实现。</p>
 </blockquote>
 <ul>
-<li>
-<p><strong>[Quick Ref for 手写code]</strong>：mini Llama ｜ <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/01-mini-llama.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link">Colab</a></p>
-</li>
-<li>
-<p><strong>[可能会考的面试手写题]</strong>：FFN ｜ MLP ｜ 直接手写一个完整 Transformer（真遇到过 😠 ）</p>
-</li>
+<li><strong>[Quick Ref for 手写code]</strong>：mini Llama ｜ <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/01-mini-llama.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link">Colab</a></li>
+</ul>
+<ul>
+<li><strong>[可能会考的面试手写题]</strong>：FFN ｜ MLP ｜ 直接手写一个完整 Transformer（真遇到过 😠 ）</li>
 </ul>
 <h2 id="_1">前言</h2>
 <p>Transformer 在 MLSys 相关面试中，已经成为了"过年的饺子"，被问到的概率极高。当然，也可能因为太基础而被跳过。但作为众多知识点的基石，熟悉 Transformer 是必不可少的——谁知道哪天面试官会让你手写一个 Transformer 呢？</p>
@@ -1365,12 +1363,10 @@ v^i &amp;= W_V a^i
 <p><strong>Step 2: Q, K 操作</strong></p>
 <p>首先以第一个output token <span class="arithmatex">\(b_1\)</span>​的计算为例：</p>
 <ul>
-<li>
-<p><span class="arithmatex">\(b_1\)</span> 的实际意义来源于 <span class="arithmatex">\(a_1\)</span> 和 <span class="arithmatex">\(a_2,a_3,a_4\)</span> 之间的关联。</p>
-</li>
-<li>
-<p>因此我们需要用 <span class="arithmatex">\(q_1\)</span> 和 <span class="arithmatex">\(k_2,k_3,k_4\)</span> 进行匹配计算注意力分数。</p>
-</li>
+<li><span class="arithmatex">\(b_1\)</span> 的实际意义来源于 <span class="arithmatex">\(a_1\)</span> 和 <span class="arithmatex">\(a_2,a_3,a_4\)</span> 之间的关联。</li>
+</ul>
+<ul>
+<li>因此我们需要用 <span class="arithmatex">\(q_1\)</span> 和 <span class="arithmatex">\(k_2,k_3,k_4\)</span> 进行匹配计算注意力分数。</li>
 <li><span class="arithmatex">\(d\)</span> 是之前的embedding纬度度，除以 <span class="arithmatex">\(\sqrt(d)\)</span>是为了避免数值过大影响计算。</li>
 </ul>
 <p><img src="../assets/01-transformer/fig-04.png" alt="fig-04" width="40%" /></p>
@@ -1424,36 +1420,32 @@ O &amp;= \hat{A}V
 <p>Batch Norm 和 Layer Norm的选择使用也是一个常见的问题。</p>
 <p><strong>Norm操作的核心思想</strong>：</p>
 <ul>
-<li>
-<p>将数据转换为均值为 0，方差为 1 的标准正态分布（此处可先忽略<span class="arithmatex">\(\beta, \gamma, \epsilon\)</span>​）。</p>
-</li>
-<li>
-<p>此处参考了pytorch的说明来辅助理解：</p>
-</li>
+<li>将数据转换为均值为 0，方差为 1 的标准正态分布（此处可先忽略<span class="arithmatex">\(\beta, \gamma, \epsilon\)</span>​）。</li>
+</ul>
+<ul>
+<li>此处参考了pytorch的说明来辅助理解：</li>
 </ul>
 <p><img src="../assets/01-transformer/fig-12.png" alt="fig-12" width="30%" /></p>
 <p>简单来说就是，对于一个 <span class="arithmatex">\((N,C,H,W)\)</span> 的input（或 <span class="arithmatex">\((N,C,...)\)</span>都可以 ）：</p>
 <ul>
-<li>
-<p><span class="arithmatex">\(N\)</span>：不同的sample，此处可理解为句子的长度</p>
-</li>
-<li>
-<p><span class="arithmatex">\(C\)</span>：不同的channel，此处可理解为多维的embedding</p>
-</li>
+<li><span class="arithmatex">\(N\)</span>：不同的sample，此处可理解为句子的长度</li>
+</ul>
+<ul>
+<li><span class="arithmatex">\(C\)</span>：不同的channel，此处可理解为多维的embedding</li>
 </ul>
 <p>Layer Norm：</p>
 <ul>
-<li>
-<p>以 <span class="arithmatex">\(N\)</span>​ 为 index做norm</p>
-</li>
-<li>
-<p>即：提取出 N = 1的所有element 做正则化，N = 2 的再做正则化，以此类推</p>
-</li>
+<li>以 <span class="arithmatex">\(N\)</span>​ 为 index做norm</li>
+</ul>
+<ul>
+<li>即：提取出 N = 1的所有element 做正则化，N = 2 的再做正则化，以此类推</li>
+</ul>
+<ul>
 <li>
 <p>此处就等于对每个词，提取出所有feature做一个正则化</p>
+<p><img src="../assets/01-transformer/fig-13.png" alt="fig-13" width="20%" /></p>
 </li>
 </ul>
-<p><img src="../assets/01-transformer/fig-13.png" alt="fig-13" width="20%" /></p>
 <p>Batch Norm：</p>
 <ul>
 <li>以 <span class="arithmatex">\(C\)</span> 为 index做norm</li>
@@ -1495,14 +1487,14 @@ O &amp;= \hat{A}V
 </ul>
 <p><img src="../assets/01-transformer/fig-22.png" alt="fig-22" width="45%" /></p>
 <ul>
-<li>
-<p>Softmax</p>
-</li>
+<li>Softmax</li>
+</ul>
+<ul>
 <li>
 <p>V计算</p>
+<p><img src="../assets/01-transformer/fig-23.png" alt="fig-23" width="35%" /></p>
 </li>
 </ul>
-<p><img src="../assets/01-transformer/fig-23.png" alt="fig-23" width="35%" /></p>
 <p><strong>【第二个MHA】</strong></p>
 <p>第二个MHA的主要区别是，Self-Attention 的 <strong>K, V</strong> 矩阵不是使用 上一个 Decoder block 的输出计算的，而是使用 <strong>Encoder 的编码信息矩阵 C</strong> 计算的。并且这里不需要mask。</p>
 <p>为什么这样做？好处是在 Decoder 的时候，每一位单词都可以利用到 Encoder 侧所有单词的信息。</p>
@@ -1510,21 +1502,17 @@ O &amp;= \hat{A}V
 <h3 id="24-linear-softmax">2.4 Linear + Softmax + 输出</h3>
 <p>Decoder 侧 <strong>最终的目标：预测下一个单词</strong>。</p>
 <ul>
-<li>
-<p>单词从哪里来？词汇表。也就是说我们要从词汇表中找出一个最可能的词作为输出。</p>
-</li>
-<li>
-<p>但是 decoder block 目前的输出是一个shape为 <span class="arithmatex">\([L×d_{model}]\)</span> 的矩阵。</p>
-</li>
+<li>单词从哪里来？词汇表。也就是说我们要从词汇表中找出一个最可能的词作为输出。</li>
+</ul>
+<ul>
+<li>但是 decoder block 目前的输出是一个shape为 <span class="arithmatex">\([L×d_{model}]\)</span> 的矩阵。</li>
 </ul>
 <p>所以最后还有两个步骤：</p>
 <ul>
-<li>
-<p>使用 Linear 层映射到词汇表维度</p>
-</li>
-<li>
-<p>使用 Softmax 计算概率分布，选取最可能的单词</p>
-</li>
+<li>使用 Linear 层映射到词汇表维度</li>
+</ul>
+<ul>
+<li>使用 Softmax 计算概率分布，选取最可能的单词</li>
 </ul>
 <p><strong>【Linear Layer】</strong></p>
 <p>假设：</p>
@@ -1548,26 +1536,22 @@ O &amp;= \hat{A}V
 <h3 id="31">3.1 训练和推理</h3>
 <p><strong>【训练时】</strong></p>
 <ul>
-<li>
-<p>输入序列：<code>["I", "like", "apples"]</code></p>
-</li>
-<li>
-<p>目标序列（需要预测的单词）：<code>["like", "apples", "&lt;END&gt;"]</code></p>
-</li>
+<li>输入序列：<code>["I", "like", "apples"]</code></li>
+</ul>
+<ul>
+<li>目标序列（需要预测的单词）：<code>["like", "apples", "&lt;END&gt;"]</code></li>
 </ul>
 <p>在训练过程中，模型可以 <strong>并行计算</strong>，一次性输入整个句子作为 Input，随后使用 <strong>Mask 机制</strong> 模拟未知后续序列的情况。</p>
 <p><strong>【推理时】</strong></p>
 <p>推理时，模型没有完整的目标序列，只能 <strong>逐步预测下一个单词</strong>：</p>
 <ul>
-<li>
-<p>给定 <code>"I"</code>，模型预测 <code>"like"</code>。</p>
-</li>
-<li>
-<p>用 <code>"I like"</code> 作为输入，模型预测 <code>"apples"</code>。</p>
-</li>
-<li>
-<p>用 <code>"I like apples"</code> 作为输入，模型预测 <code>&lt;END&gt;</code>。</p>
-</li>
+<li>给定 <code>"I"</code>，模型预测 <code>"like"</code>。</li>
+</ul>
+<ul>
+<li>用 <code>"I like"</code> 作为输入，模型预测 <code>"apples"</code>。</li>
+</ul>
+<ul>
+<li>用 <code>"I like apples"</code> 作为输入，模型预测 <code>&lt;END&gt;</code>。</li>
 </ul>
 <p>这种 <strong>自回归（Auto-Regressive）生成方式</strong> 会导致推理速度较慢，因为每个新 Token 需要依赖之前的预测结果。</p>
 <p>因此，为了提升推理效率，衍生出一系列推理加速方法。最主流的方法是 <strong>KV Cache（键值缓存）</strong>，因为它 不会影响生成质量，且可以大幅加速推理（适用于 ChatGPT / GPT-4 / LLaMA）。</p>
@@ -1580,33 +1564,39 @@ O &amp;= \hat{A}V
 </ul>
 <p><strong>为何现在的大模型大部分是Decoder only结构？</strong></p>
 <ul>
-<li><strong>Encoder侧的低秩问题</strong></li>
+<li><strong>Encoder侧的低秩问题</strong><ul>
 <li>低秩：针对encoder侧得到的编码信息矩阵，认为模型学习到的特征可能高度相关，表达能力降低。</li>
 <li>原因：在 Encoder 侧，每个 token 都可以关注整个输入序列，这意味着所有 token 共享相同的 Key/Value，这可能导致注意力分布趋于相似，最终形成一个低秩的表示。</li>
-<li><strong>Decoder-Only 更适合 Zero-Shot</strong></li>
+</ul>
+</li>
+<li><strong>Decoder-Only 更适合 Zero-Shot</strong><ul>
 <li>Zero-Shot：零样本，不给reference sample（对应的概念还有one-shot / few-shot）</li>
 <li>原因：Decoder-Only 结构天然支持 Zero-Shot，因为它<strong>没有参考样本（Reference Sample）</strong>，而是直接基于输入预测输出。</li>
-<li><strong>KV-Cache 优势，提升推理效率</strong></li>
+</ul>
+</li>
+<li><strong>KV-Cache 优势，提升推理效率</strong><ul>
 <li>Decoder-only 支持一直复用 KV-Cache，对多轮对话更友好。</li>
 <li>原因：每个 Token 的表示之和它之前的输入有关，而 Encoder-Decoder就难以做到。</li>
+</ul>
+</li>
 </ul>
 <h3 id="33-llama">3.3 LLama</h3>
 <p>LLaMA是目前为止，效果最好的开源 LLM 之一。它采用 <strong>Decoder-Only 结构</strong>，并对 Transformer 进行了关键改进，以提升训练稳定性、推理速度和长文本处理能力。</p>
 <p><strong>LLaMA 的核心优化点：</strong></p>
 <ul>
-<li>
-<p><strong>RMS Norm 归一化</strong>：Layer Norm 替换为 RMS Norm，去掉均值归一化，减少计算量。</p>
-</li>
-<li>
-<p><strong>SwiGLU 激活函数</strong>：在MLP中使用SwiGLU替代 ReLU，使梯度更平滑，提高训练效果。</p>
-</li>
-<li>
-<p><strong>RoPE 旋转位置编码</strong>：增强相对位置感知能力，提高长文本建模能力。</p>
-</li>
-<li><strong>与标准 Decoder-Only Transformer 的区别</strong>：</li>
+<li><strong>RMS Norm 归一化</strong>：Layer Norm 替换为 RMS Norm，去掉均值归一化，减少计算量。</li>
+</ul>
+<ul>
+<li><strong>SwiGLU 激活函数</strong>：在MLP中使用SwiGLU替代 ReLU，使梯度更平滑，提高训练效果。</li>
+</ul>
+<ul>
+<li><strong>RoPE 旋转位置编码</strong>：增强相对位置感知能力，提高长文本建模能力。</li>
+<li><strong>与标准 Decoder-Only Transformer 的区别</strong>：<ul>
 <li><strong>Norm 位置不同</strong>：LLaMA 采用 <strong>Pre-Norm</strong>（Norm -&gt; Add），而不是标准 Transformer 的 <strong>Post-Norm</strong>（Add -&gt; Norm）。</li>
 <li><strong>位置编码位置不同</strong>：RoPE 直接作用于 Multi-Head Attention（MHA），而不是在输入时加到 Embedding 上。</li>
 <li><strong>Decoder 侧的特殊处理</strong>：在最终输出时，LLaMA 先进行归一化（Norm），再投影到词汇表，而标准 Transformer 是 Projection -&gt; Softmax。</li>
+</ul>
+</li>
 </ul>
 <p><strong>【Pre-Norm RMS】</strong></p>
 <p>传统 Transformer 采用 <strong>Post-Norm（对输出进行归一化）</strong>，但为了提高训练的稳定性， LLaMA 改用 <strong>Pre-Norm（对输入进行归一化）</strong>。</p>
