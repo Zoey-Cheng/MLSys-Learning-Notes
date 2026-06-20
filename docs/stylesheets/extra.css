@@ -166,6 +166,16 @@
   margin-bottom: 0;
 }
 
+/* --------- 行间公式 (KaTeX display math) 上下 margin 收紧 --------- */
+/* KaTeX 默认 .katex-display 是 margin: 1em 0；arithmatex 的 wrapper 也有自己的间距。
+   全压成 0.3em，让公式跟前后文本贴近一点 */
+.md-typeset .katex-display {
+  margin: 0.3em 0 !important;
+}
+.md-typeset div.arithmatex {
+  margin: 0.3em 0;
+}
+
 /* --------- Mermaid 流程图：缩小默认大小 + 居中 (v4)
    v10+ mermaid 把 svg 放进 shadow-root, 外面 CSS 穿不进去
    只能约束外层 <div class="mermaid">, 内层 svg width:100% 会跟着缩 --------- */
@@ -215,10 +225,24 @@
   opacity: 0.6;
 }
 
-/* 一级实心点 (•)；二级空心圈 (◦)；三级实心方块 (▪) */
+/* 一级实心点 (•)；三级实心方块 (▪) */
 .md-typeset ul                 { list-style-type: disc; }
-.md-typeset ul ul              { list-style-type: circle; }
 .md-typeset ul ul ul           { list-style-type: square; }
+
+/* 二级：浏览器内建 circle 太细，禁用 marker 改用 ::before 画粗圆环 */
+.md-typeset ul ul              { list-style: none; }
+.md-typeset ul ul > li         { position: relative; }
+.md-typeset ul ul > li::before {
+  content: "";
+  position: absolute;
+  left: -1.15em;
+  top: 0.55em;
+  width: 0.42em;
+  height: 0.42em;
+  border: 0.13em solid var(--lapis-primary);   /* 圈线粗细 — 想更粗调这里 */
+  border-radius: 50%;
+  opacity: 0.6;
+}
 
 /* --------- bold / em 保留默认黑色 (不要 lapis 化) --------- */
 .md-typeset strong,
