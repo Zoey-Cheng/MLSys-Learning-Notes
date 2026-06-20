@@ -63,6 +63,7 @@ markdown_extensions:
   - toc:
       permalink: false         # 不要 ¶ 锚点（heading id 仍然会生成，右侧 TOC 跳转正常）
       marker: '[toc]'          # 兼容 Typora 风格的小写 marker
+  - mdx_truly_sane_lists       # 让 2 空格缩进就能识别嵌套 bullet（GFM 风格）
 
 extra_javascript:
   - javascripts/heading-font.js   # 标题思源宋体按可达性选源：国外走 Google，国内回落镜像
