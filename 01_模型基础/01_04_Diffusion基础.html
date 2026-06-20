@@ -1652,16 +1652,14 @@ z = \mu + \sigma \cdot \epsilon, \qquad \epsilon \sim \mathcal N(0, I)
 <li><strong>重参数化</strong> <span class="arithmatex">\(z = \mu + \sigma\epsilon\)</span>：直接"从 <span class="arithmatex">\(\mathcal N(\mu, \sigma^2)\)</span> 采 <span class="arithmatex">\(z\)</span>"是个随机操作，梯度不可穿。等效写成 <span class="arithmatex">\(\mu, \sigma\)</span>（NN 的确定函数，梯度能穿）+ 随机源 <span class="arithmatex">\(\epsilon \sim \mathcal N(0, I)\)</span>（不可学），梯度只走可学那一支（详见 §1.6）。</li>
 <li>
 <p><strong>loss 用 ELBO</strong>：理想 loss 是负对数似然 <span class="arithmatex">\(-\log p(x)\)</span>——对应 §1.2 MLE 的目标"模型给真实数据打的概率越高越好"（最大化 <span class="arithmatex">\(\log p(x)\)</span> 等价于最小化 <span class="arithmatex">\(-\log p(x)\)</span>）。但它<strong>算不动</strong>——<span class="arithmatex">\(\log p(x) = \log \int p(x|z)p(z)\,dz\)</span>，要对所有 latent <span class="arithmatex">\(z\)</span> 积分，高维下没闭式。</p>
-<p><strong>解决思路</strong>（完整推导见 <a href="#14-elbo-变分下界-">§1.4 ELBO 变分下界</a>）：找一个可算的下界 ELBO，max ELBO 等于把 <span class="arithmatex">\(\log p(x)\)</span> 顶上去。引入 VAE encoder <span class="arithmatex">\(q_\phi(z|x)\)</span>，ELBO 化成可算的两项：
-$$
-\text{ELBO}(\theta, \phi;\, x) = \underbrace{\mathbb E_{q_\phi(z|x)}[\log p_\theta(x|z)]}<em _mathrm_KL="\mathrm{KL">{\text{重建项} \approx \text{MSE}(x, \hat x)} - \underbrace{D</em>
-$$}}!\big(q_\phi(z|x) \,|\, p(z)\big)}_{\text{KL 正则项: 拉向 } \mathcal N(0,I)</p>
-<ul>
-<li><strong>重建项</strong>：<span class="arithmatex">\(x\)</span> → encoder → <span class="arithmatex">\(z\)</span> → decoder → <span class="arithmatex">\(\hat x\)</span>，越接近原图越大（<span class="arithmatex">\(\le 0\)</span>，越接近 0 越好）</li>
-<li><strong>KL 项</strong>：encoder 输出离标准高斯多远，<span class="arithmatex">\(\ge 0\)</span>，被压向 0 等价于把 <span class="arithmatex">\(q_\phi(z|x)\)</span> 拉向 <span class="arithmatex">\(\mathcal N(0,I)\)</span></li>
-</ul>
+<p><strong>解决思路</strong>（完整推导见 <a href="#14-elbo-变分下界-">§1.4 ELBO 变分下界</a>）：找一个可算的下界 ELBO，max ELBO 等于把 <span class="arithmatex">\(\log p(x)\)</span> 顶上去。引入 VAE encoder <span class="arithmatex">\(q_\phi(z|x)\)</span>，ELBO 化成可算的两项：</p>
 </li>
 </ul>
+<div class="arithmatex">\[
+\text{ELBO}(\theta, \phi;\, x) = \underbrace{\mathbb E_{q_\phi(z|x)}[\log p_\theta(x|z)]}_{\text{重建项} \approx \text{MSE}(x, \hat x)} - \underbrace{D_{\mathrm{KL}}\!\big(q_\phi(z|x) \,\|\, p(z)\big)}_{\text{KL 正则项: 拉向 } \mathcal N(0,I)}
+\]</div>
+<p>- <strong>重建项</strong>：<span class="arithmatex">\(x\)</span> → encoder → <span class="arithmatex">\(z\)</span> → decoder → <span class="arithmatex">\(\hat x\)</span>，越接近原图越大（<span class="arithmatex">\(\le 0\)</span>，越接近 0 越好）
+  - <strong>KL 项</strong>：encoder 输出离标准高斯多远，<span class="arithmatex">\(\ge 0\)</span>，被压向 0 等价于把 <span class="arithmatex">\(q_\phi(z|x)\)</span> 拉向 <span class="arithmatex">\(\mathcal N(0,I)\)</span></p>
 <p><strong>两项都可算</strong>：KL 是两个高斯之间的可算闭式，重建项靠 batch 平均做蒙特卡洛估计（§1.5）。所以 loss = <span class="arithmatex">\(-\)</span>ELBO，可微、可训。</p>
 <p><strong>KL 项就是把 encoder 输出拽向标准高斯的"扭力"</strong>——训练完后，所有训练样本的 latent 加起来差不多铺满整个标准高斯球；推理时直接从 <span class="arithmatex">\(\mathcal N(0, I)\)</span> 采的 <span class="arithmatex">\(z\)</span> 大概率落进 decoder 见过的区域，能出图。</p>
 <p>AE / VAE 对比：</p>
