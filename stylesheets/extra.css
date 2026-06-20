@@ -208,12 +208,17 @@
   background-color: var(--lapis-block-bg);
 }
 
-/* --------- 列表 marker 上色 --------- */
+/* --------- 列表 marker 上色 + 按层级分形状 --------- */
 .md-typeset ul li::marker,
 .md-typeset ol li::marker {
   color: var(--lapis-primary);
   opacity: 0.6;
 }
+
+/* 一级实心点 (•)；二级空心圈 (◦)；三级实心方块 (▪) */
+.md-typeset ul                 { list-style-type: disc; }
+.md-typeset ul ul              { list-style-type: circle; }
+.md-typeset ul ul ul           { list-style-type: square; }
 
 /* --------- bold / em 保留默认黑色 (不要 lapis 化) --------- */
 .md-typeset strong,
