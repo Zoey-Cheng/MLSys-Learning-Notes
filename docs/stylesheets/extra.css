@@ -167,13 +167,22 @@
 }
 
 /* --------- 行间公式 (KaTeX display math) 上下 margin 收紧 --------- */
-/* KaTeX 默认 .katex-display 是 margin: 1em 0；arithmatex 的 wrapper 也有自己的间距。
-   全压成 0.3em，让公式跟前后文本贴近一点 */
-.md-typeset .katex-display {
-  margin: 0.3em 0 !important;
+/* arithmatex generic=true 会输出 <div class="arithmatex">\[...\]</div>，
+   KaTeX auto-render 再渲染成 <span class="katex-display"><span class="katex">...</span></span>。
+   两层 wrapper 都得压：div.arithmatex 是块元素、katex-display 是 KaTeX 自带的块级 margin。
+   还要管住外层 <p> —— Material 给段落本身也有 margin。 */
+.md-typeset .arithmatex,
+.md-typeset div.arithmatex,
+.md-typeset span.arithmatex,
+.md-typeset .katex-display,
+.md-typeset .katex-display > .katex {
+  margin: 0.1em 0 !important;
+  padding: 0 !important;
 }
-.md-typeset div.arithmatex {
-  margin: 0.3em 0;
+/* arithmatex 渲染后外层有时被 <p> 包住，把这个 p 的 margin 也收紧 */
+.md-typeset p:has(> .arithmatex),
+.md-typeset p:has(.katex-display) {
+  margin: 0.1em 0 !important;
 }
 
 /* --------- Mermaid 流程图：缩小默认大小 + 居中 (v4)
@@ -226,20 +235,23 @@
 }
 
 /* 一级实心点 (•)；三级实心方块 (▪) */
-.md-typeset ul                 { list-style-type: disc; }
-.md-typeset ul ul ul           { list-style-type: square; }
+.md-typeset ul                 { list-style-type: disc !important; }
+.md-typeset ul ul ul           { list-style-type: square !important; }
 
 /* 二级：浏览器内建 circle 太细，禁用 marker 改用 ::before 画粗圆环 */
-.md-typeset ul ul              { list-style: none; }
+.md-typeset ul ul              { list-style: none !important; }
 .md-typeset ul ul > li         { position: relative; }
+.md-typeset ul ul > li::marker { content: "" !important; }
 .md-typeset ul ul > li::before {
-  content: "";
-  position: absolute;
+  content: "" !important;
+  position: absolute !important;
+  display: block !important;
   left: -1.15em;
-  top: 0.55em;
-  width: 0.42em;
-  height: 0.42em;
-  border: 0.13em solid var(--lapis-primary);   /* 圈线粗细 — 想更粗调这里 */
+  top: 0.6em;
+  box-sizing: border-box;                      /* 让 width 包含 border, 大小可控 */
+  width: 0.4em;                                /* 这就是外径，跟一级实心点接近 */
+  height: 0.4em;
+  border: 0.09em solid var(--lapis-primary);   /* 圈线粗细 */
   border-radius: 50%;
   opacity: 0.6;
 }
