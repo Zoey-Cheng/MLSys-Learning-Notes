@@ -251,7 +251,7 @@
   box-sizing: border-box;                      /* 让 width 包含 border, 大小可控 */
   width: 0.4em;                                /* 这就是外径，跟一级实心点接近 */
   height: 0.4em;
-  border: 0.09em solid var(--lapis-primary);   /* 圈线粗细 */
+  border: 0.09em solid var(--lapis-primary);  /* 圈线粗细 */
   border-radius: 50%;
   opacity: 0.6;
 }
@@ -281,6 +281,15 @@
 .md-nav .md-nav a.md-nav__link[href] .md-ellipsis {
   text-indent: -1.6em;
   overflow: visible;
+}
+
+/* ---------- 左侧 nav 一级章节标题（折叠 label）加粗 + 灰色 ----------
+   与具体页面链接（蓝/默认色）的视觉层级区分。
+   仅作用于一级章节 label（label.md-nav__link[for^="__nav_"]），
+   不影响右栏 TOC label（for="__toc"）和正文里的 a 链接。 */
+.md-sidebar--primary label.md-nav__link[for^="__nav_"] {
+  font-weight: 700;
+  color: var(--md-default-fg-color--light);
 }
 
 /* 移动端 drawer：给抽屉容器加横向 padding，避免 title / item 顶住屏幕左边 */
