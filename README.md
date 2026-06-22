@@ -43,11 +43,11 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 | 推理优化 | [01-推理基础](notes/05_推理优化/05_01_推理基础.md) | [link](https://zhuanlan.zhihu.com/p/2052410872912418496) | [ipynb](code/08_mini_inference.ipynb) ｜ [colab](https://drive.google.com/file/d/1Zlicq3BShtFv4iWECkbHSqJ2iNZT42xW/view?usp=sharing) | mini inference |
 | 算子 | [01-算子手写(1) - CUDA 入门 op](notes/06_算子/05_01_CUDA入门.md) | [link](https://zhuanlan.zhihu.com/p/1892487783110644443) | [ipynb](code/02-cuda-ops.ipynb) ｜ [colab](https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link) | 一些基础CUDA算子 |
 |  | 02-Flash Attention (上) - FA1/2 *WIP* | | | |
-| ♪ 面试手写题 Quick Ref | 包含 [模型](notes/07_面试手写题/07_01_模型.md) / [推理](notes/07_面试手写题/07_02_推理.md) / [算子](notes/07_面试手写题/07_03_算子CUDA.md) 分开篇章 | | | |
+| ♪ 手写题 Quick Ref | 包含 [模型](notes/07_面试手写题/07_01_模型.md) / [推理](notes/07_面试手写题/07_02_推理.md) / [算子](notes/07_面试手写题/07_03_算子CUDA.md) 分开篇章 | | | |
 
 ## 更新历史
 
-- **06/21/2026**: 新增「♪ 面试手写题 Quick Ref」部分 🐶🐶
+- **06/21/2026**: 新增「♪ 手写题 Quick Ref」部分 🐶🐶
 - **06/21/2026**: 推理优化 → 01-推理基础 [[link]](notes/05_推理优化/05_01_推理基础.md)，网页版和知乎同步发布
 - **06/20/2026**: 模型基础 → 04-Diffusion(上) [[link]](notes/01_模型基础/01_04_Diffusion基础.md)，网页版和知乎同步发布
 - **05/16/2026**: 模型基础 → 02-MoE详解 [[link]](notes/01_模型基础/01_02_MoE.md)，网页版和知乎同步发布
