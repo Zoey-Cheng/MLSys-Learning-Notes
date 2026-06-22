@@ -11,7 +11,7 @@ MLSys 自学笔记，每篇尽量带可运行代码，知乎同步更新。
 - 推理：prefill / decode 分离合并，以及 KV Cache 各类相关优化
 - 算子：基础 CUDA 算子，FA 1/2，进阶 - 架构相关优化、MoE 相关算子
 - RL：……还没想好，DPO/PPO/GRPO，sync / async / multi turn 之类的
-- 面试手写题快查 (模型 / 推理 / 算子)
+- 面试手写题 Quick Ref ([模型](07_面试手写题/07_01_模型.md) / [推理](07_面试手写题/07_02_推理.md) / [算子](07_面试手写题/07_03_算子CUDA.md))
 
 qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 
@@ -30,9 +30,10 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 | 训练方法 | [01-预训练 Pretrain](03_训练方法/03_01_Pretrain.md) | [link](https://zhuanlan.zhihu.com/p/2033923074630870192) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/04_mini_pretrain.ipynb) ｜ [colab](https://drive.google.com/file/d/1VUB1WrZx9KkHBrY9N8E3-Dfmql7aHnjw/view?usp=sharing) | mini pretrain |
 |  | [02-监督微调 SFT](03_训练方法/03_02_SFT.md) | [link](https://zhuanlan.zhihu.com/p/2034286003767218701) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/05_mini_lora_sft.ipynb) ｜ [colab](https://drive.google.com/file/d/1NrDWiGrWPoRrk2yszFXIkDe-DeyKW7B0/view?usp=drive_link) | mini lora SFT |
 | RL | *coming soon* | | | |
-| 推理优化 | 01-推理基础 *WIP* | | | |
+| 推理优化 | [01-推理基础](05_推理优化/05_01_推理基础.md) | | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/08_mini_inference.ipynb) ｜ [colab](https://drive.google.com/file/d/1Zlicq3BShtFv4iWECkbHSqJ2iNZT42xW/view?usp=sharing) | mini inference |
 | 算子 | [01-算子手写(1) - CUDA 入门 op](06_算子/05_01_CUDA入门.md) | [link](https://zhuanlan.zhihu.com/p/1892487783110644443) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/02-cuda-ops.ipynb) ｜ [colab](https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link) | 一些基础CUDA算子 |
 |  | 02-Flash Attention (上) - FA1/2 *WIP* | | | |
+| 🙌 面试手写题 Quick Ref | 包含 [模型](07_面试手写题/07_01_模型.md) / [推理](07_面试手写题/07_02_推理.md) / [算子](07_面试手写题/07_03_算子CUDA.md) 分开篇章 | | | |
 
 **[Why write this?]**
 
@@ -45,6 +46,8 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 
 ## 更新历史
 
+- **06/21/2026**: 新增「🙌 面试手写题 Quick Ref」部分 🐶🐶
+- **06/21/2026**: 推理优化 → 01-推理基础 [[link]](05_推理优化/05_01_推理基础.md)，网页版发布
 - **06/20/2026**: 模型基础 → 04-Diffusion(上) [[link]](01_模型基础/01_04_Diffusion基础.md)，网页版和知乎同步发布
 - **05/16/2026**: 模型基础 → 02-MoE详解 [[link]](01_模型基础/01_02_MoE.md)，网页版和知乎同步发布
 - **05/03/2026**: 训练方法 → 02-SFT [[link]](03_训练方法/03_02_SFT.md)，网页版和知乎同步发布
