@@ -811,7 +811,7 @@
   <span class="md-ellipsis">
     
   
-    🙌 面试手写题 Quick Ref
+    ♪ 面试手写题 Quick Ref
   
 
     
@@ -827,7 +827,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    🙌 面试手写题 Quick Ref
+    ♪ 面试手写题 Quick Ref
   
 
           </label>
@@ -1178,8 +1178,14 @@
 </blockquote>
 <h2 id="mha-with-kv-cache">MHA with KV Cache</h2>
 <ul>
-<li>past_k, past_v：[B, num_head, past_len, head_dim]</li>
-<li>流程：proj → split heads → rope → add kv → Q@K → mask → softmax → @V → merge head → proj return</li>
+<li>past_k, past_v: [B, num_head, past_len, head_dim]</li>
+<li>流程：<ul>
+<li>proj -&gt; split heads</li>
+<li>rope</li>
+<li>add kv</li>
+<li>Q@K -&gt; mask -&gt; softmax -&gt; @v -&gt; merge head -&gt; proj return</li>
+</ul>
+</li>
 </ul>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">MHA_KV</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_head</span><span class="p">,</span> <span class="n">dim</span><span class="p">):</span>
@@ -1222,16 +1228,16 @@
 </code></pre></div>
 <h2 id="next-token-generate">Next Token generate</h2>
 <ul>
-<li>Input：model, prompts, max_token_len, eos_id, past_kv<ul>
+<li>Input: [model, prompts, max_token_len, eos_id, past_kv]<ul>
 <li>prompts [B, n]</li>
 </ul>
 </li>
-<li>Prefill：(past_kv, prompts) → model → logits, past_kv<ul>
-<li>next_id (sample) → out[]（检查 EOS）</li>
+<li>prefill: (past_kv, prompts) -&gt; model -&gt; logits, past_kv<ul>
+<li>Next id (sample) -&gt; out[] (check eos)</li>
 </ul>
 </li>
-<li>Decode：(past_kv, new_token)<ul>
-<li>next_id (sample) → out[]（检查 EOS）</li>
+<li>Decode: (past_kv, new_token)<ul>
+<li>Next id (sample) -&gt; out[] (check eos)</li>
 </ul>
 </li>
 </ul>

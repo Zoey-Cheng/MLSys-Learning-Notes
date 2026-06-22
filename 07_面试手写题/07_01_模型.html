@@ -811,7 +811,7 @@
   <span class="md-ellipsis">
     
   
-    🙌 面试手写题 Quick Ref
+    ♪ 面试手写题 Quick Ref
   
 
     
@@ -827,7 +827,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    🙌 面试手写题 Quick Ref
+    ♪ 面试手写题 Quick Ref
   
 
           </label>
@@ -1116,6 +1116,15 @@
 <blockquote>
 <p>MoE = 复用 FFN（expert）+ router + dispatch</p>
 </blockquote>
+<ul>
+<li>Input: [dim, num_expert, topk]</li>
+<li>FFN class call: (dim)?</li>
+<li>Order:<ul>
+<li>flatten -&gt; Router -&gt; return [logits, topk_weight, topk_idx]</li>
+<li>Per expert dispatch (match non zero -&gt; pos, rank -&gt; not 0? -&gt; out[pos] = w*expert[x[pos]])</li>
+</ul>
+</li>
+</ul>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">MoE</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">num_experts</span><span class="p">,</span> <span class="n">top_k</span><span class="p">):</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
