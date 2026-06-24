@@ -25,12 +25,13 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 |  | [02-MoE 详解 (DeepSeek V1 / Qwen3为例)](01_模型基础/01_02_MoE.md) | [link](https://zhuanlan.zhihu.com/p/2039331127815557840) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/06_mini_moe_qwen3.ipynb) ｜ [colab](https://drive.google.com/file/d/19DwqNBulYpXuyedOMbglgauXsB183Oil/view?usp=sharing) | mini MoE Qwen3 |
 |  | 03-VLM (Qwen3-VL 为例) *WIP* | | | |
 |  | [04-Diffusion(上) - VAE 到 DDPM / DDIM](01_模型基础/01_04_Diffusion基础.md) | [link](https://zhuanlan.zhihu.com/p/2051913285751005547) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/07_basic_ddim.ipynb) ｜ [colab](https://drive.google.com/file/d/1R8kfN8Qv2SQFy7XefKuEW2lebmiElTbP/view?usp=sharing) | Basic DDIM |
-| 训练策略 | [01-分布式训练(0) - 背景知识(通信 & 单卡计算流)](02_训练策略/02_01_分布式训练基础.md) | [link](https://zhuanlan.zhihu.com/p/1897578451143221835) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/03-distributed-demo.ipynb) ｜ [colab](https://drive.google.com/file/d/15V25khFs8M8Ui3LW-_zDXUkquQytvBgq/view?usp=drive_link) | 通信原语 + DDP demo |
+|  | 05-Diffusion(下) *WIP* | | | |
+| 训练策略 | [01-分布式背景知识(通信/单卡计算流)](02_训练策略/02_01_分布式训练基础.md) | [link](https://zhuanlan.zhihu.com/p/1897578451143221835) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/03-distributed-demo.ipynb) ｜ [colab](https://drive.google.com/file/d/15V25khFs8M8Ui3LW-_zDXUkquQytvBgq/view?usp=drive_link) | 通信原语 + DDP demo |
 |  | 02-数据并行 DP *WIP* | | | |
 | 训练方法 | [01-预训练 Pretrain](03_训练方法/03_01_Pretrain.md) | [link](https://zhuanlan.zhihu.com/p/2033923074630870192) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/04_mini_pretrain.ipynb) ｜ [colab](https://drive.google.com/file/d/1VUB1WrZx9KkHBrY9N8E3-Dfmql7aHnjw/view?usp=sharing) | mini pretrain |
 |  | [02-监督微调 SFT](03_训练方法/03_02_SFT.md) | [link](https://zhuanlan.zhihu.com/p/2034286003767218701) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/05_mini_lora_sft.ipynb) ｜ [colab](https://drive.google.com/file/d/1NrDWiGrWPoRrk2yszFXIkDe-DeyKW7B0/view?usp=drive_link) | mini lora SFT |
 | RL | *coming soon* | | | |
-| 推理优化 | [01-推理基础](05_推理优化/05_01_推理基础.md) | [link](https://zhuanlan.zhihu.com/p/2052410872912418496) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/08_mini_inference.ipynb) ｜ [colab](https://drive.google.com/file/d/1Zlicq3BShtFv4iWECkbHSqJ2iNZT42xW/view?usp=sharing) | mini inference |
+| 推理优化 | [01-推理基础(PD / 指标 / KV Cache)](05_推理优化/05_01_推理基础.md) | [link](https://zhuanlan.zhihu.com/p/2052410872912418496) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/08_mini_inference.ipynb) ｜ [colab](https://drive.google.com/file/d/1Zlicq3BShtFv4iWECkbHSqJ2iNZT42xW/view?usp=sharing) | mini inference |
 | 算子 | [01-算子手写(1) - CUDA 入门 op](06_算子/05_01_CUDA入门.md) | [link](https://zhuanlan.zhihu.com/p/1892487783110644443) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/02-cuda-ops.ipynb) ｜ [colab](https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link) | 一些基础CUDA算子 |
 |  | 02-Flash Attention (上) - FA1/2 *WIP* | | | |
 | ♪ 手写题 Quick Ref | 包含 [模型](07_面试手写题/07_01_模型.md) / [推理](07_面试手写题/07_02_推理.md) / [算子](07_面试手写题/07_03_算子CUDA.md) 分开篇章 | | | |
@@ -47,13 +48,13 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 ## 更新历史
 
 - **06/21/2026**: 新增「♪ 手写题 Quick Ref」部分 🐶🐶
-- **06/21/2026**: 推理优化 → 01-推理基础 [[link]](05_推理优化/05_01_推理基础.md)，网页版和知乎同步发布
+- **06/21/2026**: 推理优化 → 01-推理基础(PD / 指标 / KV Cache) [[link]](05_推理优化/05_01_推理基础.md)，网页版和知乎同步发布
 - **06/20/2026**: 模型基础 → 04-Diffusion(上) [[link]](01_模型基础/01_04_Diffusion基础.md)，网页版和知乎同步发布
 - **05/16/2026**: 模型基础 → 02-MoE详解 [[link]](01_模型基础/01_02_MoE.md)，网页版和知乎同步发布
 - **05/03/2026**: 训练方法 → 02-SFT [[link]](03_训练方法/03_02_SFT.md)，网页版和知乎同步发布
 - **05/02/2026**: 训练方法 → 01-Pretrain [[link]](https://zhuanlan.zhihu.com/p/2033923074630870192)，网页版和知乎同步发布
 - **04/25/2026**: 新开 GitHub repo，帖子迁移到网页版了！🎉🎉
-- **04/20/2025**: 训练策略 → 01-分布式训练(0)-背景知识(通信 & 单卡计算流) [[link]](02_训练策略/02_01_分布式训练基础.md)，发布在知乎
+- **04/20/2025**: 训练策略 → 01-分布式背景知识(通信/单卡计算流) [[link]](02_训练策略/02_01_分布式训练基础.md)，发布在知乎
 - **04/06/2025**: 算子 → 01-常见CUDA手写实现 [[link]](06_算子/05_01_CUDA入门.md)，发布在知乎
 - **03/06/2025**: 模型结构 → 01-Transformer详解 [[link]](01_模型基础/01_01_Transformer.md)，发布在知乎
 
