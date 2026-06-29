@@ -1,6 +1,7 @@
 name: Deploy MkDocs site
 
 on:
+  workflow_dispatch:    # 允许 UI 手动触发
   push:
     branches:
       - main
