@@ -23,7 +23,7 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 |---|------|------|-----------|----------|
 | 模型基础 | [01-Transformer 详解 (Llama为例)](01_模型基础/01_01_Transformer.md) | [link](https://zhuanlan.zhihu.com/p/28364382951) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/01-mini-llama.ipynb) ｜ [colab](https://drive.google.com/file/d/1_R9oORTHsXZTkbW9OEUmRz8azSxLGtmW/view?usp=drive_link) | mini Llama |
 |  | [02-MoE 详解 (DeepSeek V1 / Qwen3为例)](01_模型基础/01_02_MoE.md) | [link](https://zhuanlan.zhihu.com/p/2039331127815557840) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/06_mini_moe_qwen3.ipynb) ｜ [colab](https://drive.google.com/file/d/19DwqNBulYpXuyedOMbglgauXsB183Oil/view?usp=sharing) | mini MoE / Qwen3 |
-|  | [03-VLM (Qwen2-VL / DeepSeek-OCR 为例)](01_模型基础/01_03_VLM.md) | | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/09_mini_vlm.ipynb) ｜ [colab](https://drive.google.com/file/d/1XvnV8GDKcBRJ7viE3p9bfzrMWbXcDuwV/view?usp=sharing) | mini VLM / Qwen2-VL |
+|  | [03-VLM (Qwen2-VL / DeepSeek-OCR 为例)](01_模型基础/01_03_VLM.md) | [link](https://zhuanlan.zhihu.com/p/2054938508905690163) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/09_mini_vlm.ipynb) ｜ [colab](https://drive.google.com/file/d/1XvnV8GDKcBRJ7viE3p9bfzrMWbXcDuwV/view?usp=sharing) | mini VLM / Qwen2-VL |
 |  | [04-Diffusion(上) - VAE 到 DDPM / DDIM](01_模型基础/01_04_Diffusion基础.md) | [link](https://zhuanlan.zhihu.com/p/2051913285751005547) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/07_basic_ddim.ipynb) ｜ [colab](https://drive.google.com/file/d/1R8kfN8Qv2SQFy7XefKuEW2lebmiElTbP/view?usp=sharing) | Basic DDIM |
 |  | 05-Diffusion(下) *WIP* | | | |
 | 训练策略 | [01-分布式背景知识(通信/单卡计算流)](02_训练策略/02_01_分布式训练基础.md) | [link](https://zhuanlan.zhihu.com/p/1897578451143221835) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/03-distributed-demo.ipynb) ｜ [colab](https://drive.google.com/file/d/15V25khFs8M8Ui3LW-_zDXUkquQytvBgq/view?usp=drive_link) | 通信原语 + DDP demo |
@@ -47,7 +47,7 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 
 ## 更新历史
 
-- **06/29/2026**: 模型基础 → 03-VLM [[link]](01_模型基础/01_03_VLM.md)，网页版发布
+- **06/29/2026**: 模型基础 → 03-VLM [[link]](01_模型基础/01_03_VLM.md)，网页版和知乎同步发布
 - **06/21/2026**: 新增「♪ 手写题 Quick Ref」部分 🐶🐶
 - **06/21/2026**: 推理优化 → 01-推理基础(PD / 指标 / KV Cache) [[link]](05_推理优化/05_01_推理基础.md)，网页版和知乎同步发布
 - **06/20/2026**: 模型基础 → 04-Diffusion(上) [[link]](01_模型基础/01_04_Diffusion基础.md)，网页版和知乎同步发布
