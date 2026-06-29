@@ -27,7 +27,7 @@
     
     
       
-        <title>03-VLM：从 ViT/CLIP 到 Qwen-VL / DeepSeek - MLSys 菜狗自学笔记</title>
+        <title>03-VLM: 从 ViT/CLIP 到 Qwen2-VL / DeepSeek-OCR - MLSys 菜狗自学笔记</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#03-vlm-vitclip-qwen-vl-deepseek" class="md-skip">
+        <a href="#03-vlm-vitclip-qwen2-vl-deepseek-ocr" class="md-skip">
           跳转至
         </a>
       
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              03-VLM：从 ViT/CLIP 到 Qwen-VL / DeepSeek
+              03-VLM: 从 ViT/CLIP 到 Qwen2-VL / DeepSeek-OCR
             
           </span>
         </div>
@@ -408,7 +408,7 @@
   <span class="md-ellipsis">
     
   
-    03-VLM：从 ViT/CLIP 到 Qwen-VL / DeepSeek
+    03-VLM: 从 ViT/CLIP 到 Qwen2-VL / DeepSeek-OCR
   
 
     
@@ -426,7 +426,7 @@
   <span class="md-ellipsis">
     
   
-    03-VLM：从 ViT/CLIP 到 Qwen-VL / DeepSeek
+    03-VLM: 从 ViT/CLIP 到 Qwen2-VL / DeepSeek-OCR
   
 
     
@@ -1611,7 +1611,7 @@
   
 
 
-<h1 id="03-vlm-vitclip-qwen-vl-deepseek">03-VLM：从 ViT/CLIP 到 Qwen-VL / DeepSeek</h1>
+<h1 id="03-vlm-vitclip-qwen2-vl-deepseek-ocr">03-VLM: 从 ViT/CLIP 到 Qwen2-VL / DeepSeek-OCR</h1>
 <blockquote>
 <p><strong>TL; DR</strong>：相比 LLM 需要理解的（ViT + CLIP/SigLIP + Connector）→ 手写 mini VLM（LLaVA 式 = 冻 vision / LLM + 训 Connector）→ 三个工程问题（动态分辨率 / 位置编码 / token 压缩）→ Qwen-VL 线（Qwen2-VL = mini VLM + 三个工程解）+ DeepSeek 线（ DeepSeek-OCR "光学压缩"）</p>
 </blockquote>
@@ -2216,7 +2216,7 @@
 <li>具体模型上有一些 tricks - Vision Encoder中的优化 (整体换 / 动态分辨率)，nD rope位置编码替换</li>
 </ul>
 <h2 id="7">7. 代码实现</h2>
-<p>按 doc 顺序写三段可跑代码（MiniVLM / Qwen2-VL / DeepEncoder），并和 HF 对齐：完整 notebook <a href="../code/09_mini_vlm.ipynb">09_mini_vlm.ipynb</a>。</p>
+<p>按 doc 顺序写三段可跑代码（MiniVLM / Qwen2-VL / DeepEncoder），并和 HF 对齐。</p>
 <p><strong>验证强度按模型分</strong>：</p>
 <table>
 <thead>
@@ -2245,6 +2245,7 @@
 </tbody>
 </table>
 <p>只 Qwen2-VL 做到数值对齐，因为另外两个没 HF 里对应的对齐目标。</p>
+<p>你可以下载 <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/09_mini_vlm.ipynb">ipynb</a> 或在 <a href="https://drive.google.com/file/d/1XvnV8GDKcBRJ7viE3p9bfzrMWbXcDuwV/view?usp=sharing">Colab</a> 上选 T4 直接运行。</p>
 
 
 
