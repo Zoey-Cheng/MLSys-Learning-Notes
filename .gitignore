@@ -13,3 +13,4 @@ site/
 
 # System
 .DS_Store
+.venv-mkdocs/

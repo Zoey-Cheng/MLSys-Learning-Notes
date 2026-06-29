@@ -86,3 +86,4 @@ plugins:
 
 hooks:
   - hooks/fix_canonical.py
+
