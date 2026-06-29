@@ -299,6 +299,16 @@
     padding-left: 0.8rem;
     padding-right: 0.4rem;
   }
+  /* 嵌套章节展开后里面的 list 也加左 padding —— doc 链接有 text-indent:-1.6em 悬挂缩进，
+     首字符会回到 list 的 padding 起点；不给嵌套 list padding 的话"01."的 0 会贴屏幕边 */
+  .md-nav--primary .md-nav > .md-nav__list {
+    padding-left: 0.8rem;
+  }
+
+  /* 手机端表格：靠左对齐，露出第一列（其余列横向滚动可见），避免居中导致首列被裁 */
+  .md-typeset__scrollwrap {
+    justify-content: flex-start !important;
+  }
 }
 
 /* 访客地图 (MapMyVisitors) 移动端自适应：
