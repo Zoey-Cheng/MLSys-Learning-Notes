@@ -489,7 +489,7 @@
   <a href="#12-vit-token" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.2 ViT: 图变 token
+        1.2 ViT: 图变 token (通常冻结)
       
     </span>
   </a>
@@ -500,7 +500,7 @@
   <a href="#13-clip-siglip" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.3 CLIP / SigLIP: 图文语义对齐
+        1.3 CLIP / SigLIP: 图文语义对齐 (通常冻结)
       
     </span>
   </a>
@@ -1346,7 +1346,7 @@
   <a href="#12-vit-token" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.2 ViT: 图变 token
+        1.2 ViT: 图变 token (通常冻结)
       
     </span>
   </a>
@@ -1357,7 +1357,7 @@
   <a href="#13-clip-siglip" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.3 CLIP / SigLIP: 图文语义对齐
+        1.3 CLIP / SigLIP: 图文语义对齐 (通常冻结)
       
     </span>
   </a>
@@ -1624,37 +1624,37 @@
 <li><strong>[面试点]</strong>：看懂 MiniVLM 部分应该就够了 - Vision 和 LLM部分是相对冻结的，设计的核心是 Connector</li>
 </ul>
 <h2 id="_1">前言</h2>
-<p>读完 <a href="01_01_Transformer.html">01_01_Transformer.md</a> 知道：LLM 只认 embedding 向量序列，不在乎这个向量从哪来。VLM 就是抓住这一点——LLM 本体不动，前面叠一段 pipeline 把"图"转化成能输入 LLM 的 token。本篇大部分内容讲这段 pipeline 怎么搭。</p>
+<p>读完 <a href="01_01_Transformer.html">01_01_Transformer.md</a> 知道：LLM 只认 embedding 向量序列，不在乎这个向量从哪来。VLM 就是抓住这一点——LLM 本体不动，前面加 pipeline 把"图"转化成能输入 LLM 的 token。本篇大部分内容讲这段 pipeline 怎么搭。</p>
 <p>本篇顺序（从概念到 real-world 简化版，同 <a href="01_02_MoE.html">01_02_MoE.md</a> 思路）：</p>
 <ul>
 <li><strong>§1 什么是 VLM</strong>：从 LLM 视角拆出新增设计（Vision Encoder + Connector），对应概念（ViT / CLIP &amp; SigLIP / LLaVA）</li>
-<li><strong>§2 手写最小 VLM</strong>：LLaVA 式 forward 骨架——Vision 和 LLM冻结部分直接call，训 MLP Connector -&gt; token 替换视觉占位</li>
-<li><strong>§3 走向 real-world</strong>：固定分辨率不够用之后绕不开的三件事——动态分辨率 / 2D-RoPE &amp; M-RoPE / token 压缩</li>
-<li><strong>§4 Qwen-VL 系列</strong>：经典版 Qwen2-VL（= §2.1 + §3 三件事补齐）</li>
-<li><strong>§5 DeepSeek 系列</strong>：经典版 DeepSeek-OCR（视觉 token 当文本压缩器，光学压缩）</li>
+<li><strong>§2 手写最小 VLM</strong>：LLaVA 式 forward 骨架——Vision 和 LLM冻结、直接call，训 MLP Connector</li>
+<li><strong>§3 走向 real-world</strong>：固定分辨率不够用——动态分辨率 / 2D-RoPE &amp; M-RoPE / token 压缩</li>
+<li><strong>§4 Qwen-VL 系列</strong>：经典版 Qwen2-VL（= §2.1 + 补§3）</li>
+<li><strong>§5 DeepSeek 系列</strong>：经典版 DeepSeek-OCR（视觉 token 当文本压缩器）</li>
 </ul>
 <p>嗯 Qwen系列还是具有简约设计美感，DeepSeek有点花活儿（和MoE风格一样呢！）</p>
 <h2 id="1-vlm">1. 什么是 VLM</h2>
 <h3 id="11-llm">1.1 相比LLM的三段式</h3>
 <p>从已熟悉 LLM 的角度看，VLM 只需要回答两个问题：</p>
 <blockquote>
-<p><strong>Q1：怎么把一张图变成一串 token？</strong>——VIT（patch 化 + 编码成向量序列）。</p>
+<p><strong>Q1：怎么把一张图变成一串 token？</strong>——VIT（编码成向量序列）</p>
 <p><strong>Q2：这串 token 怎么"接得上"LLM？</strong>——分两层：</p>
 <p>- <strong>Q2a 语义对齐</strong>：feature要表意近似，猫的“图”能靠近"a photo of a cat"那段话
-  - <strong>Q2b 空间对齐</strong>：feature 的维度也得对得上 LLM 的 hidden_dim，不然拼不在一起</p>
+  - <strong>Q2b 空间对齐</strong>：feature 的维度也得对得上 LLM 的 hidden_dim</p>
 </blockquote>
 <p>答完这两个问题，LLM 一侧完全不动。几乎所有理解侧 VLM 都是同一个三段式，三段刚好对应 Q1/Q2：</p>
 <p><img src="../assets/09-vlm/fig-01.png" alt="image-20260627211020200" style="zoom:50%;" /></p>
 <ul>
 <li><strong>Vision Encoder（答 Q1 + Q2a）</strong>：把图编码成一串 visual 特征，<strong>训练时一般全程冻结</strong><ul>
 <li><strong>架构</strong>上是 ViT（§1.2，conv patch 当 token，答 Q1）</li>
-<li>但<strong>预训练目标</strong>必须用 CLIP/SigLIP（§1.3，答 Q2a），feature 才"懂语言"，才能和后面的 LLM 接得上</li>
+<li>但<strong>预训练目标</strong>必须用 CLIP/SigLIP对齐图文（§1.3，答 Q2a），feature 才"懂语言" + 能和后面的 LLM 接得上</li>
 </ul>
 </li>
 </ul>
 <ul>
 <li><strong>Connector / Projector（答 Q2b）</strong>：<ul>
-<li>ViT 出来的 feature 维度（如 1024）和 LLM 的 hidden_dim（如 4096）不一样，要一个 MLP 投过去</li>
+<li>ViT 出来的 feature 维度（如 1024）和 LLM 的 hidden_dim（如 4096）不一样，要 MLP 投过去</li>
 <li><strong>这是整套结构里唯一从头训的部件</strong>——也是 VLM 设计里改动最频繁的（§1.4）。</li>
 </ul>
 </li>
@@ -1662,65 +1662,68 @@
 <ul>
 <li><strong>LLM</strong>：直接拿现成的文本基座（Vicuna / LLaMA / Qwen / DeepSeek），结构上几乎不动。训练初期冻结、后期 SFT 时才解冻调</li>
 </ul>
-<p>三段里 LLM 拿来即用，Vision Encoder 是从视觉领域借的（且训练时冻着），真正从头训的只有 Connector——所以 LLaVA 范式只用 ~1M 量级数据就能训好（详 §2.2 训练阶段 + §1.4 LLaVA 范式胜出原因）。VLM 设计空间也就集中在 Connector 和"怎么喂图"上（§3 工程问题）。</p>
-<h3 id="12-vit-token">1.2 ViT: 图变 token</h3>
-<p><strong>ViT (Vision Transformer)</strong> = 把图先切块当 token、再走一遍纯 Transformer 主干。拆成三步（以 ViT-B/16 处理 <code>224×224×3</code> 为例）：</p>
+<p>三段里 (1) LLM 拿来即用；(2) Vision Encoder 是从视觉领域借的（且训练时冻着）；(3) 真正从头训的只有 Connector——所以 LLaVA 范式只用 ~1M 量级数据就能训好。VLM 设计空间也就集中在 Connector 和"怎么喂图"上（§3 工程问题）。</p>
+<h3 id="12-vit-token">1.2 ViT: 图变 token (通常冻结)</h3>
+<p><strong>ViT (Vision Transformer)</strong> = 把图先切成 token、再走一遍纯 Transformer 主干。拆成三步（以 ViT-B/16 处理 <code>224×224×3</code> 为例）：</p>
 <ul>
 <li><strong>入口</strong>：Conv Patchify + <code>[CLS]</code> + 位置编码<ul>
-<li><strong>Conv Patchify</strong>：图过一次 <strong>无重叠的 Conv2d</strong>（<code>kernel = stride</code>），每个输出位置就是一个 token——业界把它叫 <strong>patch</strong>（kernel 覆盖原图的一个小方块）。</li>
+<li><strong>Conv Patchify</strong>：图过一次 <strong>无重叠的 Conv2d，每个输出位置就是一个 token——业界把它叫 patch</strong></li>
 <li><strong><code>[CLS]</code> token</strong>：BERT 沿用过来的"分类位"——一个加在序列最前面的可学习向量，N 层 attention 之后它的 hidden 就是整张图的"摘要"（出口拿它过分类头）。</li>
-<li><strong>位置编码</strong>：一个可学习的位置矩阵，逐元素加到序列上。和 LLaMA 的 RoPE（每层旋转 Q/K）不同，ViT 这里是进 Transformer 之前<strong>一次性加好</strong>，后面 N 层都不再管位置。</li>
+<li><strong>位置编码</strong>：一个可学习的位置矩阵，<strong>逐元素</strong>加到序列上。和 LLaMA 的 RoPE（每层旋转 Q/K）不同，ViT 这里是进 Transformer 之前<strong>一次性加好</strong>，后面 N 层都不再管位置。</li>
 </ul>
 </li>
 <li><strong>主干</strong>：N 层 Transformer</li>
-<li><strong>出口</strong>：<strong>取 <code>[CLS]</code> 过分类头</strong>——结构和 LLM 末尾的 <strong>LM head</strong> 完全一样（<code>Linear(d, K)</code> → K 类 logits），区别只在 K：CV 叫"分类头"（K = <code>num_classes</code>），LLM 叫"LM head"（K = <code>vocab_size</code>）。本质都是"对一个离散集合做分类"。</li>
+<li><strong>出口</strong>：<strong>取 <code>[CLS]</code> 过分类头</strong>（<code>Linear(d, K)</code> → K 类 logits）——结构和 LLM 末尾的 <strong>LM head</strong> 完全一样（K = <code>vocab_size</code>）。</li>
 </ul>
-<p>先一图看整体形状流转。</p>
 <p><img src="../assets/09-vlm/fig-02.png" alt="image-20260624135126530" style="zoom:40%;" /></p>
-<p>图里数字按 ViT-B/16 走（hidden_dim <strong>768</strong>、N = 12 层、分类头到 ImageNet 1000 类）。对照 LLM 的 LM head 是同一个 <code>Linear(d, K)</code>，K = <code>vocab_size</code> 通常 32k–150k（LLaMA-3 128k、Qwen 152k）。</p>
-<p><strong>一个事实约束</strong>：ViT 没有 CNN 的局部性归纳偏置（卷积自带平移不变性、局部连接），所以只有在超大规模数据上预训练才会显著超过 CNN（原文用 JFT-300M，3 亿张图）。</p>
-<h3 id="13-clip-siglip">1.3 CLIP / SigLIP: 图文语义对齐</h3>
+<p>图里数字按 ViT-B/16 走（hidden_dim <strong>768</strong>、N = 12 层、分类头到 ImageNet 1000 类）。</p>
+<p><strong>一个事实约束</strong>：ViT 没有 CNN 的局部性归纳偏置，所以只有在超大规模数据上预训练才会显著超过 CNN（原文用 JFT-300M，3 亿张图）。</p>
+<h3 id="13-clip-siglip">1.3 CLIP / SigLIP: 图文语义对齐 (通常冻结)</h3>
 <p>接 §1.2 末尾：ViT 必须大规模预训练，但 ImageNet 分类预训练对 VLM 不友好——学到的 feature 只为"分进 1000 类某一类"服务，和语言没有直接关系（向量空间里"狗"特征和"dog"这个词无关）。VLM 要的是：feature = 语言级语义，CLIP / SigLIP 就是这个语义对齐的两种解法。</p>
+<p>模型中，大部分时候是直接用对齐好的ckpt的，但有时候也会在次基础上解冻训练（见Qwen系列）。</p>
 <p><strong>[CLIP（OpenAI, 2021）：图文对比对齐]</strong></p>
-<p>核心 idea：放弃人工分类标签，用 4 亿对 <code>(图, 描述文本)</code> 配对来训——让"猫的图特征"和"a photo of a cat" 的文本特征靠近。</p>
+<p>核心 idea：放弃人工分类标签，用 4 亿对 <code>(图, 描述文本)</code> 配对来训——让"猫的图"和"a photo of a cat" 文本特征靠近。</p>
+<blockquote>
+<p>如果不想了解训练设计，看到这里已经可以跳过了。</p>
+</blockquote>
 <p>CLIP 结构 = 双塔 + 共享投影空间——两个 encoder 独立处理图和文，但都投到同一个 d 维空间，可以直接算余弦相似度：</p>
 <ul>
-<li><strong>Image Tower</strong>：<code>[B, 3, H, W]</code> 图 → ViT（§1.2 那个）→ <code>[B, hidden_vit]</code> → <strong>Linear 投影到 <code>[B, d]</code></strong> → <strong>L2 归一化</strong>。</li>
+<li><strong>Image Tower</strong>：<code>[B, 3, H, W]</code> 图 → ViT → <code>[B, hidden_vit]</code> → <strong>Linear 投影到 <code>[B, d]</code></strong> → <strong>L2 归一化</strong>。</li>
 <li><strong>Text Tower</strong>：<code>[B, T]</code> 文本 token → Transformer 主干 → 取 <code>[EOS]</code> 位置的 hidden <code>[B, hidden_txt]</code> → <strong>Linear 投影到 <code>[B, d]</code></strong>（<strong>同一个 d</strong>）→ <strong>L2 归一化</strong>。</li>
 </ul>
 <blockquote>
-<p><strong><code>[EOS]</code> 不是终止符吗？</strong> 在 CLIP 的 text encoder 里它还兼"全句摘要位"——因为 text encoder 是 <strong>causal</strong>（看前不看后），只有最末尾的 <code>[EOS]</code> 看遍了全句。对偶于 BERT/ViT 的 <code>[CLS]</code> 放最前面（<strong>双向</strong> attention 才能放最前）。</p>
+<p><strong><code>[EOS]</code> 不是终止符吗？</strong> 在 CLIP 的 text encoder 里它还兼"全句摘要位"——因为 text encoder 是 <strong>causal</strong>（看前不看后），只有最末尾的 <code>[EOS]</code> 看遍了全句。</p>
 <p><strong>L2 归一化 vs L1 归一化，为啥这里用 L2？</strong></p>
 <ul>
 <li><strong>L1 归一化</strong>：除以 <code>Σ|v_i|</code>（绝对值之和）→ 元素和 = 1。</li>
 <li><strong>L2 归一化</strong>：除以 <code>√(Σv_i²)</code>→ Euclidean 欧几里得 长度 = 1。例：2D 向量 <code>(3,4)</code>，√(9+16) = 5，除以 5 → <code>(0.6, 0.8)</code>，平方和 = 1。</li>
-<li><strong>为什么 CLIP 用 L2</strong>：余弦相似度公式 <code>cos(v,t) = (v·t)/(‖v‖₂‖t‖₂)</code>，分母是两个向量的 L2 范数（Euclidean 长度）。L2 归一化后分母 = 1，<strong>余弦退化成纯点积</strong> <code>v·t</code>——既简化计算，又把"方向"作为唯一信号（向量 magnitude 不再混淆训练）。L1 不匹配这个公式。</li>
+<li><strong>为什么 CLIP 用 L2</strong>：余弦相似度公式 <code>cos(v,t) = (v·t)/(‖v‖₂‖t‖₂)</code>，用L2 <strong>余弦退化成纯点积</strong> <code>v·t</code>，方便计算</li>
 </ul>
 </blockquote>
 <p><img src="../assets/09-vlm/fig-03.png" alt="image-20260627211212977" style="zoom:50%;" /></p>
 <ul>
 <li><strong>训练 loss（对称 InfoNCE，只训练时用）</strong>：<ul>
-<li><strong>相似度矩阵 <code>M = V @ T.T ∈ [N, N]</code></strong>（每格 <code>M[i,j] = v_i · t_j</code>，L2 归一化后 = 余弦相似度）；<strong>GT = N×N 单位矩阵 <code>I</code></strong>（对角线 1，其它 0），训练目标 = 把 M 推成 I 的形状（要的只是相对排序——<code>M[i,i]</code> 在同行同列里最大，不要求绝对值 = 1）。</li>
+<li><strong>GT = N×N 单位矩阵 <code>I</code></strong>（对角线 1，其它 0），训练目标 = 把 M 推成 I 的形状（要的只是相对排序——<code>M[i,i]</code> 在同行同列里最大，不要求绝对值 = 1）。</li>
 <li><strong>必须整 batch 一起算</strong>：每张图 <code>v_i</code> 要和 batch 里 N 个文本都算相似度，才有"正样本 <code>t_i</code> vs N−1 个负样本"的对比信号；单对单算不出 loss。</li>
 <li><strong>Loss = 对称 softmax + CE</strong>：按行算 N 次 CE（"图找文本"：等价于 v_i 在 N 个 t 里挑 t_i 的 N 类分类）+ 按列算 N 次 CE（"文本找图"），两边相加。</li>
 </ul>
 </li>
 </ul>
 <ul>
-<li><strong>训完后 / VLM 用法</strong>：只用图像塔（文本塔丢掉），它输出的 feature 已"指向"语言空间——猫的图 feature 会自然靠近 "a photo of a cat" 那段话的文本 feature。</li>
+<li><strong>训完后 / VLM 用法</strong>：只用图像塔（文本塔丢掉），它输出的 feature 已"指向"语言空间</li>
 </ul>
 <p><strong>[SigLIP（Google, 2023）：同思路换 loss（softmax → sigmoid），工程化]</strong></p>
-<p>结构和 CLIP 完全一样（双塔 + 共享投影空间 + GT = 单位矩阵 <code>I</code>），只换"怎么对比 M 和 I"。改的动机是 CLIP loss 在工程上有两个痛点（CLIP 强依赖大 batch——论文 batch = 32k，负样本越多对比信号越强——把痛点放大）：</p>
+<p>结构和 CLIP 完全一样，只换"怎么对比 M 和 I"。改的动机是 CLIP loss 在工程上有两个痛点（CLIP 强依赖大 batch——论文 batch = 32k，负样本越多对比信号越强）：</p>
 <ul>
-<li><strong>softmax 是 batch 级归一化</strong>：第 i 行分母 <code>Σ_j exp(M[i,j])</code> 要看遍整个 batch；分布式必须先 <strong>all-gather</strong>（每张卡把数据广播给所有卡，每卡拿到完整全局数据）才能算。</li>
-<li><strong>N×N 相似度矩阵 → 显存 <code>O(N²)</code></strong>：batch 一大就爆。</li>
+<li><strong>softmax 是 batch 级归一化</strong>：softmax 要看遍整个 batch；分布式必须先 <strong>all-gather</strong></li>
+<li><strong>N×N 相似度矩阵 → 显存 <code>O(N²)</code></strong>：batch 一大就爆</li>
 </ul>
-<p><strong>SigLIP 改法：softmax → sigmoid</strong>——把"N 路分类"变成 <strong>N² 个独立二分类</strong>。M 的每格 <code>M[i,j]</code> 单独问"配对吗？"：sigmoid 输出 <code>σ(M[i,j])</code>，和 <code>GT[i,j]</code> 算 <strong>Binary CE</strong>。每格独立 → 自然分块、不要 all-gather、显存线性。</p>
+<p><strong>SigLIP 改法：softmax → sigmoid</strong>——把"N 路分类"变成 <strong>N² 个独立二分类</strong>。M 的每格 <code>M[i,j]</code> 单独问"配对吗？" -&gt; 每格独立</p>
 <blockquote>
 <p>SigLIP 输出的图像特征同样"自带语义"，可以直接替换 CLIP 当 vision encoder。2023 年起新一代 VLM 几乎都用 SigLIP 系（Qwen3-VL 用 SigLIP2-SO400M、DeepSeek-VL2 用 SigLIP-SO400M，直接调用 checkpoint）。</p>
 </blockquote>
 <h3 id="14-llava">1.4 LLaVA: 图文空间对齐</h3>
-<p>§1.3 训出了 vision encoder（CLIP/SigLIP 图像塔），能输出"带语义"的视觉 feature。但这些 feature 在自己的 <code>d_vision</code> 空间里（如 <strong>1024</strong>），和 LLM 的 <code>d_llm</code> 词嵌入空间（如 <strong>4096</strong>）——维度对不上、分布也不一样，没法直接拼进 LLM 输入。还差一个<strong>变换</strong>把它送进 LLM 空间，让 LLM 当普通 token 读。这个变换就是 <strong>Connector / Projector</strong>。</p>
+<p>§1.3 训出了可以直接用的 vision encoder（CLIP/SigLIP 图像塔），能输出"带语义"的视觉 feature。但这些 feature 在自己的 <code>d_vision</code> 空间里（如 <strong>1024</strong>），和 LLM 的 <code>d_llm</code> 词嵌入空间（如 <strong>4096</strong>）——维度对不上、分布也不一样，没法直接拼进 LLM 输入。还差一个<strong>变换</strong>把它送进 LLM 空间，让 LLM 当普通 token 读。这个变换就是 <strong>Connector / Projector</strong>。</p>
 <p>历史上有三条路，按"对 LLM 改动从大到小"排：</p>
 <p><img src="../assets/09-vlm/fig-04.png" alt="image-20260627213632786" style="zoom:50%;" /></p>
 <p><strong>[范式 A：Cross-Attention 注入] —— Flamingo（2022，已淘汰）</strong></p>
@@ -1736,14 +1739,17 @@
 <li><strong>淘汰原因</strong>：query 数定死 → <strong>有损压缩</strong>，细粒度任务（DocVQA、OCR）明显处于劣势；query 训练比 MLP 难调，对数据配比敏感。</li>
 </ul>
 <p><strong>[范式 C：MLP 投影] —— LLaVA（2023，胜出，主流方案）</strong></p>
-<p>最朴素：一个可训练 MLP 把每个 patch feature 独立投到 LLM 词嵌入空间。整套结构里只有这个 MLP 是从头训的——ViT 和 LLM 都用预训练好的现成模型。这是 LLaVA 范式数据高效的根本原因。</p>
+<ul>
+<li>最朴素：一个可训练 MLP 把每个 patch feature 独立投到 LLM 词嵌入空间。</li>
+<li>整套结构里只有这个 MLP 是从头训的——ViT 和 LLM 都用预训练好的现成模型。这是 LLaVA 范式数据高效的根本原因。</li>
+</ul>
 <p><strong>为什么胜出</strong>：</p>
 <ul>
 <li><strong>信息无损</strong>：patch token 数原封不动搬过去，细粒度任务（OCR、文档）不踩坑。</li>
 <li><strong>训练稳定 + 数据高效</strong>：MLP 是最简单的可训练变换，从头训的参数量极小。LLaVA 约 <strong>1M</strong> 量级图文对就训得很好，而 Q-Former 路线动辄 <strong>1B+</strong>（因为 Q-Former 自身那套 query + cross-attn 参数也得从头训）。</li>
-<li><strong>要压 token 数也不必上 Q-Former</strong>：简单的 2×2 合并 / average pooling 就能顶上（§3.3 的 PatchMerger 就是这个升级），避免 Q-Former 那套复杂结构。</li>
+<li><strong>要压 token 数也不必上 Q-Former</strong>：简单的 2×2 合并 / average pooling 就能顶上（§3.3 PatchMerger），避免 Q-Former 复杂结构。</li>
 </ul>
-<p>到这里 <strong>三段式全齐</strong>：vision encoder（CLIP/SigLIP）+ connector（MLP）+ LLM（Vicuna/LLaMA/Qwen/...）= <strong>LLaVA 架构</strong>。下一节 §2 把它写成代码，就是个最小 VLM。</p>
+<p>到这里 <strong>三段式全齐</strong>：vision encoder (VIT + CLIP/SigLIP) + connector (MLP) + LLM (Vicuna/LLaMA/Qwen/...) = <strong>LLaVA 架构</strong>。下一节 §2 把它写成代码，就是个最小 VLM。</p>
 <h3 id="15">1.5 一条时间线</h3>
 <table>
 <thead>
@@ -1817,13 +1823,18 @@
 <p>目的：看清"三段式"拼起来到底是什么——其实就是 encode 图 → 投影 → 把视觉 token 拼进文本序列，剩下全交给原来的 LLM。这就是后面所有真实模型的公共最小核（类比 <a href="01_02_MoE.html">01_02_MoE.md</a> 里的 BasicMoE）。</p>
 </blockquote>
 <h3 id="21-llava-mini-vlm">2.1 LLaVA 式 mini VLM</h3>
-<p><strong>先说三段都用什么具体模块</strong>（以 LLaVA-1.5 为例）：</p>
+<p><strong>先说三段都用什么具体模块</strong>（以 LLaVA-1.5 为例），拼起来就是 forward：</p>
 <ul>
-<li><strong>Vision Tower (全程冻结)</strong>：直接call CLIP ViT-L/14-336，输入 <code>[B, 3, 336, 336]</code>，按 §1.2 的 patchify，patch=14 → <code>(336/14)² = 24×24 = 576</code> 个 patch → 输出 <code>[B, 576, 1024]</code>（576 个 patch token，每个 d_vision = 1024）。</li>
+<li><strong>Vision Tower (全程冻结)</strong>：直接call CLIP ViT-L/14-336，输入 <code>[B, 3, 336, 336]</code>，按 §1.2 的 patchify  → <code>576 个 patch</code> → 输出 <code>[B, 576, 1024]</code>（576 个 patch token，d_vision = 1024）。</li>
 <li><strong>Projector (训练主体)</strong>：<strong>两层 MLP</strong> <code>Linear(1024, 4096) → GELU → Linear(4096, 4096)</code>。把每个 patch token 的 1024 维投到 LLM 的 hidden_dim（4096）。唯一需要从头训的部件。</li>
 <li><strong>LLM (冻结, SFT 时训练)</strong>：现成文本基座，hidden_dim = 4096，<strong>结构完全不改</strong>。LLaVA-1.5 原版用 <strong>Vicuna-7B</strong>（= LLaMA-2 + ShareGPT 对话数据微调出来的 chat 模型）。</li>
 </ul>
-<p>拼起来就是 forward——关键 trick：在输入文本里放 <strong>N_patch 个连续 <code>&lt;image&gt;</code> 占位 token</strong>（LLaVA-1.5 = 576 个），先正常 embedding 查表得到 <code>[T, d_llm]</code> 序列；再把这 576 个占位位置的 embedding <strong>替换</strong>成投影后的 576 个视觉 token。这样后面 LLM 完全按普通 causal LM 跑，根本不知道某些 token 是从图来的。</p>
+<p>关键 trick：</p>
+<ul>
+<li>在输入文本里放 <strong>N_patch 个连续 <code>&lt;image&gt;</code> 占位 token</strong>，先正常 embedding 查表得到序列</li>
+<li>再把这 N 个占位位置的 embedding <strong>替换</strong>成投影后的 N 个视觉 token。</li>
+</ul>
+<p>这样后面 LLM 完全按普通 causal LM 跑，根本不知道某些 token 是从图来的。</p>
 <p><img src="../assets/09-vlm/fig-05.png" alt="image-20260628181118968" style="zoom:50%;" /></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># 双塔: 都是预训练好的现成模型, 直接加载即可 </span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">CLIPVisionModel</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span>
@@ -1898,7 +1909,6 @@
 <li>真正接近硬约束的是阶段 ①"只训 projector"： ViT 和 LLM 都是预训练好的，唯一没对齐的就是中间那个 projector，先单独把它训出来最稳。</li>
 </ul>
 </blockquote>
-<p>真实模型一般把这个拉成<strong>三到四阶段</strong>（encoder 对齐 → 大规模图文预训练 → 长序列 / 视频 → SFT/RL），但骨架还是这个"先对齐 connector、再逐步解冻"的思路。各家具体阶段在 §4/§5 各模型里提。</p>
 <h2 id="3-real-world">3. 走向 real-world：绕不开的问题</h2>
 <p>最小 VLM（§2）有个隐含前提：图像被 resize 成固定分辨率（LLaVA 的 336×336）。</p>
 <p>但真实场景立刻打破：4K 文档、竖屏视频、超宽表格……固定分辨率要么压糊小字、要么强行拉成方形毁掉长宽比。真实 VLM 普遍要解决<strong>三个连环问题</strong>：</p>
@@ -1908,7 +1918,7 @@
 <ul>
 <li><strong>低分辨率丢细节</strong>（小字、图表线条压糊）</li>
 <li>强行改长宽比导致形变（长文档被拉成正方形）</li>
-<li>而且不同图信息密度差异大——同一个固定 token 数既浪费又不够</li>
+<li>而且不同图信息密度差异大</li>
 </ul>
 <p>两条解法：</p>
 <table>
@@ -1925,7 +1935,7 @@
 <td><strong>原生分辨率(NaViT)</strong></td>
 <td>保留原图分辨率和长宽比直接切 patch → 不同图得到不同 patch 数（变长序列）</td>
 <td>Qwen2-VL 起</td>
-<td>ViT 原版绝对位置编码废了，必须换（→ §3.2）；多张图打包进同一序列要额外处理</td>
+<td>ViT 原版绝对位置编码废了，必须换（→ §3.2）</td>
 </tr>
 <tr>
 <td><strong>动态切图(Dynamic Tiling)</strong></td>
@@ -1935,7 +1945,7 @@
 </tr>
 </tbody>
 </table>
-<p>两条路殊途同归：token 数随图实际大小走，<code>token 数 ∝ (H/patch) × (W/patch)</code>。代价：token 可能很多——引出 §3.3。</p>
+<p>两条路殊途同归：<code>token 数 ∝ 图实际大小</code>。代价：token 可能很多——引出 §3.3。</p>
 <h3 id="32-1d-2d-m-rope">3.2 位置编码：1D → 2D / M-RoPE</h3>
 <p><strong>为什么必须重做</strong>：</p>
 <ul>
@@ -1943,14 +1953,14 @@
 <li>LLM 用的 1D RoPE 也表达不了图像 2D / 视频 3D 的结构。</li>
 </ul>
 <blockquote>
-<p><strong>RoPE 回顾</strong>（详 <a href="01_01_Transformer.html">01_01_Transformer.md</a>）：LLaMA 用的位置编码——把 token 在序列里的 1D 位置编进 Q/K 的旋转角度，位置 <code>i</code> 对应一组旋转角，不同位置的 Q/K 内积自然带上相对位置信息。文本只需 1 个位置轴。</p>
+<p><strong>RoPE 回顾</strong>（详 <a href="01_01_Transformer.html">01_01_Transformer.md</a>）：LLaMA 用的位置编码——把 token 在序列里的 1D 位置编进 Q/K 的旋转角度，位置 <code>i</code> 对应一组旋转角，不同位置的 Q/K 内积自然带上相对位置信息。<strong>文本只需 1 个位置轴</strong>。</p>
 </blockquote>
 <p>分两层做：</p>
-<p><strong>[ViT 内部] 2D-RoPE</strong>：head 维度切两半，一半按 patch x 坐标旋转、一半按 y 坐标旋转——有了 2D 相对位置，<strong>任意分辨率都能用</strong>（不像绝对位置编码换尺寸要插值）。</p>
+<p><strong>[ViT 内部] 2D-RoPE</strong>：head 维度切两半，一半按 patch x 坐标旋转、一半按 y 坐标旋转——有了 2D 相对位置，<strong>任意分辨率都能用</strong>。</p>
 <p><strong>[LLM 侧] M-RoPE（Multimodal RoPE，Qwen2-VL 提出）—— 本质就是 3D RoPE</strong>：把 1D 序列位置扩成 <code>(t, h, w)</code> 三轴，head 维度切成 时间 t / 高 h / 宽 w 三段分别旋转 Q/K。文本 token 三轴相同 → 自动退化成 1D-RoPE；图像/视频用各自的 <code>(t, h, w)</code></p>
 <p><img src="../assets/09-vlm/fig-06.png" alt="image-20260628185412244" style="zoom:50%;" /></p>
 <h3 id="33-token-patchmerger">3.3 token 压缩：PatchMerger</h3>
-<p>§3.1 的副作用：一张高分辨率图能切出几千个 patch，全塞进 LLM 序列又长又贵（attention 是 <code>O(T²)</code>）。投影进 LLM 之前要先压一道。</p>
+<p>§3.1 动态分辨率的副作用：一张高分辨率图能切出几千个 patch，全塞进 LLM 序列又长又贵（attention 是 <code>O(T²)</code>）。投影进 LLM 之前要先压一道。</p>
 <p><strong>主流做法：PatchMerger（= 2×2 合并 + MLP）</strong></p>
 <ul>
 <li>相邻 2×2 的 4 个视觉 token 在 hidden 维上拼起来（<code>d → 4d</code>）</li>
@@ -1958,10 +1968,11 @@
 <li>token 数直接降到 1/4</li>
 </ul>
 <p><img src="../assets/09-vlm/fig-07.png" alt="image-20260628185546159" style="zoom:50%;" /></p>
-<p><strong>重要</strong>：PatchMerger 就是 §2 那个 projector——压缩和"投到 LLM 空间"合并成一步。InternVL 的 pixel unshuffle 是同一思路。</p>
+<p><strong>重要</strong>：PatchMerger 就是 §2 那个 projector——压缩和"投到 LLM 空间"合并成一步。</p>
 <p>这三件事（动态分辨率 + 2D/M-RoPE + PatchMerger）是 2024 后所有真实 VLM 的标配。下面 §4/§5 看两条模型线怎么组装、又各自加了什么。</p>
 <h2 id="4-qwen-vl">4. Qwen-VL 系列</h2>
-<p>Qwen 这条线从 2023 走到 2026 跨了五代，几乎踩过 §3 每一个工程问题。和 <a href="01_02_MoE.html">01_02_MoE.md</a> §5 一样，挑一代当经典展开——选 Qwen2-VL：它是 §3 三件事第一次被一次性补齐的转折点，结构最有代表性，之后各代都是 "Qwen2-VL + X" 的增量（详 §4.1 表 + DeepStack callout）。</p>
+<p>Qwen 这条线从 2023 走到 2026 跨了五代，几乎踩过 §3 每一个工程问题。</p>
+<p>和 <a href="01_02_MoE.html">01_02_MoE.md</a> §5 一样<strong>挑一代当经典展开——选 Qwen2-VL</strong>：它是 §3 三件事第一次被一次性补齐的转折点，结构最有代表性，之后各代都是 "Qwen2-VL + X" 的增量。</p>
 <h3 id="41">4.1 设计变化对比</h3>
 <p><strong>先回忆每个组件有哪些主流选项</strong>（<strong>加粗 = 2024 后真实模型的主流</strong>）：</p>
 <p>基础结构：</p>
@@ -1974,7 +1985,7 @@
 <ul>
 <li><strong>Vision Encoder 分辨率</strong>：固定 / <strong>动态分辨率 NaViT</strong> / 动态切图 Tiling（§3.1）</li>
 <li><strong>Vision Encoder 位置编码</strong>：绝对位置编码 / <strong>2D-RoPE</strong>（§3.2）</li>
-<li><strong>LLM 位置编码</strong>：1D-RoPE / <strong>M-RoPE 三D</strong>（§3.2）/ Interleaved-MRoPE（= M-RoPE 频段交错版，§4.2）</li>
+<li><strong>LLM 位置编码</strong>：1D-RoPE / <strong>M-RoPE 3D</strong>（§3.2）/ Interleaved-MRoPE（= M-RoPE 频段交错版，§4.2）</li>
 <li><strong>LLM 上下文长度</strong>：LLM 一次能处理的最大 token 数（视觉 + 文本一起算）。<strong>8K → 32K → 128K → 256K+</strong></li>
 </ul>
 <p>下面这张表看 Qwen 各代在每个组件上的具体选择：</p>
@@ -2111,9 +2122,9 @@
 <a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>        <span class="n">x</span> <span class="o">=</span> <span class="n">group_2x2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>                     <span class="c1"># [N, d_vision] → [N/4, 4*d_vision]</span>
 <a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mlp</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>                   <span class="c1"># → [N/4, d_llm]</span>
 </code></pre></div>
-<p>训练策略上还多一处差别：§2.1 冻 ViT 只训 MLP；Qwen2-VL 因为 ViT 内部结构改了（2D-RoPE 换 1D pos embed），必须解冻让 ViT 一起训。</p>
+<p>训练策略上还多一处差别：§2.1 冻 ViT 只训 MLP；Qwen2-VL 因为 ViT 内部结构改了（2D-RoPE 换 1D pos embed），必须<strong>解冻让 ViT 一起训</strong>。</p>
 <h2 id="5-deepseek">5. DeepSeek 系列</h2>
-<p>DeepSeek 这条线和 Qwen 路线不同：Qwen 补通用 VLM 能力；DeepSeek 越往后越聚焦在一个问题上——视觉 token 能压到多狠。挑一代当经典展开——选 DeepSeek-OCR：它把"光学压缩长上下文"做成了完整方案（详 §5.1 表）。</p>
+<p>DeepSeek 这条线和 Qwen 路线不同：Qwen 补通用 VLM 能力；DeepSeek 越往后越聚焦在一个问题上——视觉 token 能压到多狠。挑一代当经典展开——选 DeepSeek-OCR：它把"<strong>光学压缩长上下文</strong>"做成了完整方案（详 §5.1 表）。</p>
 <p>不过感觉学习的意义上没有Qwen VL强。</p>
 <h3 id="51">5.1 设计变化对比</h3>
 <p><strong>回忆每个组件的主流选项</strong>（维度框架同 §4.1）：</p>
@@ -2191,10 +2202,10 @@
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>                                       ↑ 压缩比是一等目标
 </code></pre></div>
 <p><strong>和 §2.1 MiniVLM 的关系</strong>：forward 骨架完全一样，唯一替换 <code>self.vision_tower = DeepEncoder()</code>——所以这节不展开 codeDeepSeesccsc（毕竟在我们的backbone里这个是直接call的），新东西全在 DeepEncoder 内部。</p>
-<p><strong>DeepEncoder 内部结构</strong>（Base 1024² 配置为例）：</p>
+<p><strong>DeepEncoder 内部结构</strong>（Base 1024² 配置为例），简单看看吧：</p>
 <p><img src="../assets/09-vlm/fig-09.png" alt="image-20260628211129057" style="zoom:40%;" /></p>
 <h3 id="53-vlm">5.3 其它 VLM 线</h3>
-<p>补几条 Qwen / DeepSeek 之外的 VLM 线，知道哪家 + 主 idea 即可（都不展开）：</p>
+<p>补几条 Qwen / DeepSeek 之外的 VLM 线：</p>
 <ul>
 <li><strong>InternVL</strong>（上海 AI Lab / OpenGVLab）：tiling 切图（448 块 + 全局图）+ 自家 InternViT + 原生多模态预训练（图文 + 纯文本同周期混训）</li>
 <li><strong>LLaMA-4</strong>（Meta, 2025）：标榜 early fusion，但 connector 仍是 MLP + vision 用 MetaCLIP；主要变化在数据混训和统一 MoE 主干，不在架构上</li>
@@ -2204,7 +2215,7 @@
 <p>一条线串起来：</p>
 <p><img src="../assets/09-vlm/fig-01.png" alt="image-20260627211020200" style="zoom:50%;" /></p>
 <ul>
-<li><strong>§1 什么是 VLM</strong>：三段式 Vision Encoder（ViT + CLIP/SigLIP 预训, 冻）+ Connector（MLP, 主力训）+ LLM（冻）。</li>
+<li><strong>§1 什么是 VLM</strong>：三段式 - Vision Encoder（ViT + CLIP/SigLIP 预训, 冻）+ Connector（MLP, 主力训）+ LLM（冻）。</li>
 <li><strong>§2 手写最小 VLM</strong>：call 现成 <code>vision_tower</code> + <code>llm</code>（都冻），自己写 MLP projector + ~30 行 forward；核心 trick = 按 image_token_id mask 替换 vision feature。</li>
 <li><strong>§3 走向 real-world</strong>：三个工程问题——动态分辨率 + 2D-RoPE / M-RoPE（图像 2D / 视频 3D）+ PatchMerger（token 压缩）。</li>
 <li><strong>§4 Qwen-VL 系列</strong>：Qwen2-VL = <strong>§2.1 forward 骨架 + §3 三件事补齐</strong>——分别落在 vision_tower 内（NaViT + 2D-RoPE）/ Connector（MLP → PatchMerger）/ LLM 位置编码（1D → M-RoPE）。</li>
