@@ -427,7 +427,7 @@
   <span class="md-ellipsis">
     
   
-    04-Diffusion（上）：从 VAE 到 DDPM / DDIM
+    04-Diffusion (上): 从 VAE 到 DDPM / DDIM
   
 
     
@@ -455,7 +455,7 @@
   <span class="md-ellipsis">
     
   
-    05-Diffusion（下）：从 Latent Diffusion 到 DiT / FLUX
+    05-Diffusion (下): 从 Latent Diffusion 到 DiT / FLUX
   
 
     
@@ -1747,12 +1747,16 @@
 <h2 id="1-prefill-decode">1. 和训练的区别：prefill 与 decode</h2>
 <p>和训练比，推理有两点不同：</p>
 <ol>
-<li><strong>训练不需要 KV cache</strong>：
-    - 训练时整句一次并行前向，每个位置以 next token 作为 GT 标签同时算 loss，没有自回归循环，也就没有需要跨步缓存的中间结果
-    - 训练时仅考虑本 chunk 内的上下文，不需要长上下文记忆载体</li>
-<li><strong>推理自回归，分 prefill / decode 两段</strong>：
-    - prefill：并行处理整段 prompt
-    - decode：之后逐个生成 token</li>
+<li><strong>训练不需要 KV cache</strong>：<ul>
+<li>训练时整句一次并行前向，每个位置以 next token 作为 GT 标签同时算 loss，没有自回归循环，也就没有需要跨步缓存的中间结果</li>
+<li>训练时仅考虑本 chunk 内的上下文，不需要长上下文记忆载体</li>
+</ul>
+</li>
+<li><strong>推理自回归，分 prefill / decode 两段</strong>：<ul>
+<li>prefill：并行处理整段 prompt</li>
+<li>decode：之后逐个生成 token</li>
+</ul>
+</li>
 </ol>
 <h3 id="11-cache">1.1 自回归循环（无 cache）</h3>
 <p>先看朴素实现（PD 不分）：每次输入一段 prompt → 输出每个位置的 logits → 取最后一个位置选 next token → 拼回输入，反复迭代：</p>

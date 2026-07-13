@@ -27,7 +27,7 @@
     
     
       
-        <title>04-Diffusion（上）：从 VAE 到 DDPM / DDIM - MLSys 菜狗自学笔记</title>
+        <title>04-Diffusion (上): 从 VAE 到 DDPM / DDIM - MLSys 菜狗自学笔记</title>
       
     
     
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              04-Diffusion（上）：从 VAE 到 DDPM / DDIM
+              04-Diffusion (上): 从 VAE 到 DDPM / DDIM
             
           </span>
         </div>
@@ -436,7 +436,7 @@
   <span class="md-ellipsis">
     
   
-    04-Diffusion（上）：从 VAE 到 DDPM / DDIM
+    04-Diffusion (上): 从 VAE 到 DDPM / DDIM
   
 
     
@@ -454,7 +454,7 @@
   <span class="md-ellipsis">
     
   
-    04-Diffusion（上）：从 VAE 到 DDPM / DDIM
+    04-Diffusion (上): 从 VAE 到 DDPM / DDIM
   
 
     
@@ -829,7 +829,7 @@
   <span class="md-ellipsis">
     
   
-    05-Diffusion（下）：从 Latent Diffusion 到 DiT / FLUX
+    05-Diffusion (下): 从 Latent Diffusion 到 DiT / FLUX
   
 
     
@@ -1732,8 +1732,10 @@
 <p><strong>TL; DR</strong>：数学速通 → 生成模型框架（VAE：一步把高斯映射成图 → diffusion：拆成多步+预测噪声）→ DDPM 训练与推理loop → DDIM（同一个网络，把 1000 步推理砍到几十步）</p>
 </blockquote>
 <ul>
-<li><strong>[Quick Ref for 手写 code]</strong>：Basic DDIM ｜ <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/07_basic_ddim.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/1R8kfN8Qv2SQFy7XefKuEW2lebmiElTbP/view?usp=sharing">colab</a>
-    - 训练 + 推理 + noise predictor 三段，配上模型 (U-Net) 数据 (MNIST)，几分钟训出会画数字的 toy model</li>
+<li><strong>[Quick Ref for 手写 code]</strong>：Basic DDIM ｜ <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/07_basic_ddim.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/1R8kfN8Qv2SQFy7XefKuEW2lebmiElTbP/view?usp=sharing">colab</a><ul>
+<li>训练 + 推理 + noise predictor 三段，配上模型 (U-Net) 数据 (MNIST)，几分钟训出会画数字的 toy model</li>
+</ul>
+</li>
 <li><strong>[可能会考的面试手写题]</strong>：Basic DDIM 训练 / 推理 loop（§4 + §5.2）</li>
 <li>本篇只搭扩散框架；具体网络和工业级文生图系统（Latent Diffusion / SD、DiT、SD3 / FLUX）放在下篇 <a href="01_05_Diffusion%E8%BF%9B%E9%98%B6.html">01_05_Diffusion进阶.md</a></li>
 </ul>
@@ -1835,10 +1837,12 @@ $$
 $$}}!\big(q_\phi(z|x) \,|\, p(z)\big)}_{\text{KL 正则项 = prior-KL}} &amp;&amp; \text{（loss 用的形式）</p>
 <ul>
 <li><strong>第一行</strong>：ELBO = <span class="arithmatex">\(\log p(x)\)</span> （由所有z算x，算不动），减去 gap（gap ≥ 0，也算不动）</li>
-<li><strong>第二行</strong>：ELBO = 重建项 − prior-KL
-    - <strong>重建项</strong> <span class="arithmatex">\(= \mathbb E_q[\log p_\theta(x|z)] \approx \text{MSE}(x, \hat x)\)</span>：<span class="arithmatex">\(x\)</span> 走 encoder 出 <span class="arithmatex">\(z\)</span> → decoder 还原 <span class="arithmatex">\(\hat x\)</span> → 比 MSE（均方误差，"原图 vs 生成图 align"）
-    - <strong>prior-KL</strong> <span class="arithmatex">\(= D_{\mathrm{KL}}\!\big(q_\phi(z|x) \,\|\, \mathcal N(0,I)\big)\)</span>：encoder 输出离<strong>先验</strong>标准高斯多远（两个高斯之间的 KL 散度有简单闭式，可算）
-    - <strong>两项都可算 → 实际 loss 计算时用的形式</strong></li>
+<li><strong>第二行</strong>：ELBO = 重建项 − prior-KL<ul>
+<li><strong>重建项</strong> <span class="arithmatex">\(= \mathbb E_q[\log p_\theta(x|z)] \approx \text{MSE}(x, \hat x)\)</span>：<span class="arithmatex">\(x\)</span> 走 encoder 出 <span class="arithmatex">\(z\)</span> → decoder 还原 <span class="arithmatex">\(\hat x\)</span> → 比 MSE（均方误差，"原图 vs 生成图 align"）</li>
+<li><strong>prior-KL</strong> <span class="arithmatex">\(= D_{\mathrm{KL}}\!\big(q_\phi(z|x) \,\|\, \mathcal N(0,I)\big)\)</span>：encoder 输出离<strong>先验</strong>标准高斯多远（两个高斯之间的 KL 散度有简单闭式，可算）</li>
+<li><strong>两项都可算 → 实际 loss 计算时用的形式</strong></li>
+</ul>
+</li>
 </ul>
 <p>这两个都可以表示 ELBO 的定义，由于第一行算不动，所以用第二行实现具体计算。</p>
 <p><strong>[VAE 训练：调两组参数，一起最大化 ELBO]</strong></p>
