@@ -1498,7 +1498,7 @@
 <li><strong>[Quick Ref for 手写code]</strong>：mini-pretrain ｜ <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/04_mini_pretrain.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/1VUB1WrZx9KkHBrY9N8E3-Dfmql7aHnjw/view?usp=sharing">Colab</a></li>
 <li><strong>[常考面试点]</strong>：好像只有 tokenize</li>
 </ul>
-<p>模型结构和训练策略层面的内容分别见 Transformer 和“训练策略”（并行）系列。虽然面试点不多，但预训练流程是基石，知道全貌很必要。</p>
+<p>模型结构和训练策略层面的内容分别见 Transformer 和“训练策略”（并行）系列。面试点不多，但预训练流程是后续所有训练阶段的基础，值得过一遍全貌。</p>
 <h2 id="_1">前言</h2>
 <p>最近被 assign 去做了 SFT 框架迁移。想写SFT，但在进入 SFT 之前，感觉还是要先把预训练简单过一下。</p>
 <p>这篇笔记的范围：</p>
@@ -1531,13 +1531,13 @@
     style R fill:#e8eaf6,stroke:#3f51b5,stroke-width:1.5px,color:#1a237e
     style O fill:#f5f5f5,stroke:#9e9e9e,stroke-width:1px,color:#424242</code></pre>
 <p>Pretrain 训出来的就是所谓的 <strong>base model</strong>（GPT-3、Llama-3-Base、Qwen2.5-Base）——后面 SFT / RLHF 在它基础上调整行为习惯，不再注入新的世界知识。</p>
-<p>Pretrain 是最贵、最久、最关键的一步：</p>
+<p>Pretrain 是三阶段中开销最大的一步：</p>
 <ul>
 <li>算力消耗占 LLM 训练总成本的 &gt;99%</li>
-<li>后面所有能力（聊天、推理、代码）的天花板都在这一步被决定</li>
+<li>后续能力（聊天、推理、代码）的上限在这一步确定</li>
 </ul>
 <h2 id="2">2. 数据</h2>
-<p>预训练里最重要的一步是什么？模型结构大概率稳定了，真正决定 base model 能力上限的还得是<strong>洗数据</strong>。SFT / RLHF 救不回一份糟糕的预训练。</p>
+<p>模型结构在各家之间已大体收敛，决定 base model 能力上限的主要变量是<strong>数据质量</strong>。预训练数据的问题，SFT / RLHF 阶段无法弥补。</p>
 <h3 id="21">2.1 原始数据来源</h3>
 <p>工业级预训练数据通常以 JSONL 存（每行一条文档），原始字段大致这样：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
@@ -1601,9 +1601,9 @@
 </tr>
 </tbody>
 </table>
-<p>混合配比（加多少代码、加多少中文、加多少书）是各家工程秘方，通常不公开。</p>
+<p>混合配比（代码、中文、书籍各占多少）各家通常不公开。</p>
 <h3 id="22">2.2 预处理简单流程</h3>
-<p>主流程很短：<strong>Collect → Filter → Dedup → Tokenize</strong>。CommonCrawl 原始 ~PB 级、洗到最后剩约 1/10：</p>
+<p>主流程：<strong>Collect → Filter → Dedup → Tokenize</strong>。CommonCrawl 原始 ~PB 级，处理完剩约 1/10：</p>
 <pre class="mermaid"><code>flowchart LR
     C("Collect&lt;br/&gt;&lt;br/&gt;采集&lt;br/&gt;各种来源&lt;br/&gt;原始 ~PB")
     F("Filter&lt;br/&gt;&lt;br/&gt;质量过滤&lt;br/&gt;规则 + 模型分类器&lt;br/&gt;去广告 / 低质 / 敏感")
@@ -1621,10 +1621,10 @@
 <li><strong>启发式规则</strong>：长度过滤、字符比例过滤、重复 n-gram 过滤、关键词黑名单</li>
 <li><strong>模型分类器</strong>：训一个小模型区分"高质量正文" vs "广告 / 导航栏 / 垃圾内容"，扫全语料</li>
 </ul>
-<p><strong>Dedup</strong>（去重）几乎所有大模型都做——重复数据会让训练效率暴跌（同样的算力反复学一个相似段落）。工业标配是 <strong>MinHash + LSH</strong>：MinHash 把每篇文档压成一组哈希指纹，保留近重复关系；LSH 把相似指纹直接桶到一起，避免万亿级 token 上 <span class="arithmatex">\(O(N^2)\)</span> 的两两比较。颗粒度可以选<strong>文档级</strong>（两篇网页基本一样）、<strong>段落级</strong>（导航栏 / 版权声明被复制粘贴）或 <strong>n-gram 级</strong>（连续若干 token 反复出现，如样板 footer）。</p>
+<p><strong>Dedup</strong>（去重）几乎所有大模型都做：重复数据让同样的算力反复学习相似内容，训练效率下降。工业标配是 <strong>MinHash + LSH</strong>。MinHash 把每篇文档压成一组哈希指纹，近重复的文档指纹也相近；LSH 把相似指纹分进同一个桶，避免在万亿级 token 上做 <span class="arithmatex">\(O(N^2)\)</span> 两两比较。颗粒度有三档：<strong>文档级</strong>（整篇网页重复）、<strong>段落级</strong>（导航栏 / 版权声明被复制粘贴）、<strong>n-gram 级</strong>（样板 footer 这类反复出现的短片段）。</p>
 <p>Tokenize 放到 §3 跟 batch 拼接一起讲。</p>
 <h3 id="23-prepared">2.3 Prepared 后的数据</h3>
-<p>经过预处理之后，得到的 prepared 数据通常仍然是文本形式（还没 tokenize），但<strong>已经满足这些条件</strong>：</p>
+<p>预处理后的 prepared 数据仍是文本形式（还没 tokenize），满足：</p>
 <ul>
 <li>每条记录是一个<strong>清洗过的文档</strong>（一篇网页正文、一本书的一章、一段代码、一个 Reddit 帖子等）</li>
 <li>没有重复文档</li>
@@ -1636,17 +1636,16 @@
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>├── ...
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>└── shard_9999.jsonl
 </code></pre></div>
-<p><strong>这就是后面要喂给 tokenize 的输入</strong>。注意：到这一步文本仍然是变长的，每篇可能从几十字到几万字不等，接下来就把它转成模型实际使用的的定长 tensor。</p>
+<p>这就是 tokenize 的输入。到这一步文本仍是变长的，每篇从几十字到几万字不等。接下来把它转成模型实际使用的定长 tensor。</p>
 <h2 id="3-input">3. 数据 -&gt; 模型 input</h2>
-<p>这一节回答：清洗好的文本怎么变成模型实际使用的 tensor。</p>
 <h3 id="31-input">3.1 期望的 input</h3>
-<p>模型每个 step 吃进去的就是一个固定形状的 batch：</p>
+<p>模型每个 step 的输入是一个固定形状的 batch：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>input_ids:      shape = [batch_size, seq_len]    元素是 token ID (int)
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>labels:         shape = [batch_size, seq_len]    见 3.4
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>attention_mask: shape = [batch_size, seq_len]    见 3.3
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>position_ids:   shape = [batch_size, seq_len]    [0, 1, ..., seq_len-1]
 </code></pre></div>
-<p>目标很明确：把变长的 prepared 文档，变成形状统一的 <code>[B, T]</code> int tensor。下面分两步：先 tokenize（文本 → token ID），再 batch（token ID 序列 → 定长 tensor）。</p>
+<p>目标：把变长的 prepared 文档变成形状统一的 <code>[B, T]</code> int tensor。分两步：先 tokenize（文本 → token ID），再拼 batch（变长序列 → 定长 tensor）。</p>
 <h3 id="32-tokenize-token-id">3.2 Tokenize：文本 -&gt; token ID</h3>
 <p>为什么不能直接用字符或单词？</p>
 <ul>
@@ -1757,13 +1756,7 @@
 </tbody>
 </table>
 <p><strong>[Plus：SFT 阶段的 tokenizer 扩展]</strong></p>
-<p>SFT 时往往会给 tokenizer 加一批新的特殊 token（在 SFT 篇里展开），比如 ChatML 风格的 <code>&lt;|im_start|&gt;</code> / <code>&lt;|im_end|&gt;</code> / <code>&lt;|user|&gt;</code> / <code>&lt;|assistant|&gt;</code>，加上工具调用的 <code>&lt;tool_call&gt;</code> 等。原因：</p>
-<ul>
-<li>预训练 tokenizer 面向纯文本，没有"角色"概念，无法区分 user / assistant / system</li>
-<li>多轮对话需要明确边界，让 attention / loss 能正确 mask</li>
-<li>这些 marker 必须是<strong>单个 token</strong>，不能拆成 subword，否则模型每次要"组装"一个边界标记，鲁棒性差</li>
-</ul>
-<p>实现上把它们作为 <code>added_tokens</code> 写进 tokenizer，词表大小从 V 涨到 V+k；model 端要 <code>resize_token_embeddings(V+k)</code>，给新 token 在 embedding / lm_head 里开几个新行——通常用现有 embedding 的均值初始化，再让 SFT loss 学到合理位置。</p>
+<p>SFT 会给 tokenizer 加一批特殊 token，如 ChatML 的 <code>&lt;|im_start|&gt;</code> / <code>&lt;|im_end|&gt;</code>、工具调用的 <code>&lt;tool_call&gt;</code>（SFT 篇 §2.2 展开）。原因：预训练 tokenizer 面向纯文本，没有角色概念；对话边界 marker 必须是单个 token，拆成 subword 会让 attention / loss 无法对齐到边界。加完词表从 V 涨到 V+k，model 端 <code>resize_token_embeddings(V+k)</code> 开新行，用现有 embedding 均值初始化，SFT loss 再学到合理位置。</p>
 <p><strong>[Tokenize Pipeline]</strong></p>
 <p><code>tokenizer.encode("The cat sat.")</code> 内部走的是 4 步（Normalization 现代 LLM 多数跳过）：</p>
 <pre class="mermaid"><code>flowchart LR
@@ -1795,31 +1788,25 @@
 <h3 id="33-batch">3.3 切 batch、保持文档连接</h3>
 <p>数据集里是上百万篇变长文档，模型要的是定长 tensor <code>[B, T]</code>。怎么转？</p>
 <p><strong>[Concat + Chunk：最简单的做法]</strong></p>
-<p>把所有 tokenized 文档<strong>首尾拼成一条长流</strong>，每篇尾部补 <code>&lt;eos&gt;</code> 标记边界，然后按 <code>block_size</code> 切——每个 chunk 就是一条训练样本。整个过程分三步：</p>
-<p><strong>Step 1</strong>：tokenize 之后每篇文档是一段变长 int 序列。</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>doc_1:  [ t₁,  t₂,  ...,  t₁₂ ]                     长度 12
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>doc_2:  [ t₁₃, t₁₄, ...,  t₂₀ ]                     长度  8
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>doc_3:  [ t₂₁, t₂₂, ...,  t₃₀ ]                     长度 10
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>...
+<p>把所有 tokenized 文档<strong>首尾拼成一条长流</strong>，每篇尾部补 <code>&lt;eos&gt;</code> 标记边界，然后按 <code>block_size</code> 切——每个 chunk 就是一条训练样本。分两步：</p>
+<p><strong>Step 1</strong>：每篇尾部加 <code>&lt;eos&gt;</code> 作为文档分隔符，再首尾相连成一条<strong>长流</strong>。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>[ t₁ ... t₁₂  &lt;eos&gt;  t₁₃ ... t₂₀  &lt;eos&gt;  t₂₁ ... t₃₀  &lt;eos&gt;  ...... ]
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>  └─── doc_1 ───┘    └─── doc_2 ──┘     └─── doc_3 ──┘
 </code></pre></div>
-<p><strong>Step 2</strong>：每篇尾部加 <code>&lt;eos&gt;</code> 作为文档分隔符，再首尾相连成一条<strong>长流</strong>。</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>[ t₁ ... t₁₂  &lt;eos&gt;  t₁₃ ... t₂₀  &lt;eos&gt;  t₂₁ ... t₃₀  &lt;eos&gt;  ...... ]
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>  └─── doc_1 ───┘    └─── doc_2 ──┘     └─── doc_3 ──┘
+<p><strong>Step 2</strong>：在这条长流上按 <code>block_size</code>（比如 2048）等距切块，每块就是一条形如 <code>[2048]</code> 的定长训练样本。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>长流:   [ ────────── 一条几亿 token 的长序列 ────────────────── ]
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>            │              │              │              │
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>            ▼              ▼              ▼              ▼
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        ┌─ chunk 0 ─┐ ┌─ chunk 1 ─┐ ┌─ chunk 2 ─┐ ┌─ chunk 3 ─┐  ...
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>        │  2048 tok │ │  2048 tok │ │  2048 tok │ │  2048 tok │
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>        └───────────┘ └───────────┘ └───────────┘ └───────────┘
 </code></pre></div>
-<p><strong>Step 3</strong>：在这条长流上按 <code>block_size</code>（比如 2048）等距切块，每块就是一条形如 <code>[2048]</code> 的定长训练样本。</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>长流:   [ ────────── 一条几亿 token 的长序列 ────────────────── ]
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>            │              │              │              │
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>            ▼              ▼              ▼              ▼
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>        ┌─ chunk 0 ─┐ ┌─ chunk 1 ─┐ ┌─ chunk 2 ─┐ ┌─ chunk 3 ─┐  ...
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>        │  2048 tok │ │  2048 tok │ │  2048 tok │ │  2048 tok │
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>        └───────────┘ └───────────┘ └───────────┘ └───────────┘
-</code></pre></div>
-<p>这样几乎不需要 padding——concat 之后总长度是 <code>BLOCK</code> 的整数倍，剩余尾巴丢掉就行（损失 &lt; BLOCK 个 token，可以忽略）。这也是 pretrain 几乎不用 <code>&lt;pad&gt;</code> token 的原因；SFT 阶段才会大量用 padding（不能跨样本拼接）。</p>
+<p>这样几乎不需要 padding：结尾不足一个 block 的部分直接丢弃，损失 &lt; BLOCK 个 token，可以忽略。这也是 pretrain 几乎不用 <code>&lt;pad&gt;</code> token 的原因。SFT 不能跨样本拼接，才会大量用 padding。</p>
 <p><strong>[文档边界怎么处理：跨文档 attention 的污染]</strong></p>
 <p>Concat + chunk 之后，一个 chunk 里很可能塞着好几篇毫不相关的文档（前一篇的尾巴 + 几篇完整文档 + 下一篇的开头）：</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>chunk_0: [....doc_1 末尾.... &lt;eos&gt; doc_2 全部 &lt;eos&gt; doc_3 开头....]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>chunk_0: [....doc_1 末尾.... &lt;eos&gt; doc_2 全部 &lt;eos&gt; doc_3 开头....]
 </code></pre></div>
-<p><strong>问题</strong>：标准 causal attention 只屏蔽"未来"，不屏蔽"邻居"——doc_2 的 token 在算 attention 时会去 attend doc_1 的内容，相当于让模型基于一段无关上文做下一词预测。这是一种轻微但持续的"训练信号污染"。</p>
+<p><strong>问题</strong>：标准 causal attention 只屏蔽未来，不屏蔽邻居——doc_2 的 token 会 attend 到 doc_1，模型在基于一段无关上文做下一词预测。这是轻微但持续的训练信号污染。</p>
 <p><strong>两种应对</strong>：</p>
 <ul>
 <li><strong>方式 A（GPT-2 / 3 早期做法）</strong>：不管，靠 <code>&lt;eos&gt;</code> 当软分隔。模型大概能学到 <code>&lt;eos&gt;</code> 之后是新主题。简单、对数据流零改动。</li>
@@ -1827,13 +1814,13 @@
 </ul>
 <p>方式 B 的 mask 形态是 <strong>per-document 下三角、block-diagonal</strong>（左：标准 causal；右：进一步把跨文档的位置也屏蔽掉）：</p>
 <p><img src="../assets/04-pretrain/fig-01.png" alt="fig-01" width="60%" /></p>
-<p><strong>工程实现</strong>：直接存这个 <code>[T, T]</code> mask 太浪费（T=8192 时 64M 元素），实践里用 <strong><code>cu_seqlens</code></strong> (cumulative sequence lengths) 这种紧凑表示，喂给 FlashAttention 的 varlen kernel：</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>chunk 里 3 篇 doc 的边界:
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>   位置 0    4         7              11
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    │ doc_1  │  doc_2  │     doc_3    │
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    └────────┴─────────┴──────────────┘
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>cu_seqlens = [0, 4, 7, 11]    ← 累积长度，长度 = num_docs + 1
+<p><strong>工程实现</strong>：直接存 <code>[T, T]</code> mask 太浪费（T=8192 时 64M 元素）。实践里用 <strong><code>cu_seqlens</code></strong> (cumulative sequence lengths) 这种紧凑表示，传给 FlashAttention 的 varlen kernel：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>chunk 里 3 篇 doc 的边界:
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>   位置 0    4         7              11
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    │ doc_1  │  doc_2  │     doc_3    │
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    └────────┴─────────┴──────────────┘
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>cu_seqlens = [0, 4, 7, 11]    ← 累积长度，长度 = num_docs + 1
 </code></pre></div>
 <p>FlashAttention 拿到 <code>cu_seqlens</code> 就知道每篇文档的占位区间，每段内部独立做 causal attention，跨段不交互。NeMo / FlashAttention / TransformerEngine 都原生支持，复杂度从 <span class="arithmatex">\(O(T^2)\)</span> 降到 <span class="arithmatex">\(O(\sum L_i^2)\)</span>，<strong>速度和显存都不退化</strong>。</p>
 <blockquote>
@@ -1842,36 +1829,36 @@
 <h3 id="34-labels">3.4 Labels 怎么构造</h3>
 <p>Pretrain 的训练信号是 next-token prediction：<strong>用前 t 个 token 去预测第 t+1 个</strong>。所以"标签"其实就藏在输入序列自己里——把 <code>input_ids</code> 整体往左挪一位就是每个位置的目标。</p>
 <p>把这个 shift 画出来：</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>位置:           0    1    2    3    4    5    6    7
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>input_ids:    [t_0, t_1, t_2, t_3, t_4, t_5, t_6, t_7]   ← 模型实际看到的输入
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>                ↓    ↓    ↓    ↓    ↓    ↓    ↓
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>                t_1  t_2  t_3  t_4  t_5  t_6  t_7  ?     ← 每个位置应该预测的 token
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>                ↑                                   ↑
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>              位置 0 的 logits                  最后一位没有&quot;下一个&quot;
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>              对照 t_1 算 loss                  → -100，跳过 loss
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>位置:           0    1    2    3    4    5    6    7
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>input_ids:    [t_0, t_1, t_2, t_3, t_4, t_5, t_6, t_7]   ← 模型实际看到的输入
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>                ↓    ↓    ↓    ↓    ↓    ↓    ↓
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>                t_1  t_2  t_3  t_4  t_5  t_6  t_7  ?     ← 每个位置应该预测的 token
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>                ↑                                   ↑
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>              位置 0 的 logits                  最后一位没有&quot;下一个&quot;
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>              对照 t_1 算 loss                  → -100，跳过 loss
 </code></pre></div>
-<p>这里有个工程上很容易混的点：<strong>labels 张量本身和 input_ids 是同一个东西</strong>——<code>DataCollatorForLanguageModeling(mlm=False)</code> 在做的就是 <code>labels = input_ids.clone()</code>。"shift by 1" 不是在 collator 里做的，而是在模型 forward 内部计算 loss 时做的。具体地说，HF Transformers 的 <code>ForCausalLMLoss</code> 把 labels 末尾补一位 <code>-100</code>、再整体左移一位，得到错位的 <code>shift_labels</code>，再和 logits 算 cross-entropy：</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># HF Transformers 内部 (loss_utils.py)</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">labels</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">value</span><span class="o">=-</span><span class="mi">100</span><span class="p">)</span>   <span class="c1"># 末尾补 -100</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">shift_labels</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">:]</span>                            <span class="c1"># 左移一位</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">loss</span> <span class="o">=</span> <span class="n">cross_entropy</span><span class="p">(</span><span class="n">logits</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">V</span><span class="p">),</span>
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>                     <span class="n">shift_labels</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span>
-<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>                     <span class="n">ignore_index</span><span class="o">=-</span><span class="mi">100</span><span class="p">)</span>
+<p>工程上容易混的一点：<strong>labels 张量本身和 input_ids 是同一个东西</strong>。<code>DataCollatorForLanguageModeling(mlm=False)</code> 做的就是 <code>labels = input_ids.clone()</code>。"shift by 1" 不是在 collator 里做的，而是在模型 forward 内部计算 loss 时做的。具体地说，HF Transformers 的 <code>ForCausalLMLoss</code> 把 labels 末尾补一位 <code>-100</code>、再整体左移一位，得到错位的 <code>shift_labels</code>，再和 logits 算 cross-entropy：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># HF Transformers 内部 (loss_utils.py)</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">labels</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">value</span><span class="o">=-</span><span class="mi">100</span><span class="p">)</span>   <span class="c1"># 末尾补 -100</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">shift_labels</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">:]</span>                            <span class="c1"># 左移一位</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">loss</span> <span class="o">=</span> <span class="n">cross_entropy</span><span class="p">(</span><span class="n">logits</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">V</span><span class="p">),</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>                     <span class="n">shift_labels</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>                     <span class="n">ignore_index</span><span class="o">=-</span><span class="mi">100</span><span class="p">)</span>
 </code></pre></div>
-<p>之所以这样设计是为了让数据侧和模型侧解耦：dataloader 只负责吐定长 token 序列，谁是 input、谁是 label 由模型按"自回归 next-token"的语义自己去 shift。</p>
+<p>这样设计是为了让数据侧和模型侧解耦：dataloader 只负责输出定长 token 序列，谁是 input、谁是 label 由模型按"自回归 next-token"的语义自己去 shift。</p>
 <p><strong>和 SFT 的对比</strong>（后面 SFT 笔记会展开）：</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>Pretrain:
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>  input_ids: [t_0, t_1, t_2, ..., t_n]
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>  labels:    [t_0, t_1, t_2, ..., t_n]                     ← 整段都算 loss
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>SFT:
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>  input_ids: [&lt;bos&gt;, p_1, ..., p_k, r_1, ..., r_m, &lt;eos&gt;]
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>                     └─ prompt ─┘  └─ response ─┘
-<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>  labels:    [-100,  -100,  ..., -100, r_1, ..., r_m, &lt;eos&gt;]  ← 仅 response 算 loss
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>Pretrain:
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>  input_ids: [t_0, t_1, t_2, ..., t_n]
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>  labels:    [t_0, t_1, t_2, ..., t_n]                     ← 整段都算 loss
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>SFT:
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>  input_ids: [&lt;bos&gt;, p_1, ..., p_k, r_1, ..., r_m, &lt;eos&gt;]
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>                     └─ prompt ─┘  └─ response ─┘
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>  labels:    [-100,  -100,  ..., -100, r_1, ..., r_m, &lt;eos&gt;]  ← 仅 response 算 loss
 </code></pre></div>
 <p>两阶段在数据 / loss 层面唯一的差异：是否把 prompt 部分 mask 成 <code>-100</code>。其他（shift、cross-entropy、optimizer）完全一样。</p>
 <h2 id="4-logits">4. 从 logits 到参数更新</h2>
-<p>按照 <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_01_Transformer.html">01_01_Transformer.md §4 手写Transformer</a> 里 MiniLlama 的实现，模型现在已经能吃 input_ids、吐出 logits ∈ ℝ^[B, T, V]——<strong>每个位置都是一个 V 维向量</strong>，代表词表上每个 token 的"得分"（未归一化）。</p>
+<p>按照 <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_01_Transformer.html">01_01_Transformer.md §4 手写Transformer</a> 里 MiniLlama 的实现，模型现在已经能接收 input_ids、输出 logits ∈ ℝ^[B, T, V]——<strong>每个位置都是一个 V 维向量</strong>，代表词表上每个 token 的"得分"（未归一化）。</p>
 <p>剩下要做的事：</p>
 <ul>
 <li>logits 经 softmax 转成概率分布 → 对齐 label 算 cross-entropy 当 loss</li>
@@ -1884,14 +1871,14 @@ $$
 p_t = \text{softmax}(\text{logits}<em t_i="t,i">t), \quad p</em>} = \frac{\exp(\text{logits<em t_j="t,j">{t,i})}{\sum_j \exp(\text{logits}</em>
 $$
 直观说就是从 V 维"原始分数"变成 V 维概率分布（元素 ≥ 0，总和 = 1）：})</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>logits[t]:  [-0.2, 1.8, 0.5, ..., 3.2, ..., -1.0]    shape: [V]
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>                                       ↑
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>       │                        假设这位对应真实 token &quot;world&quot;
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>       ▼ softmax
-<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>       │
-<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>p_t:        [ 0.01, 0.08, 0.02, ..., 0.45, ..., 0.005]   元素 ≥ 0，总和 = 1
-<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>                                       ↑
-<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>                                  p_t[&quot;world&quot;] = 0.45
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>logits[t]:  [-0.2, 1.8, 0.5, ..., 3.2, ..., -1.0]    shape: [V]
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>                                       ↑
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>       │                        假设这位对应真实 token &quot;world&quot;
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>       ▼ softmax
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>       │
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>p_t:        [ 0.01, 0.08, 0.02, ..., 0.45, ..., 0.005]   元素 ≥ 0，总和 = 1
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>                                       ↑
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>                                  p_t[&quot;world&quot;] = 0.45
 </code></pre></div>
 <p>label 这边，等价于一个 V 维 one-hot 向量 q_t（<span class="arithmatex">\(k_t\)</span> 那位为 1，其余为 0）。这样形状一致就能对齐做距离计算了——衡量两个概率分布距离用 <strong>cross-entropy</strong> 交叉熵损失函数：</p>
 <div class="arithmatex">\[
@@ -1905,7 +1892,7 @@ $$
 <div class="arithmatex">\[
 \mathcal{L} = -\frac{1}{T}\sum_{t=1}^{T} \log p_t[k_t]
 \]</div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">loss</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">cross_entropy</span><span class="p">(</span><span class="n">logits</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">V</span><span class="p">),</span> <span class="n">labels</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">ignore_index</span><span class="o">=-</span><span class="mi">100</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">loss</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">cross_entropy</span><span class="p">(</span><span class="n">logits</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">V</span><span class="p">),</span> <span class="n">labels</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">ignore_index</span><span class="o">=-</span><span class="mi">100</span><span class="p">)</span>
 </code></pre></div>
 <p>这个标量 <span class="arithmatex">\(\mathcal{L}\)</span> 就是反向传播的<strong>起点</strong>。从这里出发按链式法则一层层穿过 lm_head → final norm → 每层 transformer block → embedding，每个参数 W 拿到自己的 <code>W.grad</code>，再交给 <strong>AdamW</strong> 更新一次权重。</p>
 <h3 id="42-warmup-cosine-decay">4.2 学习率调度：Warmup + Cosine Decay</h3>
@@ -1914,31 +1901,31 @@ $$
 <li><strong>Warmup</strong>：前 1%~3% steps 线性从 0 爬到 peak_lr</li>
 <li><strong>Cosine Decay</strong>：从 peak_lr 沿余弦曲线降到 end_lr</li>
 </ul>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>lr
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a> │       ╱─────╲
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a> │      ╱       ╲___
-<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a> │     ╱            ╲___
-<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a> │    ╱                 ╲___
-<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a> │   ╱                      ╲__
-<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a> │  ╱                          ╲_
-<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a> │ ╱                              ╲
-<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a> │╱                                 ╲___
-<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a> └──────────────────────────────────────────► step
-<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>   └warmup┘                            ↑
-<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>   1%~3%  ↑                          end_lr
-<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>        peak_lr                      (peak/10)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>lr
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a> │       ╱─────╲
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a> │      ╱       ╲___
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a> │     ╱            ╲___
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a> │    ╱                 ╲___
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a> │   ╱                      ╲__
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a> │  ╱                          ╲_
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a> │ ╱                              ╲
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a> │╱                                 ╲___
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a> └──────────────────────────────────────────► step
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>   └warmup┘                            ↑
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>   1%~3%  ↑                          end_lr
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>        peak_lr                      (peak/10)
 </code></pre></div>
 <h3 id="43">4.3 评估：训得怎么样</h3>
-<p>loop 跑起来之后怎么判断模型有没有持续在变好？分两层看：(1) <strong>实时的 loss / PPL 曲线</strong>（廉价、每 step 都有）盯 loop 健不健康，(2) <strong>定期的 evaluate 验证</strong>（贵）反映真实能力。</p>
+<p>训练跑起来之后怎么判断模型在持续变好？分两层：(1) <strong>实时的 loss / PPL 曲线</strong>，每 step 都有、开销小，用于监控训练是否健康；(2) <strong>定期的 evaluate 验证</strong>，开销大，反映真实能力。</p>
 <p><strong>[A. 实时监控：loss + PPL 曲线]</strong></p>
 <blockquote>
 <p><strong>Loss 可视化</strong></p>
 </blockquote>
-<p>每个 step 在当前 batch 上算出来的 cross-entropy Loss实时打到 wandb 等工具里画曲线。一个<strong>健康</strong>的 loss 曲线（ML基础，适用于所有训练）大致是：</p>
+<p>每个 step 在当前 batch 上算出的 cross-entropy loss，实时记录到 wandb 等工具里画曲线。一个<strong>健康</strong>的 loss 曲线（ML基础，适用于所有训练）大致是：</p>
 <ul>
 <li><strong>起点高</strong>：随机初始化的模型预测接近瞎猜</li>
 <li><strong>指数下降</strong>：前期下降很快，几千 ~ 几万步内从 ~11 降到 3 ~ 4 左右</li>
-<li><strong>逐渐 flatten</strong>：后期速度放缓，进入"挤毛巾"阶段，每万步可能就降 0.01 ~ 0.05</li>
+<li><strong>逐渐 flatten</strong>：后期下降放缓，每万步可能只降 0.01 ~ 0.05</li>
 <li><strong>整体平滑</strong>：日常 batch noise ±0.1 以内属于正常波动</li>
 </ul>
 <p>健康 vs 异常曲线对比（左 healthy 平滑下降 + 收敛；右 erratic 剧烈震荡）：</p>
@@ -1952,7 +1939,7 @@ $$
 <p><strong>PPL（Perplexity 困惑度）</strong></p>
 </blockquote>
 <p>光看 loss 数值不直观，所以工业上同时看 PPL，因为它能直接换算成"模型在多少个候选里犹豫"。</p>
-<p>大致理解一下（反正不用你手搓计算）：把每个 token 计作 <span class="arithmatex">\(w\)</span>，假设这段文本一共 <span class="arithmatex">\(n\)</span> 个 token <span class="arithmatex">\(w_1, w_2, \ldots, w_n\)</span>，则模型生成这段文本的联合条件概率概率按链式法则分解为：</p>
+<p>把每个 token 计作 <span class="arithmatex">\(w\)</span>，一段文本共 <span class="arithmatex">\(n\)</span> 个 token，模型生成它的联合概率按链式法则分解：</p>
 <div class="arithmatex">\[
 P(w_1, w_2, \ldots, w_n) = P(w_1) \cdot P(w_2 \mid w_1) \cdot P(w_3 \mid w_1, w_2) \cdots P(w_n \mid w_1, \ldots, w_{n-1}) = \prod_{i=1}^{n} P(w_i \mid w_{&lt;i})
 \]</div>
@@ -2007,19 +1994,19 @@ P(w_1, w_2, \ldots, w_n) = P(w_1) \cdot P(w_2 \mid w_1) \cdot P(w_3 \mid w_1, w_
 </tr>
 </tbody>
 </table>
-<p>降 0.5 的 loss 在大模型上是巨大改进，常对应几百 B 量级 token 的训练增量。</p>
+<p>大模型后期 loss 降 0.5 已是显著改进，常对应几百 B 量级 token 的训练增量。</p>
 <p><strong>[B. Evaluate 验证：两类数据来源]</strong></p>
 <p>当然也要拿一组模型<strong>没参与训练</strong>的数据 evaluate，SFT也是这样。来源分两类，对应不同问题：</p>
 <p><strong>[(a) 同分布 held-out：从原始数据集预先切 1%]</strong></p>
 <ul>
-<li><strong>来源</strong>：训练前从你的训练语料里<strong>随机切一小份不参与训练的 holdout</strong>，规模通常 0.1% ~ 1%</li>
-<li><strong>跑法</strong>：每隔 1K ~ 10K steps 在 holdout 上跑一遍 forward 算 loss / PPL</li>
-<li><strong>答什么问题</strong>：<strong>有没有过拟合</strong>——training loss 还在降但 holdout PPL 反弹 = 模型开始记训练集</li>
-<li><strong>关键</strong>：必须和训练<strong>同分布</strong>——这样才能和 training loss 直接对比；如果拿别领域数据当 holdout（比如训中文模型却跑英文 PPL），数值变化和训练好坏没直接关系</li>
+<li><strong>来源</strong>：训练前从训练语料随机切 0.1% ~ 1% 做 holdout，不参与训练</li>
+<li><strong>跑法</strong>：每 1K ~ 10K steps 在 holdout 上跑 forward 算 loss / PPL</li>
+<li><strong>答什么问题</strong>：<strong>有没有过拟合</strong>——training loss 还在降但 holdout PPL 反弹</li>
+<li><strong>关键</strong>：必须和训练<strong>同分布</strong>，否则不能和 training loss 直接对比</li>
 </ul>
 <p><strong>[(b) 公共 benchmark：业界专门维护的外部测试集]</strong></p>
 <ul>
-<li><strong>来源</strong>：完全独立于你的训练数据，由其他团队 / 论文专门攒出来公开发布。常见的：</li>
+<li><strong>来源</strong>：完全独立于训练数据，由其他团队 / 论文整理并公开发布。常见的：</li>
 </ul>
 <table>
 <thead>
@@ -2073,9 +2060,9 @@ P(w_1, w_2, \ldots, w_n) = P(w_1) \cdot P(w_2 \mid w_1) \cdot P(w_3 \mid w_1, w_
 </tbody>
 </table>
 <ul>
-<li><strong>跑法</strong>：每隔较大间隔（10K ~ 100K steps）拿一个中间 checkpoint，套 zero-shot / few-shot prompt 模板跑一批 benchmark</li>
-<li><strong>答什么问题</strong>：<strong>真实能力到没到、跨模型谁强</strong>——业界报"某 base model 的能力"基本就是这一组分数的快照（如 Llama-3-Base / Qwen2.5-Base 的 model card）</li>
-<li><strong>decontamination 必做</strong>：训练语料几乎一定爬到过这些 benchmark 题，要用 n-gram 重叠检测，把训练数据里和 benchmark 文本重合超过阈值的样本剔除</li>
+<li><strong>跑法</strong>：每 10K ~ 100K steps 拿一个中间 checkpoint，套 zero-shot / few-shot 模板跑一批 benchmark</li>
+<li><strong>答什么问题</strong>：<strong>真实能力、跨模型对比</strong>——业界 model card 报的就是这组分数（如 Llama-3-Base / Qwen2.5-Base）</li>
+<li><strong>decontamination 必做</strong>：训练语料几乎必然混入 benchmark 题，用 n-gram 重叠检测剔除重合超过阈值的样本</li>
 </ul>
 <blockquote>
 <p>同样这套 (a) + (b) 结构在 SFT / RLHF 也走一遍，只是换数据 / 换 benchmark。这部分留给后续笔记。</p>
@@ -2097,58 +2084,58 @@ P(w_1, w_2, \ldots, w_n) = P(w_1) \cdot P(w_2 \mid w_1) \cdot P(w_3 \mid w_1, w_
 <p>这些都是 SFT / RLHF 解决的事。</p>
 <h2 id="6-pretrain">6. 代码实现：可跑的 pretrain</h2>
 <p>把 §1~§5 的概念串成最小可跑的版本——wikitext-2 + tiny Qwen2 配置（≈ 40M params），单 GPU / CPU 都能跑：</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">chain</span>
-<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
-<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>    <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">Qwen2Config</span><span class="p">,</span>
-<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>    <span class="n">Trainer</span><span class="p">,</span> <span class="n">TrainingArguments</span><span class="p">,</span> <span class="n">DataCollatorForLanguageModeling</span><span class="p">,</span>
-<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="p">)</span>
-<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>
-<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="c1"># 1. Tokenizer (复用 Qwen，免去自己训词表)</span>
-<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">&quot;Qwen/Qwen2.5-0.5B&quot;</span><span class="p">)</span>
-<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>
-<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="n">EOS</span><span class="p">,</span> <span class="n">VOCAB_SIZE</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">)</span>
-<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a>
-<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="c1"># 2. Tiny 模型（~40M params，从头随机初始化）</span>
-<a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="n">config</span> <span class="o">=</span> <span class="n">Qwen2Config</span><span class="p">(</span>
-<a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a>    <span class="n">hidden_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">intermediate_size</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
-<a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a>    <span class="n">num_hidden_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">num_attention_heads</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-<a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a>    <span class="n">num_key_value_heads</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">vocab_size</span><span class="o">=</span><span class="n">VOCAB_SIZE</span><span class="p">,</span>
-<a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a>    <span class="n">max_position_embeddings</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
-<a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a><span class="p">)</span>
-<a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a><span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-<a id="__codelineno-15-22" name="__codelineno-15-22" href="#__codelineno-15-22"></a>
-<a id="__codelineno-15-23" name="__codelineno-15-23" href="#__codelineno-15-23"></a><span class="c1"># 3. 数据：load → tokenize → concat → chunk（§3.2 + §3.3）</span>
-<a id="__codelineno-15-24" name="__codelineno-15-24" href="#__codelineno-15-24"></a><span class="n">raw</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;Salesforce/wikitext&quot;</span><span class="p">,</span> <span class="s2">&quot;wikitext-2-raw-v1&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
-<a id="__codelineno-15-25" name="__codelineno-15-25" href="#__codelineno-15-25"></a><span class="n">raw</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
-<a id="__codelineno-15-26" name="__codelineno-15-26" href="#__codelineno-15-26"></a><span class="n">BLOCK</span> <span class="o">=</span> <span class="mi">256</span>
-<a id="__codelineno-15-27" name="__codelineno-15-27" href="#__codelineno-15-27"></a>
-<a id="__codelineno-15-28" name="__codelineno-15-28" href="#__codelineno-15-28"></a><span class="k">def</span><span class="w"> </span><span class="nf">tokenize_and_chunk</span><span class="p">(</span><span class="n">examples</span><span class="p">):</span>
-<a id="__codelineno-15-29" name="__codelineno-15-29" href="#__codelineno-15-29"></a>    <span class="n">texts</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="o">+</span> <span class="n">EOS</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]]</span>
-<a id="__codelineno-15-30" name="__codelineno-15-30" href="#__codelineno-15-30"></a>    <span class="n">tok</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">texts</span><span class="p">,</span> <span class="n">add_special_tokens</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<a id="__codelineno-15-31" name="__codelineno-15-31" href="#__codelineno-15-31"></a>    <span class="n">flat</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="n">v</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">tok</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
-<a id="__codelineno-15-32" name="__codelineno-15-32" href="#__codelineno-15-32"></a>    <span class="n">total</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">flat</span><span class="p">[</span><span class="s2">&quot;input_ids&quot;</span><span class="p">])</span> <span class="o">//</span> <span class="n">BLOCK</span><span class="p">)</span> <span class="o">*</span> <span class="n">BLOCK</span>
-<a id="__codelineno-15-33" name="__codelineno-15-33" href="#__codelineno-15-33"></a>    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="n">BLOCK</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">total</span><span class="p">,</span> <span class="n">BLOCK</span><span class="p">)]</span>
-<a id="__codelineno-15-34" name="__codelineno-15-34" href="#__codelineno-15-34"></a>            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">flat</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
-<a id="__codelineno-15-35" name="__codelineno-15-35" href="#__codelineno-15-35"></a>
-<a id="__codelineno-15-36" name="__codelineno-15-36" href="#__codelineno-15-36"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_and_chunk</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_columns</span><span class="o">=</span><span class="n">raw</span><span class="o">.</span><span class="n">column_names</span><span class="p">)</span>
-<a id="__codelineno-15-37" name="__codelineno-15-37" href="#__codelineno-15-37"></a>
-<a id="__codelineno-15-38" name="__codelineno-15-38" href="#__codelineno-15-38"></a><span class="c1"># 4. Collator: labels = input_ids.clone()（§3.4）</span>
-<a id="__codelineno-15-39" name="__codelineno-15-39" href="#__codelineno-15-39"></a><span class="n">collator</span> <span class="o">=</span> <span class="n">DataCollatorForLanguageModeling</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">mlm</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<a id="__codelineno-15-40" name="__codelineno-15-40" href="#__codelineno-15-40"></a>
-<a id="__codelineno-15-41" name="__codelineno-15-41" href="#__codelineno-15-41"></a><span class="c1"># 5. 训练（warmup + cosine，§4.2）</span>
-<a id="__codelineno-15-42" name="__codelineno-15-42" href="#__codelineno-15-42"></a><span class="n">args</span> <span class="o">=</span> <span class="n">TrainingArguments</span><span class="p">(</span>
-<a id="__codelineno-15-43" name="__codelineno-15-43" href="#__codelineno-15-43"></a>    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;./pt_out&quot;</span><span class="p">,</span>
-<a id="__codelineno-15-44" name="__codelineno-15-44" href="#__codelineno-15-44"></a>    <span class="n">learning_rate</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>                  <span class="c1"># demo 放大 10x，几百步就能看到 loss 降</span>
-<a id="__codelineno-15-45" name="__codelineno-15-45" href="#__codelineno-15-45"></a>    <span class="n">warmup_steps</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">lr_scheduler_type</span><span class="o">=</span><span class="s2">&quot;cosine&quot;</span><span class="p">,</span>
-<a id="__codelineno-15-46" name="__codelineno-15-46" href="#__codelineno-15-46"></a>    <span class="n">max_steps</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
-<a id="__codelineno-15-47" name="__codelineno-15-47" href="#__codelineno-15-47"></a>    <span class="n">logging_steps</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">save_strategy</span><span class="o">=</span><span class="s2">&quot;no&quot;</span><span class="p">,</span> <span class="n">report_to</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
-<a id="__codelineno-15-48" name="__codelineno-15-48" href="#__codelineno-15-48"></a><span class="p">)</span>
-<a id="__codelineno-15-49" name="__codelineno-15-49" href="#__codelineno-15-49"></a><span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">,</span> <span class="n">train_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span> <span class="n">data_collator</span><span class="o">=</span><span class="n">collator</span><span class="p">)</span>
-<a id="__codelineno-15-50" name="__codelineno-15-50" href="#__codelineno-15-50"></a><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">chain</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>    <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">Qwen2Config</span><span class="p">,</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>    <span class="n">Trainer</span><span class="p">,</span> <span class="n">TrainingArguments</span><span class="p">,</span> <span class="n">DataCollatorForLanguageModeling</span><span class="p">,</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="p">)</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="c1"># 1. Tokenizer (复用 Qwen，免去自己训词表)</span>
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">&quot;Qwen/Qwen2.5-0.5B&quot;</span><span class="p">)</span>
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="n">EOS</span><span class="p">,</span> <span class="n">VOCAB_SIZE</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">)</span>
+<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>
+<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a><span class="c1"># 2. Tiny 模型（~40M params，从头随机初始化）</span>
+<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a><span class="n">config</span> <span class="o">=</span> <span class="n">Qwen2Config</span><span class="p">(</span>
+<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a>    <span class="n">hidden_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">intermediate_size</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>    <span class="n">num_hidden_layers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">num_attention_heads</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+<a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>    <span class="n">num_key_value_heads</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">vocab_size</span><span class="o">=</span><span class="n">VOCAB_SIZE</span><span class="p">,</span>
+<a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a>    <span class="n">max_position_embeddings</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+<a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a><span class="p">)</span>
+<a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a><span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a>
+<a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a><span class="c1"># 3. 数据：load → tokenize → concat → chunk（§3.2 + §3.3）</span>
+<a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a><span class="n">raw</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;Salesforce/wikitext&quot;</span><span class="p">,</span> <span class="s2">&quot;wikitext-2-raw-v1&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
+<a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a><span class="n">raw</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a><span class="n">BLOCK</span> <span class="o">=</span> <span class="mi">256</span>
+<a id="__codelineno-14-27" name="__codelineno-14-27" href="#__codelineno-14-27"></a>
+<a id="__codelineno-14-28" name="__codelineno-14-28" href="#__codelineno-14-28"></a><span class="k">def</span><span class="w"> </span><span class="nf">tokenize_and_chunk</span><span class="p">(</span><span class="n">examples</span><span class="p">):</span>
+<a id="__codelineno-14-29" name="__codelineno-14-29" href="#__codelineno-14-29"></a>    <span class="n">texts</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="o">+</span> <span class="n">EOS</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]]</span>
+<a id="__codelineno-14-30" name="__codelineno-14-30" href="#__codelineno-14-30"></a>    <span class="n">tok</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">texts</span><span class="p">,</span> <span class="n">add_special_tokens</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-14-31" name="__codelineno-14-31" href="#__codelineno-14-31"></a>    <span class="n">flat</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="n">v</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">tok</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+<a id="__codelineno-14-32" name="__codelineno-14-32" href="#__codelineno-14-32"></a>    <span class="n">total</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">flat</span><span class="p">[</span><span class="s2">&quot;input_ids&quot;</span><span class="p">])</span> <span class="o">//</span> <span class="n">BLOCK</span><span class="p">)</span> <span class="o">*</span> <span class="n">BLOCK</span>
+<a id="__codelineno-14-33" name="__codelineno-14-33" href="#__codelineno-14-33"></a>    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="n">BLOCK</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">total</span><span class="p">,</span> <span class="n">BLOCK</span><span class="p">)]</span>
+<a id="__codelineno-14-34" name="__codelineno-14-34" href="#__codelineno-14-34"></a>            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">flat</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+<a id="__codelineno-14-35" name="__codelineno-14-35" href="#__codelineno-14-35"></a>
+<a id="__codelineno-14-36" name="__codelineno-14-36" href="#__codelineno-14-36"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenize_and_chunk</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">remove_columns</span><span class="o">=</span><span class="n">raw</span><span class="o">.</span><span class="n">column_names</span><span class="p">)</span>
+<a id="__codelineno-14-37" name="__codelineno-14-37" href="#__codelineno-14-37"></a>
+<a id="__codelineno-14-38" name="__codelineno-14-38" href="#__codelineno-14-38"></a><span class="c1"># 4. Collator: labels = input_ids.clone()（§3.4）</span>
+<a id="__codelineno-14-39" name="__codelineno-14-39" href="#__codelineno-14-39"></a><span class="n">collator</span> <span class="o">=</span> <span class="n">DataCollatorForLanguageModeling</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">mlm</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-14-40" name="__codelineno-14-40" href="#__codelineno-14-40"></a>
+<a id="__codelineno-14-41" name="__codelineno-14-41" href="#__codelineno-14-41"></a><span class="c1"># 5. 训练（warmup + cosine，§4.2）</span>
+<a id="__codelineno-14-42" name="__codelineno-14-42" href="#__codelineno-14-42"></a><span class="n">args</span> <span class="o">=</span> <span class="n">TrainingArguments</span><span class="p">(</span>
+<a id="__codelineno-14-43" name="__codelineno-14-43" href="#__codelineno-14-43"></a>    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;./pt_out&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-44" name="__codelineno-14-44" href="#__codelineno-14-44"></a>    <span class="n">learning_rate</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>                  <span class="c1"># demo 放大 10x，几百步就能看到 loss 降</span>
+<a id="__codelineno-14-45" name="__codelineno-14-45" href="#__codelineno-14-45"></a>    <span class="n">warmup_steps</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">lr_scheduler_type</span><span class="o">=</span><span class="s2">&quot;cosine&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-46" name="__codelineno-14-46" href="#__codelineno-14-46"></a>    <span class="n">max_steps</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+<a id="__codelineno-14-47" name="__codelineno-14-47" href="#__codelineno-14-47"></a>    <span class="n">logging_steps</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">save_strategy</span><span class="o">=</span><span class="s2">&quot;no&quot;</span><span class="p">,</span> <span class="n">report_to</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-48" name="__codelineno-14-48" href="#__codelineno-14-48"></a><span class="p">)</span>
+<a id="__codelineno-14-49" name="__codelineno-14-49" href="#__codelineno-14-49"></a><span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">,</span> <span class="n">train_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span> <span class="n">data_collator</span><span class="o">=</span><span class="n">collator</span><span class="p">)</span>
+<a id="__codelineno-14-50" name="__codelineno-14-50" href="#__codelineno-14-50"></a><span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
 </code></pre></div>
-<p>50 行不到就把整条 pipeline 跑起来了——当然这个模型本身没什么实用能力（数据量、模型规模都太小），但流程是完整的。要直接跑可以下载 <a href="../code/04_mini_pretrain.ipynb"><code>ipynb</code> 文件</a>（或在 <a href="https://drive.google.com/file/d/1VUB1WrZx9KkHBrY9N8E3-Dfmql7aHnjw/view?usp=sharing">Colab</a> 上）直接运行，Colab T4 全流程约 2 分钟。</p>
+<p>不到 50 行跑通整条 pipeline。模型本身没有实用能力（数据量、规模都太小），但流程完整。要直接跑可以下载 <a href="../code/04_mini_pretrain.ipynb"><code>ipynb</code> 文件</a>（或在 <a href="https://drive.google.com/file/d/1VUB1WrZx9KkHBrY9N8E3-Dfmql7aHnjw/view?usp=sharing">Colab</a> 上）直接运行，Colab T4 全流程约 2 分钟。</p>
 
 
 

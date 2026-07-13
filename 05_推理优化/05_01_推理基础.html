@@ -1734,11 +1734,11 @@
 </ul>
 <h2 id="_1">前言</h2>
 <p><a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_01_Transformer.html">01_Transformer.md §3.1</a> 提到过：训练能一次性输入整句、并行算；推理是自回归的，只能逐 token 串行生成。</p>
-<p>默认训练那套和 Transformer / attention / MHA 都已经熟悉 (Transformer篇讲过)，这里只在需要时回顾。作为推理优化系列的第一篇，它把后面每篇共享的底座讲清楚：</p>
+<p>默认已熟悉训练流程和 Transformer / attention / MHA（Transformer 篇讲过），只在需要时回顾。作为推理优化系列的第一篇，它把后面每篇共享的底座讲清楚：</p>
 <ul>
 <li><strong>prefill / decode</strong>：推理相对训练的计算流差别</li>
 <li><strong>推理性能指标</strong>：TTFT / TPOT / 吞吐 / SLO / Goodput</li>
-<li><strong>KV Cache</strong>：decode 对前文的"记忆"载体 -&gt; 怎么存、占多少 -&gt; 由此衍生一堆优化（后续篇）</li>
+<li><strong>KV Cache</strong>：decode 对前文的"记忆"载体 -&gt; 怎么存、占多少 -&gt; 衍生的优化方向（后续篇）</li>
 <li><strong>算法层省 KV</strong>：MQA / GQA / MLA（本篇的主要内容）</li>
 <li><strong>Sampling</strong>：得到 logits 后如何选下一个 token</li>
 <li>最后手写一个带 KV cache、分 prefill / decode 的 next-token <code>generate()</code></li>
@@ -1773,10 +1773,10 @@
 <h3 id="12-prefill-vs-decode">1.2 prefill vs decode</h3>
 <p>上面的循环里，<strong>一次并行输入多个 token</strong> 和 <strong>每次只输入一个 token</strong> 是两种计算：</p>
 <ul>
-<li><strong>Prefill</strong>：首轮就是整段 prompt（<span class="arithmatex">\(n\)</span> token）并行前向，产出整段的KV cache，第一个待生成的 token。</li>
-<li><strong>Decode</strong>：之后每步只 forward 1 个新 token，读已缓存的 KV，生成 1 个新 token，添加新 token 的 KV Cache。</li>
+<li><strong>Prefill</strong>：整段 prompt（<span class="arithmatex">\(n\)</span> token）并行前向，产出整段的 KV cache 和第一个生成 token。</li>
+<li><strong>Decode</strong>：之后每步只 forward 1 个新 token，读已缓存的 KV，生成 1 个新 token，并把它的 KV 追加进 cache。</li>
 </ul>
-<p>两者计算特性相反，根在 attention 的形状（batch=1）：</p>
+<p>两者计算特性相反，根源在 attention 计算的形状（batch=1）：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Prefill:  Q [n, d] × Kᵀ [d, n]  →  打分矩阵 [n, n]    ← 矩阵 × 矩阵，大 GEMM
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>Decode:   q [1, d] × Kᵀ [d, t]  →  打分向量 [1, t]    ← 向量 × 矩阵，瘦长 GEMV
 </code></pre></div>
@@ -1821,7 +1821,7 @@
 <li><strong>Prefill = compute-bound</strong>：<span class="arithmatex">\(n \times n\)</span> 打分矩阵 + FFN 全是大 GEMM，算量 <span class="arithmatex">\(\propto n^2\)</span>；访存量被算量盖住，能跑到 GPU 算力上限。</li>
 <li><strong>Decode = memory-bound（IO-bound）</strong>：每步只有 1 个 query，算量极小，但<strong>仍要读完整权重 + 全部历史 KV</strong>——访存量远超算量，瓶颈落在 HBM 带宽，逐 token 串行也无法靠并行掩盖。</li>
 </ul>
-<p><strong>KV cache 由此成为推理的核心矛盾——既占显存、又占带宽</strong>。</p>
+<p><strong>KV cache 因此既占显存、又占带宽</strong>，是推理优化的主要对象。</p>
 <blockquote>
 <p><strong>prefill 不等于"cache 从空开始"</strong>。其本质是"一次并行处理 ≥1 个新 token"——多轮对话场景中，新一轮的用户输入接在前几轮已有的 KV cache 后面 prefill。</p>
 </blockquote>
@@ -1863,7 +1863,7 @@
 - <strong>E2EL（End-to-End Latency）</strong>：请求发出到最后一个 token 收完，<span class="arithmatex">\(\text{E2EL} = \text{TTFT} + \text{TPOT} \times (N_{\text{out}} - 1)\)</span>，即端到端总时长
 - <strong>ITL（Inter-Token Latency）</strong>：相邻两 token 的精确间隔。单请求下 ITL 均值 = TPOT；多请求聚合时 TPOT 按请求平均、ITL 按 token 平均，serving 报告偶尔区分</p>
 </blockquote>
-<p><strong>分位数比平均更重要</strong>：生产里常说的"<strong>长尾</strong>"就是分布末端那一截——少数最慢请求拖出来的尾巴。Mean 会被长尾拉偏但定位不到它，分位数才能精确抓到。</p>
+<p><strong>分位数比平均更重要</strong>：生产里常说的<strong>长尾</strong>指延迟分布的末端——少数最慢的请求。Mean 会被长尾拉偏但定位不到它，分位数才能抓到。</p>
 <table>
 <thead>
 <tr>
@@ -1935,7 +1935,7 @@
 <thead>
 <tr>
 <th>思路</th>
-<th>怎么破</th>
+<th>做法</th>
 <th>在哪展开</th>
 </tr>
 </thead>
@@ -1964,7 +1964,7 @@
 </table>
 <h2 id="3-kv-cache">3. KV Cache</h2>
 <h3 id="31-cache">3.1 为什么要存 cache</h3>
-<p>MHA 算 Q, K, V 是天然的——三步公式，两次 matmul 夹一个 softmax：</p>
+<p>先回顾 MHA：三步公式，两次 matmul 夹一个 softmax：</p>
 <div class="arithmatex">\[
 S = Q K^\top / \sqrt{d} \;\;\xrightarrow{\text{softmax}}\;\; A \;\;\xrightarrow{\;\cdot V\;}\;\; O
 \]</div>
@@ -2008,7 +2008,7 @@ S = Q K^\top / \sqrt{d} \;\;\xrightarrow{\text{softmax}}\;\; A \;\;\xrightarrow{
 <blockquote>
 <p>常考手写题。它是 <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_01_Transformer.html">01_01_Transformer.md §4.1</a> LLaMA 版训练 attention 的推理版（命名为 <code>MHA_KV</code>），相对训练版只多了 RoPE 的位置偏移和 KV 拼接两处。建议熟练掌握。</p>
 </blockquote>
-<p>KV cache 就是把每层 attention 的 <span class="arithmatex">\(K, V\)</span> 存在 HBM 里、常驻显存，每层一份。整段流程如下（括号内步骤与训练版 MHA 相同）：</p>
+<p>KV cache 即每层 attention 的 <span class="arithmatex">\(K, V\)</span> 常驻 HBM，每层一份。流程如下（括号内步骤与训练版 MHA 相同）：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>cache:  past_k, past_v: [B, num_head, past_kv_len, head_dim]    各一份, 随生成增长
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>流程:   (proj → split heads) → rope → add kv → (Q@K) → mask → (softmax → @V → merge head → out_proj)
 </code></pre></div>
@@ -2150,7 +2150,7 @@ S = Q K^\top / \sqrt{d} \;\;\xrightarrow{\text{softmax}}\;\; A \;\;\xrightarrow{
 </blockquote>
 <p>这四种 attention 是一条演化线，都在"省 KV cache"和"训练表达力"之间重新权衡。</p>
 <h3 id="41-mha">4.1 MHA 优化思路</h3>
-<p>attention 唯一的硬约束来自<strong>残差</strong>：输出要能加回输入 <code>x + attn(x)</code>，所以输出维度必须 = <span class="arithmatex">\(d_{model}\)</span>（即 <strong>hidden_dim</strong>，由模型设计时确定，例如 Llama-7B = 4096、MiniLlama = 512；见 <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_01_Transformer.html">01_01_Transformer.md §2.4</a>）。<strong>这个约束只管输出，不管中间怎么算。</strong></p>
+<p>attention 唯一的硬约束来自<strong>残差</strong>：输出要能加回输入 <code>x + attn(x)</code>，所以输出维度必须 = <span class="arithmatex">\(d_{model}\)</span>（即 <strong>hidden_dim</strong>，模型设计时确定，如 Llama-7B = 4096；见 <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_01_Transformer.html">01_01_Transformer.md §2.4</a>）。<strong>这个约束只管输出，不管中间怎么算。</strong></p>
 <p><img src="../assets/08-inference-basics/fig-04.png" alt="image-20260621222028102" style="zoom:50%;" /></p>
 <p>拆开一层 attention：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>x [d_model] ──► Q = Wq·x  [n_head × d_h]  ┐
@@ -2370,7 +2370,6 @@ S = Q K^\top / \sqrt{d} \;\;\xrightarrow{\text{softmax}}\;\; A \;\;\xrightarrow{
 </tr>
 </tbody>
 </table>
-<p>总结：MQA 过于激进；GQA 是当下稠密模型的默认选择；MLA 将 KV 压到极致，代价是 attention 结构和 kernel 都更复杂。</p>
 <h2 id="5-sampling">5. Sampling</h2>
 <p>得到最后一个位置的 logits（词表上每个 token 的分数）后，如何选下一个 token，就是采样。它和 KV cache 那条线正交——只决定生成的确定性 vs 多样性，不影响推理的计算结构，属于解码算法的设计。本节相对独立，了解即可。</p>
 <h3 id="51">5.1 基本策略</h3>
@@ -2463,7 +2462,7 @@ p_i = \frac{e^{z_i / T}}{\sum_j e^{z_j / T}}
 <a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a>  <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">multinomial</span><span class="p">(</span><span class="n">logits</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># [B, V] 概率 → 抽 1 个 → [B, 1]</span>
 </code></pre></div>
 <h3 id="62">6.2 完整可跑版</h3>
-<p>完整版：<a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/08_mini_inference.ipynb">08_mini_inference.ipynb</a> ｜ <a href="https://drive.google.com/file/d/1Zlicq3BShtFv4iWECkbHSqJ2iNZT42xW/view?usp=sharing">Colab</a>（你可以使用免费的T4 运行）</p>
+<p>完整版：<a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/08_mini_inference.ipynb">08_mini_inference.ipynb</a> ｜ <a href="https://drive.google.com/file/d/1Zlicq3BShtFv4iWECkbHSqJ2iNZT42xW/view?usp=sharing">Colab</a>（免费 T4 可跑）</p>
 <ul>
 <li>核心： §6.1 那两段 generate + sample </li>
 <li>其他部分：DecoderBlock + MiniLlama_KV 装配让上面能跑起来</li>
