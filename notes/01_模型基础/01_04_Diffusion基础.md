@@ -1,5 +1,5 @@
 ---
-title: "04-Diffusion（上）：从 VAE 到 DDPM / DDIM"
+title: "04-Diffusion (上): 从 VAE 到 DDPM / DDIM"
 ---
 
 # 04-Diffusion (上): 从 VAE 到 DDPM / DDIM
@@ -7,7 +7,7 @@ title: "04-Diffusion（上）：从 VAE 到 DDPM / DDIM"
 > **TL; DR**：数学速通 → 生成模型框架（VAE：一步把高斯映射成图 → diffusion：拆成多步+预测噪声）→ DDPM 训练与推理loop → DDIM（同一个网络，把 1000 步推理砍到几十步）
 
 - **[Quick Ref for 手写 code]**：Basic DDIM ｜ [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/07_basic_ddim.ipynb) ｜ [colab](https://drive.google.com/file/d/1R8kfN8Qv2SQFy7XefKuEW2lebmiElTbP/view?usp=sharing)
-    - 训练 + 推理 + noise predictor 三段，配上模型 (U-Net) 数据 (MNIST)，几分钟训出会画数字的 toy model
+  - 训练 + 推理 + noise predictor 三段，配上模型 (U-Net) 数据 (MNIST)，几分钟训出会画数字的 toy model
 - **[可能会考的面试手写题]**：Basic DDIM 训练 / 推理 loop（§4 + §5.2）
 - 本篇只搭扩散框架；具体网络和工业级文生图系统（Latent Diffusion / SD、DiT、SD3 / FLUX）放在下篇 [01_05_Diffusion进阶.md](01_05_Diffusion进阶.md)
 
@@ -139,9 +139,9 @@ $$
 
 - **第一行**：ELBO = $\log p(x)$ （由所有z算x，算不动），减去 gap（gap ≥ 0，也算不动）
 - **第二行**：ELBO = 重建项 − prior-KL
-    - **重建项** $= \mathbb E_q[\log p_\theta(x|z)] \approx \text{MSE}(x, \hat x)$：$x$ 走 encoder 出 $z$ → decoder 还原 $\hat x$ → 比 MSE（均方误差，"原图 vs 生成图 align"）
-    - **prior-KL** $= D_{\mathrm{KL}}\!\big(q_\phi(z|x) \,\|\, \mathcal N(0,I)\big)$：encoder 输出离**先验**标准高斯多远（两个高斯之间的 KL 散度有简单闭式，可算）
-    - **两项都可算 → 实际 loss 计算时用的形式**
+  - **重建项** $= \mathbb E_q[\log p_\theta(x|z)] \approx \text{MSE}(x, \hat x)$：$x$ 走 encoder 出 $z$ → decoder 还原 $\hat x$ → 比 MSE（均方误差，"原图 vs 生成图 align"）
+  - **prior-KL** $= D_{\mathrm{KL}}\!\big(q_\phi(z|x) \,\|\, \mathcal N(0,I)\big)$：encoder 输出离**先验**标准高斯多远（两个高斯之间的 KL 散度有简单闭式，可算）
+  - **两项都可算 → 实际 loss 计算时用的形式**
 
 这两个都可以表示 ELBO 的定义，由于第一行算不动，所以用第二行实现具体计算。
 

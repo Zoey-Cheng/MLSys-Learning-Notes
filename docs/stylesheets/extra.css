@@ -57,36 +57,40 @@
   max-width: 80rem;
 }
 
-/* --------- sidebar：稍加宽 + 固定滚动条槽位 ---------
+/* --------- sidebar：稍加宽 + 固定滚动条槽位（仅桌面） ---------
    默认 12.1rem，中文长标题偏挤 → 13.5rem。
    scrollbar-gutter 预留滚动条位置：nav 溢出（出滚动条）和不溢出的页面
-   文字可用宽度一致，避免首页/内页看起来宽度不一样。 */
-.md-sidebar {
-  width: 13.5rem;
-}
-/* 主题把 nav 文字宽度硬编码成 11.5rem（padding-right 的 hack 给滚动条留位），
-   sidebar 加宽后要同步放宽，否则多出的宽度全是文字和滚动条之间的空隙。
-   13.5 - 0.6（原 gap）= 12.9rem */
-[dir="ltr"] .md-sidebar__inner {
-  padding-right: calc(100% - 12.9rem);
-}
-.md-sidebar__scrollwrap {
-  scrollbar-gutter: stable;
-}
+   文字可用宽度一致，避免首页/内页看起来宽度不一样。
+   ⚠️ 必须限定桌面断点：手机端 nav 是抽屉（left:-12.1rem 藏到屏幕外），
+   只改宽度不改 left 会让多出的 1.4rem 露在屏幕左缘挡住正文。 */
+@media screen and (min-width: 76.25em) {
+  .md-sidebar {
+    width: 13.5rem;
+  }
+  /* 主题把 nav 文字宽度硬编码成 11.5rem（padding-right 的 hack 给滚动条留位），
+     sidebar 加宽后要同步放宽，否则多出的宽度全是文字和滚动条之间的空隙。
+     13.5 - 0.6（原 gap）= 12.9rem */
+  [dir="ltr"] .md-sidebar__inner {
+    padding-right: calc(100% - 12.9rem);
+  }
+  .md-sidebar__scrollwrap {
+    scrollbar-gutter: stable;
+  }
 
-/* sidebar 滚动条平时透明，悬停侧边栏时才显示
-   （槽位已由上面 scrollbar-gutter 固定，显隐不影响文字宽度） */
-.md-sidebar__scrollwrap {
-  scrollbar-color: transparent transparent;              /* Firefox */
-}
-.md-sidebar:hover .md-sidebar__scrollwrap {
-  scrollbar-color: var(--md-default-fg-color--lighter) transparent;
-}
-.md-sidebar__scrollwrap::-webkit-scrollbar-thumb {
-  background-color: transparent;                         /* Chrome / Safari */
-}
-.md-sidebar:hover .md-sidebar__scrollwrap::-webkit-scrollbar-thumb {
-  background-color: var(--md-default-fg-color--lighter);
+  /* sidebar 滚动条平时透明，悬停侧边栏时才显示
+     （槽位已由上面 scrollbar-gutter 固定，显隐不影响文字宽度） */
+  .md-sidebar__scrollwrap {
+    scrollbar-color: transparent transparent;              /* Firefox */
+  }
+  .md-sidebar:hover .md-sidebar__scrollwrap {
+    scrollbar-color: var(--md-default-fg-color--lighter) transparent;
+  }
+  .md-sidebar__scrollwrap::-webkit-scrollbar-thumb {
+    background-color: transparent;                         /* Chrome / Safari */
+  }
+  .md-sidebar:hover .md-sidebar__scrollwrap::-webkit-scrollbar-thumb {
+    background-color: var(--md-default-fg-color--lighter);
+  }
 }
 
 /* --------- content 颜色（用变量，自动适配亮暗） --------- */

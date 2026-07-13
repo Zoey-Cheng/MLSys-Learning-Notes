@@ -1,19 +1,19 @@
 ---
-title: "05-Diffusion（下）：从 Latent Diffusion 到 DiT / FLUX"
+title: "05-Diffusion (下): 从 Latent Diffusion 到 DiT / FLUX"
 ---
 
-# 05-Diffusion (下)：从 Latent Diffusion 到 DiT / FLUX
+# 05-Diffusion (下): 从 Latent Diffusion 到 DiT / FLUX
 
 > **TL; DR**：给 diffusion 补 backbone → 走两代 real-world 文生图产品：**U-Net 时代**（LDM / SD1.x / SDXL = U-Net + latent + cross-attn + CFG）→ **Transformer 时代**（DiT → MMDiT，SD3 / FLUX 再换训练目标 ε → v）
 
 - **[Quick Ref for 手写 code]**：MiniSD (§2.5) + MiniFLUX (§4.2) ｜ [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/10_mini_sd_flux.ipynb) ｜ [colab](https://drive.google.com/file/d/1f3LFn-5BRBN_ED6DBPwcMd81wxUtSf-G/view?usp=sharing)
-    - MiniSD = 框架 (BasicDDIM + 三处 diff)，主干 U-Net 只 call 不展开
-    - MiniFLUX = MiniSD 换 v-prediction + 手写 Transformer backbone（DiT / MMDiT block）
+  - MiniSD = 框架 (BasicDDIM + 三处 diff)，主干 U-Net 只 call 不展开
+  - MiniFLUX = MiniSD 换 v-prediction + 手写 Transformer backbone（DiT / MMDiT block）
 - **[可能会考的面试点]**：text 注入/ DiT & MMDiT（没面过我猜的）
 - 原理地基
-    - Diffusion 框架 DDPM / DDIM：[01_04_Diffusion基础.md](01_04_Diffusion基础.md)
-    - Transformer / LLama：[01_01_Transformer.md](01_01_Transformer.md)
-    - ViT / Llava：[01_03_VLM.md](01_03_VLM.md)
+  - Diffusion 框架 DDPM / DDIM：[01_04_Diffusion基础.md](01_04_Diffusion基础.md)
+  - Transformer / LLama：[01_01_Transformer.md](01_01_Transformer.md)
+  - ViT / Llava：[01_03_VLM.md](01_03_VLM.md)
 
 
 
