@@ -9,7 +9,7 @@ title: "04-Diffusion（上）：从 VAE 到 DDPM / DDIM"
 - **[Quick Ref for 手写 code]**：Basic DDIM ｜ [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/07_basic_ddim.ipynb) ｜ [colab](https://drive.google.com/file/d/1R8kfN8Qv2SQFy7XefKuEW2lebmiElTbP/view?usp=sharing)
     - 训练 + 推理 + noise predictor 三段，配上模型 (U-Net) 数据 (MNIST)，几分钟训出会画数字的 toy model
 - **[可能会考的面试手写题]**：Basic DDIM 训练 / 推理 loop（§4 + §5.2）
-- 本篇只搭扩散框架；具体网络和工业级文生图系统（Latent Diffusion / SD、DiT、SD3 / FLUX）放在下篇
+- 本篇只搭扩散框架；具体网络和工业级文生图系统（Latent Diffusion / SD、DiT、SD3 / FLUX）放在下篇 [01_05_Diffusion进阶.md](01_05_Diffusion进阶.md)
 
 ## 前言
 
@@ -17,7 +17,12 @@ title: "04-Diffusion（上）：从 VAE 到 DDPM / DDIM"
 
 **Diffusion 的整体逻辑** 可以一句话压缩：生成模型本质是「学到样本背后的分布、再采样新样本」。
 
-本篇的逻辑：
+Diffusion 的实现分两层，本篇只做框架层：
+
+- **框架**（idea 层）：加噪设计、训练目标、采样器。本篇在这层搭出最小核 **BasicDDIM**（§2–§5）
+- **噪声网络 $\epsilon_\theta$**（计算层）：框架每步调用的网络。本篇全程当黑盒；U-Net / DiT / MMDiT 的实现在下篇 [01_05_Diffusion进阶.md](01_05_Diffusion进阶.md)
+
+框架层内部，本篇的逻辑：
 
 - **前身 VAE（§2）**：encoder 和 decoder 各是独立 NN，单步映射 + 生成。但用于生成的 decoder 一步从纯噪跳到结构复杂的图太难、出图糊
 - **DDPM 解法（§3 / §4）**：encoder 写成多步固定加噪公式（无参）+ decoder 学反解，**两边共享同一个公式**；同时把一步拆成 T 步、生成时逐步去噪。代价是推理要串行调用网络 T 步、采样开销大
@@ -35,7 +40,7 @@ title: "04-Diffusion（上）：从 VAE 到 DDPM / DDIM"
 
 记号 $\mathcal N(\mu, \sigma^2)$：一维上的正态概率分布，完全由**均值** $\mu$ 和**方差** $\sigma^2$ 决定。
 
-多维 $\mathcal N(0, I)$ 指每维独立、均值 0、方差 1，几何上就是「以原点为中心、各向同分布的随机噪声」，**概率密度只取决于到中间点的欧氏距离 $|x|_2$。**二维可视为圆形，三维是球体等等，`torch.randn` 一行就能采集。
+多维 $\mathcal N(0, I)$ 指每维独立、均值 0、方差 1，几何上就是「以原点为中心、各向同分布的随机噪声」，**概率密度只取决于到原点的欧氏距离 $|x|_2$**。二维可视为圆形，三维是球体等等，`torch.randn` 一行就能采样。
 
 <img src="../assets/07-diffusion/fig-01.png" alt="image-20260610143322135" style="zoom:40%;" />
 
@@ -47,7 +52,7 @@ Diffusion 偏爱它有三个理由：
 - **高斯的线性组合还是高斯**（高斯族对加法 / 线性变换封闭）
 - **两个高斯之间的 KL 散度有简单闭式**——§1.4 ELBO 能算到底，靠的也是这条。
 
-> **「闭式」 / closed-form**：一个量能**用有限步基本运算（加减乘除 / log / exp / 开方 / …）直接写成一个公式**，不用数值积分、迭代逼近或采样估计。反义就是本篇反复说的「算不动」（如ELBO的 $\log p(x) = \log \int p(x,z)\,dz$（Decode, 所有潜空间->推图片），要对所有 latent 积分，高维下没法写成公式）。
+> **「闭式」 / closed-form**：一个量能**用有限步基本运算（加减乘除 / log / exp / 开方 / …）直接写成一个公式**，不用数值积分、迭代逼近或采样估计。反义就是本篇反复说的「算不动」——例如 ELBO 里的 $\log p(x) = \log \int p(x,z)\,dz$，要对所有 latent 积分，高维下没法写成公式。
 
 所以「为什么扩散的前向噪声非要是高斯」不是巧合，是**让数学和工程都能闭合**的选择。
 
@@ -71,7 +76,7 @@ $$
 
 $q = p$ 时为 0，其他时候 $\ge 0$。
 
-> **常见出处**：你最早大概率是在**知识蒸馏**里见到它——让学生模型的输出分布逼近老师，loss 就是一个 $D_{\mathrm{KL}}(\text{老师} \,\|\, \text{学生})$。本篇 §1.4 ELBO 里那个"KL 正则项"和 DDPM loss 背后的 ELBO 推导（详见 Chan 教程）都是**完全同一个东西**，只是分布换成了 latent 上的高斯。
+> **常见出处**：你最早大概率是在**知识蒸馏**里见到它——让学生模型的输出分布逼近老师，loss 就是一个 $D_{\mathrm{KL}}(\text{老师} \,\|\, \text{学生})$。
 
 本篇需要记两条：
 
@@ -79,6 +84,8 @@ $q = p$ 时为 0，其他时候 $\ge 0$。
 - **两个高斯之间有闭式**（可被直接表示为公式）：这正是 ELBO / DDPM loss 能算到底的关键（呼应 §1.1）。
 
 ### 1.4 ELBO 变分下界 (!)
+
+> 和 VAE Loss 部分相关，跟 Diffusion 部分关系不大
 
 目标：§1.2 MLE，让 $\log p_\theta(x)$ 尽量大：
 
@@ -155,7 +162,7 @@ $$
   
 - **$\hat x$ 是什么？** 
 
-  - 就是由参数推出的**一张图（tensor）——**不是 ELBO，是图，不是数值
+  - 就是由参数推出的一张图（tensor）——不是 ELBO，不是数值
 
   - ELBO / KL 都是用来算训练 loss的，推理时不算。decoder 之所以能出像样的图，是因为训练时 ELBO 把参数 $\theta^*$ 调好了
 
@@ -218,50 +225,58 @@ $$
 
 ### 2.1 我们到底在学什么
 
-**生成模型的目标**：手上只有一堆图像样本 $\{x_i\}$，想学到它们背后的真实分布 $p(x)$，并且能从中**采样**出新的、没见过的样本。难点是 $p(x)$ 高维、未知、没有闭式（不能用公式直接表示）。
+**生成模型的目标**：手上只有一堆图像样本 $\{x_i\}$，想学到它们背后的真实分布 $p(x)$，并且能从中**采样**出新的、没见过的样本。
 
-主流思路不是去直接写出 $p(x)$，而是学一个**从简单分布到数据的映射**：**钦定**一个简单的 latent 分布 $p(z) = \mathcal N(0, I)$（标准高斯），再学一个映射把从中采出的向量 $z$ 变成数据 $x$。
+主流思路不是直接写出 $p(x)$，而是学一个**从简单分布到数据的映射**：指定一个简单的 latent 分布 $p(z) = \mathcal N(0, I)$（标准高斯），再学习把从中采出的向量 $z$ **通过映射变成数据 $x$**。
 
-于是采样变成两步：**从 $\mathcal N(0,I)$ 采一个 $z$ → 映射 → 得到 $x$**。VAE 和 diffusion 都走这条路，区别只在「这个映射怎么搭、分几步」。
+于是采样变成两步：**从 $\mathcal N(0,I)$ 采一个 $z$ → 映射 → 得到 $x$**。VAE 和 diffusion 都走这条路。
 
 两个基础约定：
 
-- **$z$ 是一个向量，不是分布**——记号 $z \sim \mathcal N(0,I)$ 读作"$z$ **从**标准高斯**采**"。$z$ 的维度是**超参**，有点类似 hidden dim（玩具 VAE 几十维、SD 的 VAE ≈ 16k 维），**远低于**像素维度（几十万）——这正是"latent"（隐空间）的字面意思：把图压进一个紧凑空间。
-- **$\mathcal N(0,I)$ 不是训出来的**，是我们指定的；训的是**映射本身**（VAE 的 decoder、diffusion 的 noise predictor）。
+- **$z$ 是一个向量**——记号 $z \sim \mathcal N(0,I)$ 读作"$z$ **从**标准高斯**采**"。$z$ 的维度是**超参**，有点类似 hidden dim（玩具 VAE 几十维、SD 的 VAE ≈ 16k 维），**远低于**像素维度（几十万）——这正是"latent"（隐空间）的字面意思：把图压进一个紧凑空间。
+- **$\mathcal N(0,I)$ 是标准分布 - 无未知参数**；训的是**映射本身**（VAE 的 decoder、diffusion 的 noise predictor）。
 
 ### 2.2 AE 起点
 
-AE（AutoEncoder）是"先压缩、再还原"的两段式：
+原始的 AE（AutoEncoder）是"先压缩、再还原"的两段式：
 
 ```
 x ──Encoder──► z ──Decoder──► x̂
 (图)         (低维向量)      (重建图)
 ```
 
-训练让 $\hat x$ 贴近原图，loss 是重建 MSE $\|x - \hat x\|^2$。AE 能学到紧凑的 latent 表征，但**不能生成**——从 $\mathcal N(0,I)$ 采个 $z$ 喂进 decoder 出垃圾，因为 AE 没约束 latent 空间长成什么形状。VAE 接着回答的就是：「怎么让 latent 空间长得齐整、能从 $\mathcal N(0,I)$ 直接采」。
+训练让 $\hat x$ 贴近原图，loss 用 MSE $\|x - \hat x\|^2$。
 
-### 2.3 VAE = AE + 三处改造
+AE 能学到紧凑的 latent 表征，但**不能生成**——从 $\mathcal N(0,I)$ 采一个 $z$ 输入 decoder，输出是无意义的图，因为 AE 没约束 latent 空间长成什么形状。
 
-VAE 沿用 AE "压缩 → 还原" 的两段结构，加三处改造让 latent 空间长得"齐整"——**从 $\mathcal N(0,I)$ 随便采就能直接出图**：
+VAE 接着回答的就是：「怎么让 latent 空间长得齐整，能从 $\mathcal N(0,I)$ 直接采样生成」。
+
+### 2.3 VAE = AE + 改造
+
+VAE 沿用 AE "压缩 → 还原" 的两段结构，加几处改造让 latent 空间长得"齐整"——**从 $\mathcal N(0,I)$ 随便采就能直接出图**：
 
 <img src="../assets/07-diffusion/fig-04.png" alt="image-20260614205142061" style="zoom:50%;" />
 
-- **encoder 输出 latent 分布**：encoder 给出一对 $(\mu, \sigma)$，确定一个**依赖输入 $x$ 的**高斯 $\mathcal N(\mu(x), \sigma^2(x))$——**不是标准高斯**（每张图对应不一样的 $\mu, \sigma$），但下面 KL 项会把它向标准高斯拉。训练后$z$ 从这个高斯里采。
-- **重参数化** $z = \mu + \sigma\epsilon$：直接"从 $\mathcal N(\mu, \sigma^2)$ 采 $z$"是个随机操作，梯度不可穿。等效写成 $\mu, \sigma$（NN 的确定函数，梯度能穿）+ 随机源 $\epsilon \sim \mathcal N(0, I)$（不可学），梯度只走可学那一支（详见 §1.6）。
-- **loss 用 ELBO**：理想 loss 是负对数似然 $-\log p(x)$——对应 §1.2 MLE 的目标"模型给真实数据打的概率越高越好"（最大化 $\log p(x)$ 等价于最小化 $-\log p(x)$）。但它**算不动**——$\log p(x) = \log \int p(x|z)p(z)\,dz$，要对所有 latent $z$ 积分，高维下没闭式。
+- **encoder 输出 latent 分布**：encoder 给出一对 $(\mu, \sigma)$，确定一个**依赖输入 $x$ 的**高斯 $\mathcal N(\mu(x), \sigma^2(x))$——**不是标准高斯**（但 KL 项会把它向标准高斯拉，最终接近）。
+- **重参数化** $z = \mu + \sigma\epsilon$：直接"从 $\mathcal N(\mu, \sigma^2)$ 采 $z$"是个随机操作，梯度不可穿。等效写成带标准随机源 $\epsilon \sim \mathcal N(0, I)$（不可学）的形式，算梯度时只走可学那一支即可（详见 §1.6）。
+- **训练目标**：重建图贴近输入图
 
-  **解决思路**（完整推导见 [§1.4 ELBO 变分下界](#14-elbo-变分下界-)）：找一个可算的下界 ELBO，max ELBO 等于把 $\log p(x)$ 顶上去。引入 VAE encoder $q_\phi(z|x)$，ELBO 化成可算的两项：
+**[Loss 部分]**（数学推导，可跳过）
 
-$$
-\text{ELBO}(\theta, \phi;\, x) = \underbrace{\mathbb E_{q_\phi(z|x)}[\log p_\theta(x|z)]}_{\text{重建项} \approx \text{MSE}(x, \hat x)} - \underbrace{D_{\mathrm{KL}}\!\big(q_\phi(z|x) \,\|\, p(z)\big)}_{\text{KL 正则项: 拉向 } \mathcal N(0,I)}
-$$
-
-  - **重建项**：$x$ → encoder → $z$ → decoder → $\hat x$，越接近原图越大（$\le 0$，越接近 0 越好）
-  - **KL 项**：encoder 输出离标准高斯多远，$\ge 0$，被压向 0 等价于把 $q_\phi(z|x)$ 拉向 $\mathcal N(0,I)$
-
-**两项都可算**：KL 是两个高斯之间的可算闭式，重建项靠 batch 平均做蒙特卡洛估计（§1.5）。所以 loss = $-$ELBO，可微、可训。
-
-**KL 项就是把 encoder 输出拽向标准高斯的"扭力"**——训练完后，所有训练样本的 latent 加起来差不多铺满整个标准高斯球；推理时直接从 $\mathcal N(0, I)$ 采的 $z$ 大概率落进 decoder 见过的区域，能出图。
+> - **loss 用 ELBO**：理想 loss 是负对数似然 $-\log p(x)$——对应 §1.2 MLE 的目标"模型给真实数据打的概率越高越好"（最大化 $\log p(x)$ 等价于最小化 $-\log p(x)$）。但它**算不动**——$\log p(x) = \log \int p(x|z)p(z)\,dz$，要对所有 latent $z$ 积分，高维下没闭式。
+>
+>   **解决思路**（完整推导见 [§1.4 ELBO 变分下界](#14-elbo-变分下界-)）：找一个可算的下界 ELBO，max ELBO 等于把 $\log p(x)$ 顶上去。引入 VAE encoder $q_\phi(z|x)$，ELBO 化成可算的两项：
+>
+> $$
+> \text{ELBO}(\theta, \phi;\, x) = \underbrace{\mathbb E_{q_\phi(z|x)}[\log p_\theta(x|z)]}_{\text{重建项} \approx \text{MSE}(x, \hat x)} - \underbrace{D_{\mathrm{KL}}\!\big(q_\phi(z|x) \,\|\, p(z)\big)}_{\text{KL 正则项: 拉向 } \mathcal N(0,I)}
+> $$
+>
+>   - **重建项**：$x$ → encoder → $z$ → decoder → $\hat x$，越接近原图越大（$\le 0$，越接近 0 越好）
+>   - **KL 项**：encoder 输出离标准高斯多远，$\ge 0$，被压向 0 等价于把 $q_\phi(z|x)$ 拉向 $\mathcal N(0,I)$
+>
+> **两项都可算**：KL 是两个高斯之间的可算闭式，重建项靠 batch 平均做蒙特卡洛估计（§1.5）。所以 loss = $-$ELBO，可微、可训。
+>
+> **KL 项就是把 encoder 输出拽向标准高斯的"扭力"**——训练完后，所有训练样本的 latent 加起来差不多铺满整个标准高斯球；推理时直接从 $\mathcal N(0, I)$ 采的 $z$ 大概率落进 decoder 见过的区域，能出图。
 
 AE / VAE 对比：
 
@@ -278,7 +293,7 @@ AE / VAE 对比：
 
 > 记住这个 VAE：它在下篇 latent diffusion 里会**原样回来**——只借它的 encoder/decoder 做压缩，生成交给 diffusion。
 
-### 2.4 从 VAE 到 Diffusion：把一步拆成很多步
+### 2.4 从 VAE 到 Diffusion：把单步拆成很多步
 
 VAE 难在"一步"——decoder 要一次从 $\mathcal N(0,I)$ 跳到真实图。Diffusion 的办法是 **把这一大跳拆成 T 个简单的小步**，每步只去掉一点点噪声，每个小步就是一个简单的条件高斯，好学得多。
 
@@ -302,17 +317,17 @@ VAE 难在"一步"——decoder 要一次从 $\mathcal N(0,I)$ 跳到真实图�
 
 <img src="../assets/07-diffusion/fig-05.png" alt="image-20260614235634170" style="zoom:40%;" />
 
-- **前向 encoder**：固定的多轮加噪，**无参数**；全场唯一的随机源是采一次 $\epsilon \sim \mathcal N(0,I)$。整条 T 步前向塌成一次 reparam（§1.6）：
+- **前向 encoder**：固定的多轮加噪，**无参数**；整条 T 步前向最终可表示为：
 
   $$x_T = \underbrace{\sqrt{\bar\alpha_T}\,x_0}_{\mu\text{：确定}} + \underbrace{\sqrt{1-\bar\alpha_T}}_{\sigma\text{：确定}}\,\epsilon$$
 
-  默认 schedule（T=1000）下 $\sqrt{\bar\alpha_T} \approx 0.007$，$x_T$ 整体近似 $\mathcal N(0,I)$。这个 $\epsilon$ 在 §3 训练里**双重身份**：算 input $x_t$ 用它、网络 GT 也是它（§3.1）
+  全场唯一的随机源是采一次 $\epsilon \sim \mathcal N(0,I)$，默认 schedule（T=1000）下 $\sqrt{\bar\alpha_T} \approx 0.007$，所以 $x_T$ 整体近似 $\mathcal N(0,I)$。
 
-- **反向 decoder**：网络要学的。学会"给定 $x_t$ 怎么退回 $x_{t-1}$"后，从随便采的 $x_T$ 走 T 步得到新图
+- **反向 decoder**：网络要学的。学会"给定 $x_t$ 怎么退回 $x_{t-1}$"，最终从随便采的 $x_T$ 噪声走 T 步decoder即可得到新图
 
 > **Note**：图里正反向画成了同一个 $x_t$，表示同一组**噪声等级**。训练时 $x_t$ 来自真实图加噪，采样时 $x_t'$ 来自模型反向链去噪。但具体采样结果不保证逐步对齐，会有模型误差和累计误差。
 
-总之，可以直接把 diffusion 看成一个**特殊的层级 VAE**：T 层、每层 latent 和数据同维，前向写死、只有反向（去噪）要学。VAE 那个"难学的大映射"于是化简成"T 个好学的小映射"——"一个 ELBO"也摊成"T 个去噪项的和"。
+总之，可以直接把 diffusion 看成一个**特殊的层级 VAE**：T 层、每层 latent 和数据同维，前向加噪固定、只有反向（去噪）要学。把"难学的单步映射"于是化简成"T 个好学的小映射"。
 
 
 
@@ -320,10 +335,12 @@ VAE 难在"一步"——decoder 要一次从 $\mathcal N(0,I)$ 跳到真实图�
 
 DDPM（Ho et al., 2020）把 §2.4 那个"T 步小去噪"的想法定型成第一个能跑的扩散模型。沿用 §2.4 的 encoder / decoder 划分：
 
-- **encoder（前向加噪）**：固定 schedule、**无参数**，靠高斯加性闭包从 $x_0$ 一步算到任意 $x_t$
-- **decoder（反向去噪）**：要训的网络 $\epsilon_\theta(x_t, t)$，预测当初从 $x_0$ 掺进去的那个 $\epsilon$
+- **encoder（前向加噪 - 固定）**：固定 schedule、**无参数**，已知 $x_0$ 后可用公式表示任意 $x_t$
+- **decoder（反向去噪 - 训练）**：要训的网络 $\epsilon_\theta(x_t, t)$，预测当初从 $x_0$ 掺进去的那个噪声 $\epsilon$
 
-**为什么 decoder 只预测"一个噪声"？** 因为高斯的**加性封闭**（§1.1）让一轮和多轮加噪都能写成「reparam + 一个 $\epsilon$」的同一种形式：
+**为什么 多步decoder 只需要预测"一个噪声"？** 
+
+> 因为高斯的**加性封闭**（§1.1），一轮和多轮加噪都能写成只含有一个随机高斯噪声的形式：
 
 <img src="../assets/07-diffusion/fig-06.png" alt="980dff8b5c76000baa03509d2f918b75" style="zoom:30%;" />
 
@@ -332,14 +349,12 @@ DDPM（Ho et al., 2020）把 §2.4 那个"T 步小去噪"的想法定型成第�
 | 1 轮（$x_{t-1} \to x_t$） | $x_t = \sqrt{\alpha_t}\,x_{t-1} + \sqrt{\beta_t}\,\epsilon_t,\;\;\epsilon_t \sim \mathcal N(0,I)$ |
 | t 轮合一（$x_0 \to x_t$） | $x_t = \sqrt{\bar\alpha_t}\,x_0 + \sqrt{1-\bar\alpha_t}\,\epsilon,\;\;\epsilon \sim \mathcal N(0,I)$ |
 
-t 个独立 $\epsilon_s$ 的线性组合仍是 $\mathcal N(0,I)$，所以多轮可以**合成一个等效 $\epsilon$**——无论走了几步、噪声怎么累积，加噪过程**永远只有"一个噪声变量"**。decoder 不用管步数也不用管累积，只学一件事：**从加噪结果反推这一个 $\epsilon$**。所以 **decoder 是一个 $\epsilon_\theta$ 通吃所有时间步**。
+t 个独立 $\epsilon_s$ 的线性组合仍是 $\mathcal N(0,I)$，所以多轮可以**合成一个等效 $\epsilon$**。反函数也可以合并。
 
 记号上区分两个东西：
 
 - **T**（总步数）是**超参**，固定值（约定 1000）
-- **t**（当前在第几步，$1 \le t \le T$）是**变量**，作为输入喂进网络让它知道现在的噪声等级；$x_0$ 为纯图，$x_T$ 为纯噪声
-
-§3.1 把训练和推理的公式写出来：encoder 加噪公式（共用工具）→ 训 decoder 的 loss → decoder 反向去噪的迭代式。
+- **t**（当前在第几步，$1 \le t \le T$）是**变量**，作为输入送进网络、告知当前噪声等级；$x_0$ 为纯图，$x_T$ 为纯噪声
 
 ### 3.1 训练与推理公式
 
@@ -353,7 +368,7 @@ $$
 x_t = \sqrt{\bar\alpha_t}\,x_0 + \sqrt{1-\bar\alpha_t}\,\epsilon,\qquad \epsilon\sim\mathcal N(0,I)
 $$
 
-形式上正是 reparam（确定部分 + 噪声分离）。$\bar\alpha_t$ 从 1 单调降到 ≈0，所以 $t$ 小时 $x_t$ 几乎是原图、$t$ 大时几乎是纯噪声。
+$\bar\alpha_t$ 从 1 单调降到 ≈0，所以 $t$ 小时 $x_t$ 几乎是原图、$t$ 大时几乎是纯噪声。
 
 这个公式本身**不是一个独立的"训练 / 推理阶段"**，是下面两段共用的工具：
 
@@ -364,11 +379,11 @@ $$
 
 <img src="../assets/07-diffusion/fig-07.png" alt="4b7e0504b683259da712cc0534a2f182" style="zoom:50%;" />
 
-每个 $x_0$ 在 $\{1, \dots, T\}$ 里均匀抽一个时间步 $t$，配上加噪公式算出的 $x_t$ 喂进网络，让它猜公式里用的那个 $\epsilon$，loss 是 MSE：
+每个 $x_0$ 在 $\{1, \dots, T\}$ 里均匀抽一个时间步 $t$，把加噪公式算出的 $x_t$ 输入网络，让它预测公式里用的那个 $\epsilon$，loss 是 MSE：
 
 - **input**：加噪图 $x_t$（加噪公式算出来的）+ 时间步 $t$（每个 $x_0$ 独立在 $\{1, \dots, T\}$ 内均匀抽一个）
 - **GT**：加噪公式里那一步随机采的 $\epsilon$（self-supervised，`torch.randn` 就行）
-- **loss**：朴素 MSE——回归任务，没有对抗、没有 KL（已在 ELBO 推导里化掉，详见 Chan 教程）
+- **loss**：朴素 MSE——回归任务，没有对抗、没有 KL
 
 $$
 L = \mathbb E_{t,\,x_0,\,\epsilon}\Big[\big\|\,\epsilon - \epsilon_\theta(\sqrt{\bar\alpha_t}x_0+\sqrt{1-\bar\alpha_t}\epsilon,\;t)\,\big\|^2\Big]
@@ -383,14 +398,10 @@ $$
 训练完后，**这个噪声预测网络 $\epsilon_\theta$ 拿来做推理**：从纯噪声起步，每步让 decoder 预测当前的 $\epsilon$，再按反向公式退一步，**DDPM 设计成 T 步退到 $x_0$**（§5 DDIM 会去掉这个约束）。
 
 - **起点**：$x_T \sim \mathcal N(0, I)$（一次 `torch.randn`）
-- **每步**：$(x_t, t)$ 喂进 decoder → $\hat\epsilon = \epsilon_\theta(x_t, t)$ → 按下面公式退到 $x_{t-1}$
+- **每步**：$(x_t, t)$ 输入 decoder → $\hat\epsilon = \epsilon_\theta(x_t, t)$ → 按下面公式退到 $x_{t-1}$
 - **终点**：$t = 0$ 时不加 $z$，输出 $x_0$（生成图）
 
-$$
-x_{t-1} = \frac{1}{\sqrt{\alpha_t}}\Big(x_t - \frac{1-\alpha_t}{\sqrt{1-\bar\alpha_t}}\,\epsilon_\theta(x_t,t)\Big) + \sigma_t\,z,\qquad z \sim \mathcal N(0,I)
-$$
-
-直觉：加噪公式的反解 +$\sigma_t z$ 补回一点随机性。
+直觉：按加噪公式反解一步，再加 $\sigma_t z$ 补回一点随机性。
 
 **这一步串行、要重复 T 次**——§3.2 讨论的采样开销问题就在这里。
 
@@ -400,11 +411,9 @@ $$
 
 DDPM 2020 年质量就够用了，但没法直接拿去做产品，问题不在算法、在工程：
 
-**生成一张图要串行调用网络 T=1000 次**。这 T 步有严格依赖（$x_{t-1}$ 依赖 $x_t$），没法并行；每步还是一次对**整张图**的完整前向。对比自回归 LM 生成 1000 个 token 也要 1000 次前向，但 LM 有 KV cache、每步只算一个 token；扩散每步都重算整张图，单张图就要几十秒。
+**生成一张图要串行调用网络 T=1000 次**。
 
-这个采样开销问题后续由三条路线分别解决（详见 §6 全篇 roadmap），其中最简单的一条就是 **DDIM（§5，本篇）：不改训练、只换采样器**。
-
-> 另一个独立问题是「**像素空间计算量太大**」（512×512 直接做扩散，FLOPs 量级过高）——由下篇的 latent 空间解决。
+但实际这不是必须的。后续有一系列加速方案，最简单的一条是 **DDIM（§5）：不改训练、只换采样器**。
 
 
 
@@ -469,7 +478,7 @@ def sample(model, shape):                     # shape: [B, C, H, W]
 注意上面两段代码里，`model` 一直是个黑盒 `ε_θ(x_t, t)`：输入一张和图同尺寸的 $x_t$、一个标量 t，输出一张同尺寸的噪声图。**这是个图到图（同分辨率）的映射**，约束只有两条：
 
 - **输入输出同形状**（预测的是逐像素噪声）
-- **t 要喂进去**：t 先过一个正弦位置编码（同 [01-Transformer.md](01-Transformer.md) 的 PE 思路）变成向量，再注入网络每一层——因为「该去多少噪」强依赖当前在第几步
+- **t 要作为输入**：t 先过一个正弦位置编码（同 [01_01_Transformer.md](01_01_Transformer.md) 的 PE 思路）变成向量，再注入网络每一层——因为「该去多少噪」强依赖当前在第几步
 
 满足这两条的网络都行。历史上的标准选择是 **U-Net**（CNN，下采样—上采样 + skip 连接，下篇细说），2023 年起被 **DiT**（Transformer，下篇）取代。**网络结构和扩散框架是解耦的**——换网络不影响 §4.1/§4.2 这套训练/采样逻辑。
 
@@ -487,11 +496,11 @@ DDIM（Song et al., 2020.10）是针对 §3.2 采样开销最直接的方案：*
 
 **[Markov 假设松绑]**
 
-DDPM 整个框架的初始idea基于一阶马尔可夫链的（$x_{t-1}$ 只依赖紧邻的 $x_t$）。根据它的假设，训练和推理都是在前一个 state 上叠一个新高斯（$\sigma_t z$ 是方差项）；每步只走一格，所以推理 T=1000 步要全部走完（也就是DDPM的推理设计）。
+DDPM 框架的初始 idea 基于一阶马尔可夫链（$x_{t-1}$ 只依赖紧邻的 $x_t$）。按这个假设，每步都在前一个 state 上叠一个新高斯、只走一格。所以 DDPM 的推理设计是 T=1000 步全部走完。
 
-但训练那边其实早就压缩过了：§3 开头的**高斯加性封闭**让 t 步合并成一步——$x_t = \sqrt{\bar\alpha_t}x_0 + \sqrt{1-\bar\alpha_t}\epsilon$ 直接从 $x_0$ 跳到任意 $t$，根本不走 $\{1, 2, \dots, t-1\}$ 这串中间态。
+但**训练那边其实早就压缩过了（定义可跳步）**：§3 开头的**高斯加性封闭**让 t 步合并成一步——$x_t = \sqrt{\bar\alpha_t}x_0 + \sqrt{1-\bar\alpha_t}\epsilon$ 直接从 $x_0$ 跳到任意 $t$，根本不走 $\{1, 2, \dots, t-1\}$ 这串中间态。
 
-反向同理：给定 $\hat x_0$ 和 $\hat\epsilon$，可以用同一个公式合成任意更早的 $x_{t'}$。所以推理也不必走完 $\{T, T-1, \dots, 1, 0\}$ 全 1000 步，挑一个稀疏子序列就行——比如 $\{1000, 980, 960, \dots, 20, 0\}$，每步跨 20、50 步出图。又因为训练 loss 只约束前向边缘分布 $q(x_t|x_0)$、不规定反向必须 Markov，反向流程就可以重新设计，训好的 $\epsilon_\theta$ 不用动。
+**反向同理（也可以跳步）**：给定 $\hat x_0$ 和 $\hat\epsilon$，可以用同一个公式合成任意更早的 $x_{t'}$。所以推理也不必走完全部 1000 步，挑一个稀疏子序列就行——比如 $\{1000, 980, 960, \dots, 20, 0\}$，几十步出图。为什么允许这么改？训练 loss 只约束前向边缘分布 $q(x_t|x_0)$，不规定反向必须 Markov。反向流程可以重新设计，训好的 $\epsilon_\theta$ 不用动。
 
 **[DDIM 反向公式]**
 
@@ -536,7 +545,7 @@ def ddim_sample(model, shape, steps=50, eta=0.0):        # ≠§4.2: steps 远�
     return x
 ```
 
-实践里 DDIM 50 步、甚至 20 步的质量就接近 DDPM 1000 步，今天几乎没人用原始 DDPM 1000 步采样了——DDIM（及其后继 DPM-Solver 等更高阶 ODE 求解器，本篇不展开）是默认。再往下压到个位数步，就得靠蒸馏 / flow matching（下篇）。
+实践里 DDIM 50 步、甚至 20 步的质量就接近 DDPM 1000 步。今天几乎没人用原始 DDPM 1000 步采样，默认是 DDIM 及其后继（DPM-Solver 等更高阶 ODE 求解器，本篇不展开）。再往下压到个位数步，要靠蒸馏 / flow matching（下篇）。
 
 ### 5.3 时间线回顾
 
@@ -545,11 +554,11 @@ def ddim_sample(model, shape, steps=50, eta=0.0):        # ≠§4.2: steps 远�
 | 2013–14 | VAE (Kingma & Welling) | latent 生成模型 + ELBO | diffusion 的前身 |
 | 2015 | Sohl-Dickstein et al. | 扩散概率模型雏形（受非平衡热力学启发） | 玩具规模 |
 | 2019 | Song & Ermon (SMLD) | score matching + Langevin 采样 | 连续视角源头 |
-| 2020.06 | **DDPM** | 定型「预测 ε + 简化 MSE」，质量首次能打 | 像素空间，1000 步 |
+| 2020.06 | **DDPM** | 定型「预测 ε + 简化 MSE」，质量首次达到可用 | 像素空间，1000 步 |
 | 2020.10 | **DDIM** | 非马尔可夫采样：确定性 + 跳步 | 训练不变，几十步出图 |
 | 2020–21 | Song et al. (Score SDE) | 用 SDE 统一 DDPM 与 score matching | probability-flow ODE |
 
-> 再往后（CFG → Latent Diffusion / SD → DiT → SD3/FLUX）是「从算法变成系统」的演化，整条时间线在下篇 [05-Diffusion进阶.md](05-Diffusion进阶.md) 前言接着列。
+> 再往后（CFG → Latent Diffusion / SD → DiT → SD3/FLUX）是「从算法变成系统」的演化，整条时间线在下篇 [01_05_Diffusion进阶.md](01_05_Diffusion进阶.md) 前言接着列。
 
 
 
@@ -568,7 +577,7 @@ def ddim_sample(model, shape, steps=50, eta=0.0):        # ≠§4.2: steps 远�
 
 **本篇还没正式上模型架构**——只搭起了 diffusion 的训练/推理框架，模型 noise predictor $\epsilon_\theta$ 一直当黑盒处理。具体网络长啥样、$x$ 是像素还是 latent、文本条件怎么注入，下篇接着讲。
 
-接 [05-Diffusion进阶.md](05-Diffusion进阶.md)（下）：Latent Diffusion / Stable Diffusion（VAE latent + 文本条件 + CFG）→ DiT（U-Net 换 Transformer）→ Flow Matching / SD3·FLUX。
+接 [01_05_Diffusion进阶.md](01_05_Diffusion进阶.md)（下）：Latent Diffusion / Stable Diffusion（VAE latent + 文本条件 + CFG）→ DiT（U-Net 换 Transformer）→ Flow Matching / SD3·FLUX。
 
 
 
@@ -592,7 +601,7 @@ T4 单卡 ~4 分钟运行完，模型 0.87M 参数，10 epoch 后 loss 从 ~0.09
 
 为了 demo 能在几分钟内跑通，这三处都向 toy 量级妥协了。真正能打的工业架构在下篇展开。
 
-后续模型 = 这个 BasicDDIM 框架 + 一处增量：
+后续模型 = 这个 BasicDDIM 框架 + 一处增量（都在下篇 [01_05_Diffusion进阶.md](01_05_Diffusion进阶.md)）：
 
 | 模型 | 增量 | 章节 |
 | --- | --- | --- |
