@@ -1,0 +1,2334 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="MLSys 自学笔记，知乎同步更新">
+      
+      
+      
+        <link rel="canonical" href="https://zoey-cheng.github.io/MLSys-Learning-Notes/01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_05_Diffusion%E8%BF%9B%E9%98%B6.html">
+      
+      
+        <link rel="prev" href="01_04_Diffusion%E5%9F%BA%E7%A1%80.html">
+      
+      
+        <link rel="next" href="../02_%E8%AE%AD%E7%BB%83%E7%AD%96%E7%95%A5/02_01_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%E5%9F%BA%E7%A1%80.html">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>05-Diffusion（下）：从 Latent Diffusion 到 DiT / FLUX - MLSys 菜狗自学笔记</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../katex/katex.min.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#05-diffusion-latent-diffusion-dit-flux" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../index.html" title="MLSys 菜狗自学笔记" class="md-header__button md-logo" aria-label="MLSys 菜狗自学笔记" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            MLSys 菜狗自学笔记
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              05-Diffusion（下）：从 Latent Diffusion 到 DiT / FLUX
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换到暗色模式"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到暗色模式" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换到亮色模式"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到亮色模式" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Zoey-Cheng/MLSys-Learning-Notes
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../index.html" title="MLSys 菜狗自学笔记" class="md-nav__button md-logo" aria-label="MLSys 菜狗自学笔记" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    MLSys 菜狗自学笔记
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Zoey-Cheng/MLSys-Learning-Notes
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    模型基础
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    模型基础
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="01_01_Transformer.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-Transformer 架构详解:以 LLaMA 为例
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="01_02_MoE.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-MoE 架构详解: 从基础版到 DeepSeek / Qwen3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="01_03_VLM.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    03-VLM: 从 ViT/CLIP 到 Qwen2-VL / DeepSeek-OCR
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="01_04_Diffusion%E5%9F%BA%E7%A1%80.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    04-Diffusion（上）：从 VAE 到 DDPM / DDIM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    05-Diffusion（下）：从 Latent Diffusion 到 DiT / FLUX
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="01_05_Diffusion%E8%BF%9B%E9%98%B6.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    05-Diffusion（下）：从 Latent Diffusion 到 DiT / FLUX
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前言
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-backbone-u-net" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 基础 backbone: U-Net
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 基础 backbone: U-Net">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-u-net-cnn-encoder-decoder-skip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 原始 U-Net：纯 CNN Encoder Decoder + skip
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-sd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 从原版到 SD 的改造
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-sd-u-net" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 SD U-Net 详细结构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-2023" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 短板：为什么 2023 起要换掉
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-latent-diffusion-stable-diffusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Latent Diffusion / Stable Diffusion
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Latent Diffusion / Stable Diffusion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-vae-latent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 搬进 VAE latent 空间
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-cross-attention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 文本条件：cross-attention
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-cfgclassifier-free-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 CFG（classifier-free guidance）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 整体结构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-minisd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 简化代码：MiniSD
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-backbone-transformer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 进阶 backbone: Transformer 系列
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 进阶 backbone: Transformer 系列">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-dit-transformer-adaln-zero" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 DiT：换成 Transformer + adaLN-Zero
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-mmdit-self-attn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 MMDiT：拼接 + 联合 self-attn
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-flow-matching-vsd3-flux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Flow Matching: 训练目标 ε → v（SD3 / FLUX）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Flow Matching: 训练目标 ε → v（SD3 / FLUX）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-flow-matching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Flow Matching：把弯路径换成直线
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-miniflux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 简化代码：MiniFLUX
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-sd1x-sdxl-sd3-flux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 代际对照：SD1.x / SDXL / SD3 / FLUX
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 总结（两篇合起来）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. 代码实现
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    训练策略
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    训练策略
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02_%E8%AE%AD%E7%BB%83%E7%AD%96%E7%95%A5/02_01_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%E5%9F%BA%E7%A1%80.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-分布式背景:通信/单卡计算流
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    训练方法
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    训练方法
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_01_Pretrain.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-预训练 Pretrain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_02_SFT.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-监督微调 SFT
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    推理优化
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    推理优化
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05_%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96/05_01_%E6%8E%A8%E7%90%86%E5%9F%BA%E7%A1%80.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-推理基础: PD/KV Cache
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    算子
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    算子
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../06_%E7%AE%97%E5%AD%90/05_01_CUDA%E5%85%A5%E9%97%A8.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-算子手写(1) - CUDA 入门 op
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ♪ 手写题 Quick Ref
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ♪ 手写题 Quick Ref
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07_%E9%9D%A2%E8%AF%95%E6%89%8B%E5%86%99%E9%A2%98/07_01_%E6%A8%A1%E5%9E%8B.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-模型
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07_%E9%9D%A2%E8%AF%95%E6%89%8B%E5%86%99%E9%A2%98/07_02_%E6%8E%A8%E7%90%86.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-推理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07_%E9%9D%A2%E8%AF%95%E6%89%8B%E5%86%99%E9%A2%98/07_03_%E7%AE%97%E5%AD%90CUDA.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    03-算子
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前言
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-backbone-u-net" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 基础 backbone: U-Net
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 基础 backbone: U-Net">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-u-net-cnn-encoder-decoder-skip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 原始 U-Net：纯 CNN Encoder Decoder + skip
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-sd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 从原版到 SD 的改造
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-sd-u-net" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 SD U-Net 详细结构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-2023" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 短板：为什么 2023 起要换掉
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-latent-diffusion-stable-diffusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Latent Diffusion / Stable Diffusion
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Latent Diffusion / Stable Diffusion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-vae-latent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 搬进 VAE latent 空间
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-cross-attention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 文本条件：cross-attention
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-cfgclassifier-free-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 CFG（classifier-free guidance）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 整体结构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-minisd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 简化代码：MiniSD
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-backbone-transformer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 进阶 backbone: Transformer 系列
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 进阶 backbone: Transformer 系列">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-dit-transformer-adaln-zero" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 DiT：换成 Transformer + adaLN-Zero
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-mmdit-self-attn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 MMDiT：拼接 + 联合 self-attn
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-flow-matching-vsd3-flux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Flow Matching: 训练目标 ε → v（SD3 / FLUX）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Flow Matching: 训练目标 ε → v（SD3 / FLUX）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-flow-matching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Flow Matching：把弯路径换成直线
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-miniflux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 简化代码：MiniFLUX
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-sd1x-sdxl-sd3-flux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 代际对照：SD1.x / SDXL / SD3 / FLUX
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 总结（两篇合起来）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. 代码实现
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="05-diffusion-latent-diffusion-dit-flux">05-Diffusion (下)：从 Latent Diffusion 到 DiT / FLUX</h1>
+<blockquote>
+<p><strong>TL; DR</strong>：给 diffusion 补 backbone → 走两代 real-world 文生图产品：<strong>U-Net 时代</strong>（LDM / SD1.x / SDXL = U-Net + latent + cross-attn + CFG）→ <strong>Transformer 时代</strong>（DiT → MMDiT，SD3 / FLUX 再换训练目标 ε → v）</p>
+</blockquote>
+<ul>
+<li><strong>[Quick Ref for 手写 code]</strong>：MiniSD (§2.5) + MiniFLUX (§4.2) ｜ <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/10_mini_sd_flux.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/1f3LFn-5BRBN_ED6DBPwcMd81wxUtSf-G/view?usp=sharing">colab</a>
+    - MiniSD = 框架 (BasicDDIM + 三处 diff)，主干 U-Net 只 call 不展开
+    - MiniFLUX = MiniSD 换 v-prediction + 手写 Transformer backbone（DiT / MMDiT block）</li>
+<li><strong>[可能会考的面试点]</strong>：text 注入/ DiT &amp; MMDiT（没面过我猜的）</li>
+<li>原理地基
+    - Diffusion 框架 DDPM / DDIM：<a href="01_04_Diffusion%E5%9F%BA%E7%A1%80.html">01_04_Diffusion基础.md</a>
+    - Transformer / LLama：<a href="01_01_Transformer.html">01_01_Transformer.md</a>
+    - ViT / Llava：<a href="01_03_VLM.html">01_03_VLM.md</a></li>
+</ul>
+<h2 id="_1">前言</h2>
+<p>Diffusion 的实现分两层，上篇只动了框架层，本篇两层都动：</p>
+<ul>
+<li><strong>框架</strong>（idea 层）：加噪设计、训练目标。上篇 <a href="01_04_Diffusion%E5%9F%BA%E7%A1%80.html">01_04_Diffusion基础.md</a> 在这层实现了最小核 <strong>BasicDDIM</strong>；本篇往上叠 3 个产品化增量</li>
+<li><strong>噪声网络 <span class="arithmatex">\(\epsilon_\theta\)</span></strong>（计算层）：框架每步调用的网络，上篇一直当黑盒；本篇补上实现——U-Net（§1）、DiT → MMDiT（§3）</li>
+</ul>
+<p>两层增量按时间线组合成两代产品，也是本篇的章节安排：</p>
+<ul>
+<li><strong>U-Net 时代</strong>：§1 U-Net + §2 LDM 框架（latent + cross-attn + CFG）→ <strong>SD1.x / SDXL</strong></li>
+<li><strong>Transformer 时代</strong>：§3 DiT → MMDiT + §4 flow matching（ε → v）→ <strong>SD3 / FLUX</strong></li>
+</ul>
+<p>之后 §5 代际对照表、§6 两篇总结、§7 端到端代码。</p>
+<p><strong>[贯穿全篇的线索]</strong></p>
+<p>backbone 无论怎么换，<span class="arithmatex">\(\epsilon_\theta\)</span> 都是同一个<strong>三输入函数</strong> <span class="arithmatex">\(\epsilon_\theta(z_t, t, c)\)</span>：</p>
+<ul>
+<li>图像 <span class="arithmatex">\(z_t\)</span>：<span class="arithmatex">\(t\)</span> 时刻的带噪图。U-Net 里是空间 Tensor；Transformer 里过 conv 切 patch 变 token</li>
+<li>时间步 <span class="arithmatex">\(t\)</span>：标量，当前噪声程度</li>
+<li>文本条件 <span class="arithmatex">\(c\)</span>：§2.2 起加入</li>
+</ul>
+<p><strong>符号约定</strong>：<span class="arithmatex">\(x\)</span> = 像素图；<span class="arithmatex">\(z\)</span> = VAE latent，<span class="arithmatex">\(z=\text{VAE.encode}(x)\)</span>（§2.1）。下标是时刻：<span class="arithmatex">\(z_0\)</span> 干净图、<span class="arithmatex">\(t\)</span> 最大时纯噪声。</p>
+<h2 id="1-backbone-u-net">1. 基础 backbone: U-Net</h2>
+<p>BasicDDIM 是框架层，把<strong>噪声预测网络 <span class="arithmatex">\(\epsilon_\theta\)</span></strong> 当黑盒调用；本节补上它的具体实现。</p>
+<p>SD1.x / SDXL 用的是 <strong>U-Net</strong>，原是 2015 年 Ronneberger 等人做医学图像分割的架构。diffusion 沿用它做噪声预测网络。</p>
+<p>本节顺序：原版 U-Net（§1.1）→ SD 怎么改它（§1.2–§1.3）→ 为什么 2023 起被换掉（§1.4）。</p>
+<blockquote>
+<p>只想懂 FLUX 一系的话，SD U-Net 的细节（§1.2–§1.3）可以跳过</p>
+</blockquote>
+<h3 id="11-u-net-cnn-encoder-decoder-skip">1.1 原始 U-Net：纯 CNN Encoder Decoder + skip</h3>
+<p>题外话：这是主包本科毕设时候的模型。死去的记忆它袭击我</p>
+<p>原始 U-Net 是个很简洁的纯 CNN：对称的 Encoder–Decoder + 同层 skip connection，形状像字母 U。</p>
+<p><img src="../assets/10-diffusion-2/fig-01.png" alt="image-20260705195021031" style="zoom:40%;" /></p>
+<p><strong>每一层只做两件事</strong>：</p>
+<ol>
+<li><strong>两次 Conv 3×3 + ReLU</strong>：提取特征。用 valid padding（不填充），所以每次卷积空间缩小 2：<code>572→570→568</code>。</li>
+<li><strong>下采样 / 上采样</strong>：encoder 用 Max Pool 2×2（空间 ÷ 2），decoder 用 Up-Conv 2×2（空间 × 2）。</li>
+</ol>
+<p><img src="../assets/10-diffusion-2/fig-02.png" alt="image-20260710155447599" style="zoom:50%;" /></p>
+<p><strong>关键设计是 skip connection（copy &amp; crop）</strong>：encoder 第 <span class="arithmatex">\(i\)</span> 层的特征图拷贝一份，裁剪后沿通道拼接（concat）到 decoder 第 <span class="arithmatex">\(i\)</span> 层。高分辨率细节由此直接跳到 decoder 同层，不必绕过 U 型底部；decoder 在这个基础上融合来自底部的全局语义。</p>
+<p>为什么要 crop？valid padding 让 encoder 同层特征图比 decoder 的大一圈（<code>568×568</code> vs <code>392×392</code>），要从中心裁剪对齐。SD 改用 same padding 后尺寸一致，直接 concat。</p>
+<p><strong>通道变化规律</strong>：encoder 逐级通道翻倍（64→128→256→512→1024），decoder 逐级减半。这是 CNN 的经典设计：空间缩小、通道增大，用更多通道编码更抽象的语义。</p>
+<p>要注意的：<strong>原版 U-Net 没有 attention、没有归一化层（BatchNorm / GroupNorm）、也没有任何条件注入</strong>，完全是朴素的卷积堆叠。后面 diffusion 的改造全是往这个骨架上加东西。</p>
+<h3 id="12-sd">1.2 从原版到 SD 的改造</h3>
+<p>diffusion 沿用了 U-Net 的骨架（Encoder Decoder + skip），但<strong>每层内部</strong>做了大幅改造，使之成为一个<strong>CNN + Transformer 混合体</strong>。改动可以按「替换现有组件」和「新增模块」分成两类：</p>
+<p><img src="../assets/10-diffusion-2/fig-03.png" alt="image-20260705190818147" style="zoom:40%;" /></p>
+<p>总结：骨架（U 形 encoder-decoder + skip）完全不变，改的全是每层内部的处理单元，从"两次普通卷积"变成"ResNet + Transformer + 双条件注入"。</p>
+<h3 id="13-sd-u-net">1.3 SD U-Net 详细结构</h3>
+<blockquote>
+<p>还是有点复杂的，花活儿太多感觉容易被时代淘汰，不建议扣细节，直接去看 Transformer backbone 也可以</p>
+</blockquote>
+<p>先明确整个网络的<strong>函数签名</strong>——SD U-Net 是一个三输入一输出的函数：</p>
+<p><img src="../assets/10-diffusion-2/fig-04.png" alt="image-20260706153008434" style="zoom:50%;" /></p>
+<p>三路输入的注入位置各不相同：</p>
+<ul>
+<li>主数据流 <span class="arithmatex">\(z_t\)</span> - 图像特征，贯穿全网；</li>
+<li>时间 <span class="arithmatex">\(t\)</span> - 噪声程度，注入每个 <strong>ResNet Block</strong>；</li>
+<li>文本 <span class="arithmatex">\(c\)</span> - 文字 prompt，注入每个 <strong>Transformer Block</strong></li>
+</ul>
+<p><img src="../assets/10-diffusion-2/fig-05.png" alt="image-20260706235704241" style="zoom:50%;" /></p>
+<p>效果：每一层的输出都同时整合了"该去多大噪声"（时间步）和"该生成什么内容"（文本）两路信息。下面分别看两种 block 怎么接收各自的条件。</p>
+<p><strong>[① ResNet Block：注入时间步 <span class="arithmatex">\(t\)</span>]</strong></p>
+<p><img src="../assets/10-diffusion-2/fig-06.png" alt="sd_resnet_block_shared_vs_perblock" style="zoom:15%;" /></p>
+<p>注入链路分四步（对应图中左侧旁路）。<span class="arithmatex">\(t\)</span> 从输入起就是一个标量（batch 维上 shape <code>[B]</code>），即噪声程度。处理方式：</p>
+<ul>
+<li>
+<p>对于每个 <span class="arithmatex">\(t\)</span>，映射到通道数 <code>[C]</code>上</p>
+<ul>
+<li>标量 <span class="arithmatex">\(t\)</span> 做 <strong>sinusoidal encoding</strong> 位置编码 → <code>[320]</code> 向量</li>
+</ul>
+<ul>
+<li>
+<p>过一个<strong>全网共享</strong>的 MLP（Linear → SiLU → Linear）→ <code>[1280]</code>。</p>
+<blockquote>
+<p>这两步的维度其实是借鉴了 SD U-Net 主干的 channel 数，但实际没有硬性约束</p>
+</blockquote>
+</li>
+</ul>
+<ul>
+<li>把 <code>[1280]</code> 投到自己的通道数 <code>[C]</code>——即对上各 block 的 "hidden"</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li>reshape 成 <code>[C, 1, 1]</code>，<strong>broadcast 加</strong>到第一次卷积的输出 <code>[C, H, W]</code> 上。逐通道看：第 <span class="arithmatex">\(i\)</span> 个通道的整张 H×W 特征图加同一个标量。噪声程度是全局量，所以刻意不带空间信息。</li>
+</ul>
+<p>为什么需要 time embedding？同一套参数要在 <span class="arithmatex">\(t\)</span> 大时输出粗略轮廓（去大噪声）、<span class="arithmatex">\(t\)</span> 小时输出精细纹理（去小噪声）。time embedding 告诉网络"现在走到第几步了"，让它自适应调整去噪粒度。</p>
+<p>注意共享/独立的分工：sinusoidal PE + MLP 全网只有一份（把 <span class="arithmatex">\(t\)</span> 编码成通用表示），但每个 block 的投影 Linear 是独立的（每层按需从中提取自己要的信息）。</p>
+<p><strong>[② Transformer Block（Spatial Transformer）：Self-Attention + Cross-Attention]</strong></p>
+<p>Transformer Block 在 SD 源码中叫 <strong>Spatial Transformer</strong>。"Spatial" 指它的输入是 2D 空间特征图——处理流程是"flatten 展平 → attention → 折回"三段式：</p>
+<p><img src="../assets/10-diffusion-2/fig-07.png" alt="image-20260706235949658" style="zoom:40%;" /></p>
+<p>关键是首尾两次 <strong>reshape</strong>（图中黄色高亮）：attention 只认序列不认 2D 网格，所以先把 <code>[C, H, W]</code> flatten 成 <code>[H·W, C]</code>，每个空间位置变成一个 token（<code>32×32</code> 的特征图 → 1024 个 token）。attention 做完再折回 <code>[C, H, W]</code> 接回 CNN 主干。DiT 的 patchify（§3.1）是同一思路。</p>
+<p><strong>中间的 attention 层</strong> 里，和普通 attention 只有一个区别——<strong>Q/K/V 的来源</strong>：</p>
+<p><img src="../assets/10-diffusion-2/fig-08.png" alt="image-20260705191835739" style="zoom:40%;" /></p>
+<ul>
+<li>普通 <strong>Self-Attention</strong>：Q、K、V 全来自图像 token。</li>
+</ul>
+<ul>
+<li>此处 <strong>Cross-Attention</strong>：Q 来自图像 token，<strong>K/V 来自文本条件 <span class="arithmatex">\(c\)</span></strong>（CLIP text encoder 输出，<code>[77, 768]</code>）。</li>
+</ul>
+<p><strong>[SD 1.5 各层具体配置]</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>层级</th>
+<th>空间分辨率</th>
+<th>通道数</th>
+<th>Down Block</th>
+<th>Up Block</th>
+<th>有 Transformer？</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Level 1</td>
+<td>64×64</td>
+<td>320</td>
+<td>ResNet×2 + Trans×2</td>
+<td>ResNet×3 + Trans×3</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Level 2</td>
+<td>32×32</td>
+<td>640</td>
+<td>ResNet×2 + Trans×2</td>
+<td>ResNet×3 + Trans×3</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Level 3</td>
+<td>16×16</td>
+<td>1280</td>
+<td>ResNet×2 + Trans×2</td>
+<td>ResNet×3 + Trans×3</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Level 4</td>
+<td>8×8</td>
+<td>1280</td>
+<td>ResNet×2</td>
+<td>ResNet×3</td>
+<td>✗</td>
+</tr>
+<tr>
+<td>Mid</td>
+<td>8×8</td>
+<td>1280</td>
+<td>—</td>
+<td>—</td>
+<td>✓ (ResNet + Trans + ResNet)</td>
+</tr>
+</tbody>
+</table>
+<p>两个细节：</p>
+<ul>
+<li><strong>Up Block 比 Down Block 多一个 ResNet</strong>（3 vs 2）：因为 skip connection concat 后通道翻倍，需要多一层来融合。</li>
+<li><strong>Level 4 没有 Transformer Block</strong>：在最低分辨率（<code>8×8</code>）不接文本 cross-attention。</li>
+</ul>
+<h3 id="14-2023">1.4 短板：为什么 2023 起要换掉</h3>
+<p>SD1.x / SDXL 用得住，但 U-Net 有三个短板：</p>
+<ul>
+<li><strong>CNN 归纳偏置在 latent 上收益小</strong>：局部性 / 平移等变这些先验是为像素设计的，latent 已是压缩过的特征</li>
+<li><strong>结构不规则</strong>：每层多少个 ResNet、多少个 Transformer、哪层有 cross-attn 哪层没有，全是启发式调参。没有 Transformer 那种干净的 scaling law（加 <span class="arithmatex">\(N\)</span> 层就是加 <span class="arithmatex">\(N\)</span> 层）</li>
+<li><strong>扩展性差</strong>：想做更高分辨率、更多参数量，U-Net 的多分辨率金字塔结构让放大变得复杂（SDXL 做到 ~2.6B 已经很勉强），不如 Transformer 堆 block 直接</li>
+</ul>
+<p>DiT (2023) 就是这个替换（§3.1）：整个 U-Net 换成标准 Transformer。</p>
+<h2 id="2-latent-diffusion-stable-diffusion">2. Latent Diffusion / Stable Diffusion</h2>
+<blockquote>
+<p>Latent / Stable Diffusion 是使用 U-Net 作为 backbone 的代表模型线</p>
+</blockquote>
+<p>上篇 §3.2 结尾 note 点过：<strong>直接在 512×512×3 的像素空间做 diffusion 成本过高</strong>。U-Net 每一步处理几十万维张量，T 步下来训练和推理成本都难以接受。</p>
+<p>BasicDDIM + U-Net 到产品级文生图，缺三样东西，对应 §2.1–§2.3 三个增量：</p>
+<table>
+<thead>
+<tr>
+<th>缺什么</th>
+<th>增量</th>
+<th>一句话</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>算力</strong></td>
+<td>§2.1 搬进 VAE latent</td>
+<td>数据维度降到 ~1/48，消费级显卡可跑</td>
+</tr>
+<tr>
+<td><strong>文本输入</strong></td>
+<td>§2.2 文本条件</td>
+<td>CLIP 编码文本 → cross-attn 注入</td>
+</tr>
+<tr>
+<td><strong>服从度</strong></td>
+<td>§2.3 CFG</td>
+<td>条件/无条件差分外推，放大服从度</td>
+</tr>
+</tbody>
+</table>
+<p>Latent Diffusion（Rombach et al., 2021.12，开源后即 <strong>Stable Diffusion</strong>）的第一个增量是一条通用的省算力思路：真正有用的信号是低维的，就<strong>到低维空间里做运算</strong>。</p>
+<ul>
+<li>LoRA 是这个思路的权重版（权重更新的有效秩很低，用低秩子空间 <span class="arithmatex">\(A\cdot B\)</span> 替代全秩 <span class="arithmatex">\(\Delta W\)</span>），用的是简单 <code>nn.Linear</code></li>
+</ul>
+<ul>
+<li>LDM 则是空间版：图像语义远比像素维度低，把 diffusion 从 <code>512×512×3</code> 的像素搬到 <code>64×64×4</code> 的 VAE latent 里做（encoder 是卷积网络：ResNet block + stride-2 Conv 下采样 ×3，瓶颈处带 attention）</li>
+</ul>
+<h3 id="21-vae-latent">2.1 搬进 VAE latent 空间</h3>
+<p>上篇 §2.3 的 VAE 在这里再次用上。但不用它一步生成，只用 encoder/decoder 做「像素 ↔ 低维特征」的压缩和还原，生成交给 diffusion。</p>
+<p><img src="../assets/10-diffusion-2/fig-09.png" alt="image-20260711114650024" style="zoom:40%;" /></p>
+<ul>
+<li><strong>diffusion 过程整个搬到 latent 上</strong>：本质是特征降维，数据维度降到约 1/48，计算量大幅下降。</li>
+<li><strong>职责分离</strong>：VAE 负责像素细节的压缩和还原（预训练后冻结）；diffusion 只在 latent 层面建模分布。高频纹理交给 VAE decoder。</li>
+<li><strong>这个 VAE 不是上篇的 vanilla VAE</strong>：loss 有额外改造（重建更清晰、保住高频纹理），结构细节本篇略过。</li>
+</ul>
+<p>这是 SD 能在消费级显卡上跑文生图的直接原因。</p>
+<h3 id="22-cross-attention">2.2 文本条件：cross-attention</h3>
+<p>到这里还是无条件生成。要让文本控制生成，分两步：(1) 文本怎么变成向量 <span class="arithmatex">\(c\)</span>, (2) <span class="arithmatex">\(c\)</span> 怎么进网络。和 VLM 篇的思路很像。</p>
+<p><strong>[主线：两步接线]</strong></p>
+<ul>
+<li>
+<p><strong>第一步，文本 → <span class="arithmatex">\(c\)</span></strong>：prompt 过 <strong>CLIP 的 text encoder</strong>（SD1.x 用 CLIP ViT-L/14），得到 token × 768 维的向量序列 <span class="arithmatex">\(c\)</span>。</p>
+<p>为什么用 CLIP 的 text encoder？因为 CLIP 是图文对比学习预训练的，<strong>文本嵌入天生和视觉语义对齐</strong>："cat" 的嵌入已经带着"猫长什么样"的信息，diffusion 不用从头学文字到视觉概念的映射。（SD2.x 换成 OpenCLIP，SDXL 用双 text encoder 拼接，思路不变。）</p>
+</li>
+</ul>
+<ul>
+<li><strong>第二步，<span class="arithmatex">\(c\)</span> → 网络</strong>：接线在 §1.3 ② 已经讲过：U-Net 每个 Transformer Block 里的 cross-attention 层，Q 来自图像 latent、K/V 来自 <span class="arithmatex">\(c\)</span>，图像每个位置按相关性汇聚文本语义。这里不重复展开。</li>
+</ul>
+<p>于是噪声预测网络从 <span class="arithmatex">\(\epsilon_\theta(x_t,t)\)</span> 变成 <span class="arithmatex">\(\epsilon_\theta(x_t,t,c)\)</span>：<strong>多一个输入，训练/采样逻辑不变</strong>。</p>
+<p><strong>[副线：为什么是 cross-attention——idea来源]</strong></p>
+<blockquote>
+<p><strong>Cross-attention 的本质</strong>：就是 2017 原始 Transformer 里 encoder-decoder 之间的那一层：Q 从一个序列（生成端），K/V 从另一个序列（条件端）。Decoder-only LLM（LLaMA / GPT）不带 encoder，也就没有这一层。</p>
+</blockquote>
+<p>同样是图文一起处理，VLM 主流和 SD 的架构选择不一样：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>VLM 主流（LLaVA 范式）</th>
+<th>SD (LDM)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>主干</td>
+<td>LLM（decoder-only，处理 token 序列）</td>
+<td>SD U-Net（处理 spatial latent）</td>
+</tr>
+<tr>
+<td>图像怎么进</td>
+<td>Vision encoder → MLP 投影 → <strong>拼接进文本 token 序列</strong></td>
+<td>图像本身是 diffusion 的主体，不"进入"外部网络</td>
+</tr>
+<tr>
+<td>图文交互</td>
+<td>LLM 内部 self-attention（图文混在初始序列里）</td>
+<td>U-Net 里显式插 <strong>cross-attention 层</strong></td>
+</tr>
+<tr>
+<td>为什么这么选</td>
+<td>LLM 处理 token 序列，拼接最直接</td>
+<td>U-Net 处理 spatial tensor，<strong>没有自然拼接位</strong>，必须显式引入 cross-attn</td>
+</tr>
+</tbody>
+</table>
+<p>VLM 早期也试过 cross-attention 注入（Flamingo、Qwen-VL v1，见 <a href="01_03_VLM.html">01_03_VLM.md</a> §1.5 "范式 A"），但主流最终收敛到 MLP + 拼接（LLaVA 范式）：信息无损、训练稳定、数据高效。</p>
+<p>SD1.x / SDXL 一直用 cross-attention，因为 U-Net 里"拼接进 token 序列"这条路走不通。</p>
+<blockquote>
+<p><strong>⚠️ 这个论证只对 U-Net 成立</strong>：§3 主干换成 Transformer 后，"拼接进 token 序列"重新可行。</p>
+</blockquote>
+<h3 id="23-cfgclassifier-free-guidance">2.3 CFG（classifier-free guidance）</h3>
+<p>只把 <span class="arithmatex">\(c\)</span> 加进去，模型对文本的服从度往往不够。CFG（Ho &amp; Salimans, 2021）手动放大服从度，几乎所有条件 diffusion 都用它。</p>
+<p>网络每步做两次预测：有文本的 $\epsilon(c) $ 和没文本的 $\epsilon(\varnothing) $。两者的差
+$$
+d = \epsilon_\theta(x_t,t,c) - \epsilon_\theta(x_t,t,\varnothing)
+$$
+就是<strong>文本对预测的全部影响</strong>，一个"朝文本方向"的修正向量。CFG 把这个修正向量放大 <span class="arithmatex">\(w\)</span> 倍，再加回无条件预测：
+$$
+\tilde\epsilon = \epsilon_\theta(x_t,t,\varnothing) + w\cdot d
+$$
+<span class="arithmatex">\(w=1\)</span> 还原成普通条件预测 $\epsilon(c) <span class="arithmatex">\(；\)</span>w&gt;1$ 沿文本方向<strong>过量外推</strong>，服从度随之增加。<span class="arithmatex">\(w\)</span> 就是 SD 里的 guidance scale（默认 7.5 左右，越大越贴 prompt，太大会过饱和、丢多样性）。</p>
+<p><strong>具体做法</strong>：</p>
+<ul>
+<li><strong>训练时</strong>：以约 10% 概率把条件 $c $ 换成空条件 $\varnothing $，同一个网络两种模式一起训，这样它才会算 $\epsilon(\varnothing) $</li>
+<li><strong>采样时</strong>：每步跑两次前向（有条件 + 无条件），按上式外推</li>
+<li><strong>代价</strong>：每步两次前向，推理成本 ×2</li>
+</ul>
+<p><strong>negative prompt 就是同一条公式</strong>：把无条件分支的 <span class="arithmatex">\(\varnothing\)</span> 换成负面提示词 <span class="arithmatex">\(c_{\text{neg}}\)</span>（"blurry, low quality, extra fingers"），修正向量 $d $ 的方向从"朝向 <span class="arithmatex">\(c\)</span>"变成"远离 <span class="arithmatex">\(c_{\text{neg}}\)</span>、朝向 <span class="arithmatex">\(c\)</span>"。数学上没有新东西。</p>
+<h3 id="24">2.4 整体结构</h3>
+<p>把 §1（U-Net）+ §2.1~§2.3（latent + 文本 + CFG）拼起来，就是 SD1.x 的全貌：</p>
+<p><img src="../assets/10-diffusion-2/fig-10.png" alt="image-20260707150103221" style="zoom:45%;" /></p>
+<p>三个模块的分工和训练状态如下，<strong>只有 U-Net 是从零训的</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>参数量</th>
+<th>职责</th>
+<th>训练状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CLIP Text Encoder</td>
+<td>≈123M</td>
+<td>文本 → 语义向量 <span class="arithmatex">\(c\)</span>（§2.2）</td>
+<td>预训练冻结</td>
+</tr>
+<tr>
+<td>U-Net</td>
+<td>≈860M</td>
+<td>latent 空间迭代去噪，使用 <span class="arithmatex">\(t\)</span> + <span class="arithmatex">\(c\)</span> 双条件（§1）</td>
+<td><strong>从零训练</strong></td>
+</tr>
+<tr>
+<td>VAE</td>
+<td>≈84M</td>
+<td>像素 ↔ latent 压缩（§2.1）；推理只用 decoder</td>
+<td>预训练冻结</td>
+</tr>
+</tbody>
+</table>
+<p>SD3 / FLUX 后来把 U-Net 换成 MMDiT，backbone 侧的变化见 §3；训练目标也换了，见 §4。所有代际的差异汇总见 §5。</p>
+<h3 id="25-minisd">2.5 简化代码：MiniSD</h3>
+<p>和上篇 §7 BasicDDIM 的关系：</p>
+<ul>
+<li>框架层：在 BasicDDIM 的基础上加了3 处 diff，正好对应 §2.1–§2.3（VAE latent、文本条件 c、CFG）</li>
+</ul>
+<ul>
+<li>噪声网络 <span class="arithmatex">\(\epsilon_\theta\)</span> 内部（SD U-Net）<strong>只 call 不展开</strong></li>
+</ul>
+<p>代码注释约定（本篇通用）：<code># ←</code> 开头 = 相对 baseline 的<strong>新增行</strong>（此处基线为上篇 BasicDDIM）；普通注释 = 照搬部分的说明。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># ---- 训练 step (vs 上篇 §4.1) ----</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">train_step_sd</span><span class="p">(</span><span class="n">x0_pixel</span><span class="p">,</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">vae</span><span class="p">,</span> <span class="n">text_enc</span><span class="p">):</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">z0</span> <span class="o">=</span> <span class="n">vae</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">x0_pixel</span><span class="p">)</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span>          <span class="c1"># ← latent: 像素 → latent（VAE 冻结，§2.1）</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">c</span>  <span class="o">=</span> <span class="n">text_enc</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>                       <span class="c1"># ← 条件: 文本 → 条件向量（§2.2）</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">B</span> <span class="o">=</span> <span class="n">z0</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">drop</span> <span class="o">=</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">B</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.1</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># ← CFG: 条件 dropout 10%（§2.3）</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">c</span>    <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">drop</span><span class="p">,</span> <span class="n">null_c</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>         <span class="c1">#        换成 null 条件</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">t</span>   <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="p">(</span><span class="n">B</span><span class="p">,))</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">eps</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn_like</span><span class="p">(</span><span class="n">z0</span><span class="p">)</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">a</span>   <span class="o">=</span> <span class="n">abar</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">zt</span>  <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">sqrt</span><span class="p">()</span> <span class="o">*</span> <span class="n">z0</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">a</span><span class="p">)</span><span class="o">.</span><span class="n">sqrt</span><span class="p">()</span> <span class="o">*</span> <span class="n">eps</span>  <span class="c1"># 加噪公式和上篇 §4.1 一字不差，只是 x → z</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">eps_pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">zt</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>                  <span class="c1"># ← 条件: ε_θ 多接一个 c</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">mse_loss</span><span class="p">(</span><span class="n">eps_pred</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="c1"># ---- 采样 step (vs 上篇 §5.2 DDIM，这里为简洁写 DDPM 版) ----</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="k">def</span><span class="w"> </span><span class="nf">sample_sd</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">vae</span><span class="p">,</span> <span class="n">text_enc</span><span class="p">,</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="mf">7.5</span><span class="p">):</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="n">c</span> <span class="o">=</span> <span class="n">text_enc</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>                         <span class="c1"># ← 条件: 文本 → 条件向量</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="n">z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>                       <span class="c1"># 同上篇，只是起点在 latent 空间</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">T</span><span class="p">)):</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>        <span class="n">eps_c</span>  <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>                  <span class="c1"># ← 条件: 条件预测（多接 c）</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        <span class="n">eps_un</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">null_c</span><span class="p">)</span>             <span class="c1"># ← CFG: 无条件预测（多一次前向）</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>        <span class="n">eps</span>    <span class="o">=</span> <span class="n">eps_un</span> <span class="o">+</span> <span class="n">w</span> <span class="o">*</span> <span class="p">(</span><span class="n">eps_c</span> <span class="o">-</span> <span class="n">eps_un</span><span class="p">)</span>   <span class="c1"># ← CFG: 外推（§2.3 公式）</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>        <span class="c1"># 之后 mean / 方差项和上篇 §4.2 完全一样</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>        <span class="n">mean</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">alphas</span><span class="p">[</span><span class="n">t</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">abar</span><span class="p">[</span><span class="n">t</span><span class="p">])</span><span class="o">.</span><span class="n">sqrt</span><span class="p">()</span> <span class="o">*</span> <span class="n">eps</span><span class="p">)</span> <span class="o">/</span> <span class="n">alphas</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">sqrt</span><span class="p">()</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>        <span class="n">z</span> <span class="o">=</span> <span class="n">mean</span> <span class="o">+</span> <span class="p">(</span><span class="n">betas</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">sqrt</span><span class="p">()</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn_like</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="k">if</span> <span class="n">t</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>    <span class="k">return</span> <span class="n">vae</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>                          <span class="c1"># ← latent: latent → 像素</span>
+</code></pre></div>
+<p>相对 BasicDDIM 三处改动（按代价 / 收益顺序）：</p>
+<ul>
+<li><strong>搬进 latent</strong>：<code>z0 = vae.encode(x0)</code>；数据流从 <code>(B, 3, 512, 512)</code> 变成 <code>(B, 4, 64, 64)</code>。省算力，不改公式。</li>
+<li><strong>注入文本</strong>：<span class="arithmatex">\(\epsilon_\theta(z_t, t, c)\)</span>；<span class="arithmatex">\(\epsilon_\theta\)</span> 内部 U-Net 每一 block 插 cross-attention 层（Q 来自图像 latent、K/V 来自 c）。文本编码沿用 CLIP（<a href="01_03_VLM.html">01_03_VLM.md</a>）。</li>
+<li><strong>CFG</strong>：训练加条件 dropout、采样每步跑两次前向按 <span class="arithmatex">\(w\)</span> 外推。<strong>推理成本 ×2</strong>，最贵但换来对文本的服从度。</li>
+</ul>
+<p><span class="arithmatex">\(\epsilon_\theta\)</span> 内部（U-Net vs Transformer）和上篇 §4.1 / §5.2 的训练采样逻辑解耦。§3 换成 Transformer，就是替换这一个 <code>model</code>。端到端可跑的 toy 版见 §7 ipynb。</p>
+<h2 id="3-backbone-transformer">3. 进阶 backbone: Transformer 系列</h2>
+<blockquote>
+<p>还是 Transformer 结构更具有简化的数学之美！</p>
+</blockquote>
+<p>§2 走完了 U-Net 时代。但因为 §1.4 的短板，2023 起 backbone 换成 Transformer，分两步：</p>
+<ul>
+<li><strong>§3.1 DiT</strong>：U-Net 换成标准 Transformer + conv patchify + adaLN-Zero 注入条件</li>
+<li><strong>§3.2 MMDiT</strong>：文本注入也换掉，cross-attn 改成"文本图像拼一条序列做联合 self-attn"，架构和 VLM 主流合流</li>
+</ul>
+<p>SD3 / FLUX 这一代在 backbone 之外还换了训练目标，那是 §4。</p>
+<h3 id="31-dit-transformer-adaln-zero">3.1 DiT：换成 Transformer + adaLN-Zero</h3>
+<blockquote>
+<p>注意：这里的 <span class="arithmatex">\(c\)</span> 不是文本 prompt，是类别标签</p>
+</blockquote>
+<p>DiT (Peebles &amp; Xie, 2023) 把噪声网络 <span class="arithmatex">\(\epsilon_\theta\)</span> 整个换成标准 Transformer。生成模型的工程栈从此和 LLM 对齐，<a href="01_01_Transformer.html">01_01_Transformer.md</a> 和 <a href="01_03_VLM.html">01_03_VLM.md</a> 里的 Transformer 和 ViT 几乎直接复用。</p>
+<p>先看整体：DiT 跑在 §2 的 latent 上（LDM + Transformer），<strong>函数签名不变，还是三输入 <span class="arithmatex">\(\epsilon_\theta(z_t, t, c)\)</span></strong>，内部从 U 形变成一条流水线。</p>
+<p><strong>但注意 <span class="arithmatex">\(c\)</span> 的内容变了</strong>：DiT 原论文不是文生图，是 ImageNet <strong>类别</strong>生成——<span class="arithmatex">\(c\)</span> 从 §2 的文本 prompt 换成类别标签（1000 类选一），整个模型没有 text encoder。文生图怎么搬回 DiT 上，是 §3.2 的事。</p>
+<p>三路输入的处理，只有注入方式是新的：</p>
+<ul>
+<li><strong>主数据流 <span class="arithmatex">\(z_t\)</span> - 图像特征</strong>：VAE latent 过 conv 切 patch 变 token（patchify 同 ViT，对象从像素换成 latent）</li>
+<li><strong>时间 <span class="arithmatex">\(t\)</span> - 噪声程度</strong>：先沿用 §1.3 前两步（sinusoidal + MLP）变成向量</li>
+<li><strong>条件 <span class="arithmatex">\(c\)</span> - 类别标签</strong>：查 embedding 表得到<strong>单个向量</strong>，和 <span class="arithmatex">\(t\)</span> 向量相加合成一个条件向量，走 <strong>adaLN-Zero</strong> 注入</li>
+</ul>
+<p><img src="../assets/10-diffusion-2/fig-11.png" alt="image-20260707161929279" style="zoom:40%;" /></p>
+<p>对着图从左到右过一遍：</p>
+<ul>
+<li><strong>编码入口</strong>：三者都要先把原始输入变成 token 序列 <code>[B, T, d]</code>，起点不同<ul>
+<li>LLaMA：文本过 tokenizer 词表得离散 id，再查 embedding 表变 d 维向量</li>
+<li>ViT：像素图直接过 conv patchify 切不重叠 patch，conv 一步兼做「切词 + embedding」</li>
+<li><strong>DiT</strong>：入口做的事和 ViT 完全一样——conv 切 patch + 投影 + 2D sin-cos 位置编码。区别只在输入：不是像素，是 §2.1 已压好的 VAE latent（如 <code>32×32×4</code>）</li>
+<li>注意 VAE 只负责压缩：输出仍是 2D 特征图，不做 token 化、不带位置编码。</li>
+</ul>
+</li>
+<li><strong>主干</strong>：N 个 Transformer block（self-attention + FFN）。空间关系靠位置编码 + attention。</li>
+<li><strong>出口</strong>：<ul>
+<li>ViT 做分类：取 BERT 沿用来的 [CLS] 分类位，过分类头</li>
+<li>DiT 做逐 patch 预测：Final Layer 把 hidden dim 投影回 latent 形状，输出还是 ε̂（或 §4 的 v̂）</li>
+<li>LLaMA：LM head 逐位置出 next-token logits</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>所以唯一真正新的东西，是噪声等级 <span class="arithmatex">\(t\)</span> 和条件 <span class="arithmatex">\(c\)</span> 怎么注入，即 adaLN-Zero</p>
+</blockquote>
+<p><strong>[adaLN-Zero]</strong></p>
+<ul>
+<li>U-Net 时代 <span class="arithmatex">\(t\)</span> 靠编码 + MLP 后 broadcast 加法、<span class="arithmatex">\(c\)</span> 靠 cross-attn（§1.3）</li>
+<li>DiT 把两者合成一个向量，用 <strong>adaLN-Zero（自适应 LayerNorm，零初始化）</strong> 从旁路注入每个 block</li>
+</ul>
+<p>把 DiT block 和已熟的 ViT block 摆在一起对比：</p>
+<p><img src="../assets/10-diffusion-2/fig-12.png" alt="image-20260707162035606" style="zoom:40%;" /></p>
+<p>机制分三步：① adaLN 从 <span class="arithmatex">\(c\)</span> 回归出 shift / scale / gate；② LayerNorm（去掉自带仿射）后用 shift / scale 做仿射调制；③ attention / FFN 输出乘 gate 再残差相加。Zero 指 gate 零初始化——训练起点每个 block 都是恒等映射，深网络训练更稳。</p>
+<p><img src="../assets/10-diffusion-2/fig-13.png" alt="image-20260711133032048" style="zoom:40%;" /></p>
+<p>一个 DiT block 的代码（条件 <span class="arithmatex">\(c\)</span> 已经合成好），和机制三步逐行对应。<code># ←</code> 标出相对 ViT block 的改动，其余行就是标准 Transformer block：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">modulate</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">shift</span><span class="p">,</span> <span class="n">scale</span><span class="p">):</span>                       <span class="c1"># ← 新增: adaLN 的仿射调制，LN 之后做</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">scale</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">+</span> <span class="n">shift</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">DiTBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">n_heads</span><span class="p">,</span> <span class="n">mlp_ratio</span><span class="o">=</span><span class="mf">4.0</span><span class="p">):</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">norm1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">elementwise_affine</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">)</span>  <span class="c1"># ← 去掉自带仿射，交给 adaLN</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">attn</span>  <span class="o">=</span> <span class="n">SelfAttention</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">n_heads</span><span class="p">)</span>        <span class="c1"># 标准 MHA（见 01_01_Transformer.md）</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">norm2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">elementwise_affine</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">)</span>  <span class="c1"># ← 同上</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">mlp</span>   <span class="o">=</span> <span class="n">MLP</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">d</span> <span class="o">*</span> <span class="n">mlp_ratio</span><span class="p">))</span>       <span class="c1"># 标准 FFN</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">adaLN</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">SiLU</span><span class="p">(),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="mi">6</span> <span class="o">*</span> <span class="n">d</span><span class="p">))</span>  <span class="c1"># ← 新增: 从 c 回归 6 组调制参数</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>        <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">zeros_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">adaLN</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>         <span class="c1"># ← 新增(Zero): 零初始化</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">zeros_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">adaLN</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">bias</span><span class="p">)</span>           <span class="c1">#   初始 gate=0 → block 退化成恒等</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>                          <span class="c1"># x: [B, T, d] 图像 token；← 多接条件 c: [B, d]</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>        <span class="n">shift1</span><span class="p">,</span> <span class="n">scale1</span><span class="p">,</span> <span class="n">gate1</span><span class="p">,</span> <span class="n">shift2</span><span class="p">,</span> <span class="n">scale2</span><span class="p">,</span> <span class="n">gate2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">adaLN</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">chunk</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># ← 新增</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">gate1</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="p">(</span><span class="n">modulate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">norm1</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">shift1</span><span class="p">,</span> <span class="n">scale1</span><span class="p">))</span>  <span class="c1"># ← 加调制 + 门控</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">gate2</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mlp</span> <span class="p">(</span><span class="n">modulate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">norm2</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">shift2</span><span class="p">,</span> <span class="n">scale2</span><span class="p">))</span>  <span class="c1"># ← 同上</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>        <span class="k">return</span> <span class="n">x</span>
+</code></pre></div>
+<h3 id="32-mmdit-self-attn">3.2 MMDiT：拼接 + 联合 self-attn</h3>
+<p>本节只讲一件事：<strong>文本 prompt <span class="arithmatex">\(c\)</span> 怎么进 Transformer backbone</strong>。（§3.1 DiT 的 <span class="arithmatex">\(c\)</span> 还是类别标签）</p>
+<p>分两代：过渡期（PixArt）沿用 cross-attn，MMDiT（SD3 / FLUX）换成拼接。</p>
+<p><strong>[过渡期：文本先加回 cross-attn（PixArt 一代）]</strong></p>
+<ul>
+<li>§3.1 的 DiT 是类别条件，文生图要把 <span class="arithmatex">\(c\)</span> 换成文本。但 adaLN 只接收单个全局向量，文本序列 pool 成一个向量会丢信息</li>
+<li>过渡方案（PixArt-α, 2023.10 等）把条件拆两路：<span class="arithmatex">\(t\)</span> + 类别照旧走 adaLN；逐 token 文本序列在每个 block 里加回 §2.2 的 cross-attention</li>
+<li>局限同 §2.2 结尾 caveat：cross-attn 里文本 token 每层只被图像 <strong>单向查询</strong>，自己不交互、也看不到图像</li>
+</ul>
+<p><strong>[MMDiT：两个独立 Transformer，仅在 attention 处拼接]</strong></p>
+<p>SD3 / FLUX (2024) 的 <strong>MMDiT (Multi-Modal DiT)</strong>，用 SD3 论文的自我概括一句话：<strong>两套独立权重、两个独立 Transformer，仅在 attention 处拼接序列</strong>。</p>
+<p><img src="../assets/10-diffusion-2/fig-14.png" alt="image-20260711213851867" style="zoom:50%;" /></p>
+<p>对着图（左 cross-attn，右 MMDiT）把这句话展开：</p>
+<ul>
+<li><strong>入口</strong>（进 backbone 前）：文本过 text encoder（CLIP / T5；T5 是纯文本 encoder-decoder 模型，这里只用其 encoder）、图像过 VAE + patchify，各自变成 token 序列</li>
+<li><strong>block 内</strong>：<ul>
+<li>两路先各用自己的 adaLN（<span class="arithmatex">\(t\)</span> + pooled 文本注入）+ QKV 投影</li>
+<li><strong>Attention - 唯一合并点</strong>：两路 Q/K/V 沿序列维拼接，softmax 在整条混合序列上算一次，每个 token 双向看到两个模态</li>
+<li><strong>切回两路</strong>：attention 输出按位置切开，各自过自己的输出投影 + FFN</li>
+</ul>
+</li>
+</ul>
+<p>分开/合并的判定标准是<strong>有没有参数</strong>：带权重的组件（adaLN / QKV / 输出投影 / FFN）每模态一套；合并的只有 softmax(QKᵀ)V 这步<strong>无参数</strong>运算。「合流」合的是信息流，不是参数。</p>
+<p><strong>[对照 VLM 主流：双流 vs 单流]</strong></p>
+<p>拼接思路和 VLM 主流相同（LLaVA 范式 C，见 <a href="01_03_VLM.html">01_03_VLM.md</a> §1.5），差别在几套权重：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>VLM 主流（LLaVA 范式 C）</th>
+<th>MMDiT (SD3 / FLUX)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>几个 Transformer</td>
+<td>一个，图文共用权重（<strong>单流</strong>）</td>
+<td>两个独立，图文各一套权重（<strong>双流</strong>）</td>
+</tr>
+<tr>
+<td>拼接发生在哪</td>
+<td>入口拼一次，之后全程一条序列</td>
+<td>每个 block 的 attention 处拼，算完切回两路</td>
+</tr>
+<tr>
+<td>图像侧怎么进</td>
+<td>vision encoder → MLP → 拼接进 LLM 序列</td>
+<td>VAE + patchify → 进自己的图像流</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>「双流/单流」即 FLUX 官方代码的类名 <code>DoubleStreamBlock</code> / <code>SingleStreamBlock</code></li>
+</ul>
+<p>backbone 的演化到 MMDiT 为止：<strong>图像生成和 VLM 收敛到同一架构范式</strong>。SD3 / FLUX 最后一处改动是训练目标，见 §4。</p>
+<h2 id="4-flow-matching-vsd3-flux">4. Flow Matching: 训练目标 ε → v（SD3 / FLUX）</h2>
+<blockquote>
+<p>积分路径从曲线换成直线（导数恒定了）</p>
+</blockquote>
+<p>§3 换完 backbone 后，SD3 / FLUX (2024) 还做了最后一件事：<strong>换训练目标</strong>，从噪声 ε (DDPM) 换成速度场 v (flow matching)。</p>
+<p>到这里 SD3 / FLUX 的三块全齐了：latent + 文本 + CFG（§2，从上一代继承）、MMDiT backbone（§3.2）、flow matching 训练目标（本节）。</p>
+<h3 id="41-flow-matching">4.1 Flow Matching：把弯路径换成直线</h3>
+<p><strong>[问题：DDPM 的路径是弯的]</strong></p>
+<p>回看 DDPM 前向公式（上篇 §3.1，像素空间记号；在 latent 里把 <span class="arithmatex">\(x\)</span> 换成 <span class="arithmatex">\(z\)</span> 同形）：<span class="arithmatex">\(x_t=\sqrt{\bar\alpha_t}\,x_0+\sqrt{1-\bar\alpha_t}\,\epsilon\)</span>。两个系数都是 <span class="arithmatex">\(t\)</span> 的非线性函数，所以 <span class="arithmatex">\(x_t\)</span> 从数据走到噪声，走的是一条<strong>弯曲</strong>路径。采样要沿这条曲线积分：方向随 <span class="arithmatex">\(t\)</span> 一直在变，步子大了就偏离曲线，只能小步多走——这是采样慢的几何原因。</p>
+<p><img src="../assets/10-diffusion-2/fig-15.png" alt="image-20260712014321028" style="zoom:40%;" /></p>
+<p><strong>[改动一：路径换成直线]</strong></p>
+<p>flow matching 直接把数据和噪声之间的路径定义成<strong>直线插值</strong>。约定 <span class="arithmatex">\(t\in[0,1]\)</span> 连续（不再是 1000 个离散步）；<span class="arithmatex">\(z_0\)</span> 是干净数据（latent，见前言符号约定）、<span class="arithmatex">\(\epsilon\)</span> 是纯噪声：</p>
+<div class="arithmatex">\[
+z_t = (1-t)\,z_0 + t\,\epsilon
+\]</div>
+<p><span class="arithmatex">\(t=0\)</span> 在数据端，<span class="arithmatex">\(t=1\)</span> 在噪声端。两个系数 <span class="arithmatex">\((1-t)\)</span> 和 <span class="arithmatex">\(t\)</span> 都是 <span class="arithmatex">\(t\)</span> 的线性函数——这就是「直」的含义。</p>
+<p><strong>[改动二：学的量换成速度 v]</strong></p>
+<p>直线上是匀速运动，速度 = 终点 − 起点，处处相同：</p>
+<div class="arithmatex">\[
+v = \frac{dz_t}{dt} = \epsilon - z_0,\qquad L = \mathbb E\;\big\|\,v_\theta(z_t,t) - (\epsilon - z_0)\,\big\|^2
+\]</div>
+<p>训练仍是纯 MSE，只是 target 从「噪声 ε」换成「速度 v」。<span class="arithmatex">\(z_0 / \epsilon / v\)</span> 三种 target 靠前向公式线性互换，是参数化选择、不是不同模型（之前只用了 ε）。</p>
+<p><strong>[采样：沿速度场倒着走]</strong></p>
+<blockquote>
+<p>简单来说：求 v，然后由终点反解起点</p>
+</blockquote>
+<p>计算本身只是匀速直线运动，但涉及两个术语：</p>
+<ul>
+<li><strong>ODE（Ordinary Differential Equation，常微分方程）</strong>：形如 <span class="arithmatex">\(\frac{dz}{dt}=v(z,t)\)</span> 的方程——给出每一时刻的导数，从初值出发就能把整条轨迹积出来。训好的 <span class="arithmatex">\(v_\theta\)</span> 正好就是这个导数，所以<strong>采样 = 解一个 ODE</strong>（求 v）</li>
+<li><strong>Euler 法</strong>：解 ODE 最朴素的数值方法——沿当前导数直走一小步 <span class="arithmatex">\(z \leftarrow z + v\,\Delta t\)</span>，重复 N 步。上篇 §5 的 DDIM 跳步本质也是在解 ODE，只是解法写成了"反解 <span class="arithmatex">\(\hat x_0\)</span> 再合成"</li>
+</ul>
+<p>具体到 flow matching：从 <span class="arithmatex">\(t=1\)</span> 的纯噪声出发，每步问网络"当前速度是多少"，逆着速度走一小步：<span class="arithmatex">\(z \leftarrow z - v_\theta(z,t)\,\Delta t\)</span>（代码见 §4.2）。路径是直的，大步走也不偏：20 步质量接近 DDIM 50 步，也更容易蒸馏到 1~4 步。</p>
+<p><img src="../assets/10-diffusion-2/fig-16.png" alt="image-20260712015300611" style="zoom:50%;" /></p>
+<p>两条补充：</p>
+<ul>
+<li>SD3 配套把 <span class="arithmatex">\(t\)</span> 按 <strong>logit-normal</strong> 分布采样（标准高斯过 sigmoid 压进 <span class="arithmatex">\((0,1)\)</span>，见 §4.2 代码），中间时刻采得更密。为什么中间难？和选哪个 target 无关：由上面的线性互换，预测 ε / v 都等价于「从混合物 <span class="arithmatex">\(z_t\)</span> 估出干净图 <span class="arithmatex">\(\mathbb E[z_0|z_t]\)</span>」。<span class="arithmatex">\(t\approx0\)</span> 时答案几乎就在输入里；<span class="arithmatex">\(t\approx1\)</span> 时最优猜测退化成数据集均值；中间图噪幅度相当，必须真正推断图像内容——最难，训练预算堆在这里</li>
+<li>命名：「直线插值」这个具体方案的原始论文叫 <strong>Rectified Flow</strong>，SD3 论文沿用此名；<strong>flow matching</strong> 是包含它的一般框架。两者在本篇语境下可当同义词，统一用 flow matching</li>
+</ul>
+<h3 id="42-miniflux">4.2 简化代码：MiniFLUX</h3>
+<p>和 §2.5 MiniSD 的关系有两层：</p>
+<ul>
+<li><strong>训练/采样框架</strong>：diff 在训练 target（ε → v）和采样方式</li>
+<li><strong>主干 <code>model</code></strong>：从"只 call 的 U-Net"换成<strong>手写的双流 MMDiT block</strong>——即 FLUX 实际用的结构（§3.2）。代码不在本节展开：每条流的参数就是一个 §3.1 的 DiTBlock，双流版 = 两套 DiTBlock 参数 + 每层拼一次联合 attention，完整实现见 §7 ipynb</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># ---- 训练 step (vs §2.5 MiniSD: 只换 t 采样 + target) ----</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">train_step_fm</span><span class="p">(</span><span class="n">x0_pixel</span><span class="p">,</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">vae</span><span class="p">,</span> <span class="n">text_enc</span><span class="p">):</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">z0</span> <span class="o">=</span> <span class="n">vae</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">x0_pixel</span><span class="p">)</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">c</span>  <span class="o">=</span> <span class="n">text_enc</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">B</span>  <span class="o">=</span> <span class="n">z0</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">drop</span> <span class="o">=</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">B</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.1</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">c</span>    <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">drop</span><span class="p">,</span> <span class="n">null_c</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="c1"># ← FM: t 从 [0,1] 连续采（SD3 用 logit-normal，中间时刻更密）</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">t</span>   <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">B</span><span class="p">))</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="n">t_bc</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">eps</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn_like</span><span class="p">(</span><span class="n">z0</span><span class="p">)</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">zt</span>  <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">t_bc</span><span class="p">)</span> <span class="o">*</span> <span class="n">z0</span> <span class="o">+</span> <span class="n">t_bc</span> <span class="o">*</span> <span class="n">eps</span>           <span class="c1"># ← FM: 直线插值代替 DDPM 加噪公式</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="n">v_gt</span>   <span class="o">=</span> <span class="n">eps</span> <span class="o">-</span> <span class="n">z0</span>                             <span class="c1"># ← FM: target 从 ε 换成速度 v</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="n">v_pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">zt</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>                      <span class="c1"># ← 主干已换成 Transformer（§3），调用接口不变</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">mse_loss</span><span class="p">(</span><span class="n">v_pred</span><span class="p">,</span> <span class="n">v_gt</span><span class="p">)</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="c1"># ---- 采样 (vs §2.5 sample_sd / DDIM 反解: 换 Euler 解 ODE) ----</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="k">def</span><span class="w"> </span><span class="nf">sample_fm</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">vae</span><span class="p">,</span> <span class="n">text_enc</span><span class="p">,</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="mf">7.5</span><span class="p">):</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>    <span class="n">c</span>  <span class="o">=</span> <span class="n">text_enc</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>    <span class="n">z</span>  <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>                       <span class="c1"># 从 t=1（纯噪）起</span>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>    <span class="n">dt</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">steps</span>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">steps</span><span class="p">):</span>                        <span class="c1"># ← FM: 20 步就够</span>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>        <span class="n">t</span>     <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">i</span> <span class="o">*</span> <span class="n">dt</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>        <span class="n">v_c</span>   <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>        <span class="n">v_un</span>  <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">null_c</span><span class="p">)</span>
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>        <span class="n">v</span>     <span class="o">=</span> <span class="n">v_un</span> <span class="o">+</span> <span class="n">w</span> <span class="o">*</span> <span class="p">(</span><span class="n">v_c</span> <span class="o">-</span> <span class="n">v_un</span><span class="p">)</span>           <span class="c1"># CFG 公式和 §2.3 一字不差</span>
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>        <span class="n">z</span>     <span class="o">=</span> <span class="n">z</span> <span class="o">-</span> <span class="n">v</span> <span class="o">*</span> <span class="n">dt</span>                        <span class="c1"># ← FM: Euler 一阶 ODE，dz/dt = v</span>
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>    <span class="k">return</span> <span class="n">vae</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+</code></pre></div>
+<p>相对 §2.5 MiniSD 的改动：</p>
+<ul>
+<li><strong>训练 target: ε → v</strong>：MSE 形式一样，v = ε − z₀ 只是前向公式的另一种线性组合</li>
+<li><strong>t 连续 + logit-normal</strong>：中间时刻采得更密，噪声较大 / 较小的两端相对稀</li>
+<li><strong>采样换成 Euler 解 ODE</strong>：直线路径 dz/dt = v 恒定（§4.1），20 步质量接近 DDIM 50 步；对 1~4 步蒸馏也更友好</li>
+<li><strong>主干换成手写 Transformer</strong>：DiT block 见 §3.1 代码；双流 MMDiT block + patchify/unpatchify 全套见 §7 ipynb</li>
+</ul>
+<h2 id="5-sd1x-sdxl-sd3-flux">5. 代际对照：SD1.x / SDXL / SD3 / FLUX</h2>
+<p>从 SD (Stable Diffusion) 第一代到当前 SOTA，backbone (§1 → §3) 和训练目标 (§4) 两个维度映射到具体产品：</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>上市</th>
+<th>Backbone</th>
+<th>训练目标</th>
+<th>关键 diff</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SD 1.4 / 1.5</strong></td>
+<td>2022.08</td>
+<td>U-Net</td>
+<td>ε (DDPM)</td>
+<td>LDM 论文的开源版（~0.9B）</td>
+</tr>
+<tr>
+<td><strong>SD 2.x</strong></td>
+<td>2022.11</td>
+<td>U-Net</td>
+<td>ε</td>
+<td>换开源 CLIP，规模不变</td>
+</tr>
+<tr>
+<td><strong>SDXL</strong></td>
+<td>2023.07</td>
+<td>U-Net 做大 + refiner</td>
+<td>ε</td>
+<td>~2.6B，U-Net 路线的极限</td>
+</tr>
+<tr>
+<td><strong>SD3</strong></td>
+<td>2024.03</td>
+<td><strong>MMDiT</strong>（双流）</td>
+<td><strong>flow matching (v)</strong></td>
+<td>换 backbone + 换目标（0.8B~8B 多档）</td>
+</tr>
+<tr>
+<td><strong>FLUX.1</strong></td>
+<td>2024.08</td>
+<td><strong>MMDiT + 后段单流 block</strong></td>
+<td>flow matching (v)</td>
+<td>SD3 路线的规模化（~12B）</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>refiner</strong>（SDXL 行）：第二个 U-Net，对 base 输出的 latent 在低噪声区间再做一遍去噪精修，可选组件。</p>
+</blockquote>
+<p>三条演化主线：</p>
+<ul>
+<li><strong>框架不变</strong>：最小核（MSE 回归 + 迭代采样）+ latent 空间 + 文本条件 + CFG，五代都用这个骨架（§2）</li>
+<li><strong>Backbone 演化</strong>：U-Net (§1) → U-Net 做大 → MMDiT 双流 → MMDiT + 单流后段（§3）</li>
+<li><strong>训练目标演化</strong>：ε (DDPM) → v (flow matching)，从 SD3 起换（§4）</li>
+</ul>
+<p>命名说明：SD = Stable Diffusion，Stability AI 的产品线（SD1 → SD3）；FLUX 出自 Black Forest Labs，由 Stability 核心成员（含 LDM 原作者）离职创立，走 SD3 同一路线。所以 SD3 和 FLUX 是同代不同家。</p>
+<h2 id="6">6. 总结（两篇合起来）</h2>
+<p>上下两篇 = 一个公共最小核 + 逐层增量，对应前言的两层：</p>
+<ul>
+<li><strong>框架层最小核（上篇）</strong>：VAE 一步生成糊 → DDPM 拆成 T 步去噪，DDIM 路径压缩（网络当黑盒 -&gt; BasicDDIM）</li>
+<li><strong>框架层增量（本篇 §2、§4）</strong>：搬进 VAE latent (省算力) + 文本注入 + CFG (服从度++) ；SD3 / FLUX 再把训练目标 ε 换成 v</li>
+<li><strong>网络层增量（本篇 §1、§3）</strong>：U-Net → Transformer (DiT、MMDiT)</li>
+<li><strong>产品对号（本篇 §5）</strong>：SD1.x / SD2.x / SDXL = U-Net + ε；SD3 / FLUX = MMDiT + v</li>
+</ul>
+<h2 id="7">7. 代码实现</h2>
+<p>覆盖本篇两个简化模型，MNIST 上端到端可跑：<a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/10_mini_sd_flux.ipynb">10_mini_sd_flux.ipynb</a> ｜ <a href="https://drive.google.com/file/d/1f3LFn-5BRBN_ED6DBPwcMd81wxUtSf-G/view?usp=sharing">colab</a>（T4 单卡 ≈ 7 分钟）。</p>
+<ul>
+<li><strong>基座</strong>：上篇 BasicDDIM 的组件原样搬运</li>
+<li><strong>MiniSD（§2）</strong>：框架加三增量——VAE latent（tiny AE）、类别标签当"Text"、CFG；网络 U-Net 只 call 不展开</li>
+<li><strong>MiniFLUX（§3 + §4）</strong>：框架目标换成 v；主干手写双流 MMDiT（patchify + adaLN-Zero + 联合 attention）</li>
+</ul>
+<p><strong>结果</strong>：</p>
+<p><strong>① MiniSD</strong>（1.14M，训 2min）：DDIM 50 步、CFG w=3（听文字的话），约八成可辨</p>
+<p><img src="../assets/10-diffusion-2/fig-17.png" style="zoom:50%;" /></p>
+<p><strong>② MiniFLUX</strong>（2.45M，训 3min）：采样（§4.1）20 步，数字全部按标签对齐、字形清晰；步数减到 8，质量几乎不降——直线路径大步走不偏，少步优势 toy 上即可复现。出图好于 MiniSD（但参数量未对齐，只能当个趋势看）</p>
+<p><img src="../assets/10-diffusion-2/fig-18.png" style="zoom:50%;" /></p>
+<p><img src="../assets/10-diffusion-2/fig-19.png" style="zoom:60%;" /></p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "navigation.expand", "toc.follow", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/heading-font.js"></script>
+      
+        <script src="../javascripts/katex.js"></script>
+      
+        <script src="../javascripts/mmv.js"></script>
+      
+        <script src="../katex/katex.min.js"></script>
+      
+        <script src="../katex/auto-render.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -771,6 +771,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="01_05_Diffusion%E8%BF%9B%E9%98%B6.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    05-Diffusion（下）：从 Latent Diffusion 到 DiT / FLUX
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1621,19 +1649,19 @@
 <li>Qwen2-VL 部分与 HF 真模型逐元素对齐</li>
 </ul>
 </li>
-<li><strong>[面试点]</strong>：看懂 MiniVLM 部分应该就够了 - Vision 和 LLM部分是相对冻结的，设计的核心是 Connector</li>
+<li><strong>[面试点]</strong>：看懂 MiniVLM 部分应该就够了——Vision 和 LLM 部分相对冻结，设计核心是 Connector</li>
 </ul>
 <h2 id="_1">前言</h2>
 <p>读完 <a href="01_01_Transformer.html">01_01_Transformer.md</a> 知道：LLM 只认 embedding 向量序列，不在乎这个向量从哪来。VLM 就是抓住这一点——LLM 本体不动，前面加 pipeline 把"图"转化成能输入 LLM 的 token。本篇大部分内容讲这段 pipeline 怎么搭。</p>
 <p>本篇顺序（从概念到 real-world 简化版，同 <a href="01_02_MoE.html">01_02_MoE.md</a> 思路）：</p>
 <ul>
 <li><strong>§1 什么是 VLM</strong>：从 LLM 视角拆出新增设计（Vision Encoder + Connector），对应概念（ViT / CLIP &amp; SigLIP / LLaVA）</li>
-<li><strong>§2 手写最小 VLM</strong>：LLaVA 式 forward 骨架——Vision 和 LLM冻结、直接call，训 MLP Connector</li>
+<li><strong>§2 手写最小 VLM</strong>：LLaVA 式 forward 骨架——Vision 和 LLM 冻结、直接调用，训 MLP Connector</li>
 <li><strong>§3 走向 real-world</strong>：固定分辨率不够用——动态分辨率 / 2D-RoPE &amp; M-RoPE / token 压缩</li>
 <li><strong>§4 Qwen-VL 系列</strong>：经典版 Qwen2-VL（= §2.1 + 补§3）</li>
 <li><strong>§5 DeepSeek 系列</strong>：经典版 DeepSeek-OCR（视觉 token 当文本压缩器）</li>
 </ul>
-<p>嗯 Qwen系列还是具有简约设计美感，DeepSeek有点花活儿（和MoE风格一样呢！）</p>
+<p>Qwen 线延续简约设计，DeepSeek 线自定义组件更多——和 MoE 篇的观感一致。</p>
 <h2 id="1-vlm">1. 什么是 VLM</h2>
 <h3 id="11-llm">1.1 相比LLM的三段式</h3>
 <p>从已熟悉 LLM 的角度看，VLM 只需要回答两个问题：</p>
@@ -1648,7 +1676,7 @@
 <ul>
 <li><strong>Vision Encoder（答 Q1 + Q2a）</strong>：把图编码成一串 visual 特征，<strong>训练时一般全程冻结</strong><ul>
 <li><strong>架构</strong>上是 ViT（§1.2，conv patch 当 token，答 Q1）</li>
-<li>但<strong>预训练目标</strong>必须用 CLIP/SigLIP对齐图文（§1.3，答 Q2a），feature 才"懂语言" + 能和后面的 LLM 接得上</li>
+<li><strong>预训练目标</strong>用 CLIP/SigLIP 做图文对齐（§1.3，答 Q2a）。对齐后的 feature 带语言语义，才能接进后面的 LLM</li>
 </ul>
 </li>
 </ul>
@@ -1662,7 +1690,7 @@
 <ul>
 <li><strong>LLM</strong>：直接拿现成的文本基座（Vicuna / LLaMA / Qwen / DeepSeek），结构上几乎不动。训练初期冻结、后期 SFT 时才解冻调</li>
 </ul>
-<p>三段里 (1) LLM 拿来即用；(2) Vision Encoder 是从视觉领域借的（且训练时冻着）；(3) 真正从头训的只有 Connector——所以 LLaVA 范式只用 ~1M 量级数据就能训好。VLM 设计空间也就集中在 Connector 和"怎么喂图"上（§3 工程问题）。</p>
+<p>三段里，LLM 拿来即用；Vision Encoder 借自视觉领域，训练时冻结；真正从头训的只有 Connector。所以 LLaVA 范式只用 ~1M 量级数据就能训好。VLM 的设计空间也集中在 Connector 和图像输入方式上（§3 工程问题）。</p>
 <h3 id="12-vit-token">1.2 ViT: 图变 token (通常冻结)</h3>
 <p><strong>ViT (Vision Transformer)</strong> = 把图先切成 token、再走一遍纯 Transformer 主干。拆成三步（以 ViT-B/16 处理 <code>224×224×3</code> 为例）：</p>
 <ul>
@@ -1680,7 +1708,7 @@
 <p><strong>一个事实约束</strong>：ViT 没有 CNN 的局部性归纳偏置，所以只有在超大规模数据上预训练才会显著超过 CNN（原文用 JFT-300M，3 亿张图）。</p>
 <h3 id="13-clip-siglip">1.3 CLIP / SigLIP: 图文语义对齐 (通常冻结)</h3>
 <p>接 §1.2 末尾：ViT 必须大规模预训练，但 ImageNet 分类预训练对 VLM 不友好——学到的 feature 只为"分进 1000 类某一类"服务，和语言没有直接关系（向量空间里"狗"特征和"dog"这个词无关）。VLM 要的是：feature = 语言级语义，CLIP / SigLIP 就是这个语义对齐的两种解法。</p>
-<p>模型中，大部分时候是直接用对齐好的ckpt的，但有时候也会在次基础上解冻训练（见Qwen系列）。</p>
+<p>实际模型大多直接用对齐好的 ckpt，有时也在此基础上解冻继续训（见 Qwen 系列）。</p>
 <p><strong>[CLIP（OpenAI, 2021）：图文对比对齐]</strong></p>
 <p>核心 idea：放弃人工分类标签，用 4 亿对 <code>(图, 描述文本)</code> 配对来训——让"猫的图"和"a photo of a cat" 文本特征靠近。</p>
 <blockquote>
@@ -1713,12 +1741,12 @@
 <li><strong>训完后 / VLM 用法</strong>：只用图像塔（文本塔丢掉），它输出的 feature 已"指向"语言空间</li>
 </ul>
 <p><strong>[SigLIP（Google, 2023）：同思路换 loss（softmax → sigmoid），工程化]</strong></p>
-<p>结构和 CLIP 完全一样，只换"怎么对比 M 和 I"。改的动机是 CLIP loss 在工程上有两个痛点（CLIP 强依赖大 batch——论文 batch = 32k，负样本越多对比信号越强）：</p>
+<p>结构和 CLIP 完全一样，只换"怎么对比 M 和 I"。改的动机：CLIP loss 强依赖大 batch（论文 batch = 32k，负样本越多对比信号越强），工程上有两个痛点：</p>
 <ul>
 <li><strong>softmax 是 batch 级归一化</strong>：softmax 要看遍整个 batch；分布式必须先 <strong>all-gather</strong></li>
-<li><strong>N×N 相似度矩阵 → 显存 <code>O(N²)</code></strong>：batch 一大就爆</li>
+<li><strong>N×N 相似度矩阵 → 显存 <code>O(N²)</code></strong>：batch 一大显存就不够</li>
 </ul>
-<p><strong>SigLIP 改法：softmax → sigmoid</strong>——把"N 路分类"变成 <strong>N² 个独立二分类</strong>。M 的每格 <code>M[i,j]</code> 单独问"配对吗？" -&gt; 每格独立</p>
+<p><strong>SigLIP 改法：softmax → sigmoid</strong>——把"N 路分类"变成 <strong>N² 个独立二分类</strong>。M 的每格 <code>M[i,j]</code> 独立判断"是否配对"。</p>
 <blockquote>
 <p>SigLIP 输出的图像特征同样"自带语义"，可以直接替换 CLIP 当 vision encoder。2023 年起新一代 VLM 几乎都用 SigLIP 系（Qwen3-VL 用 SigLIP2-SO400M、DeepSeek-VL2 用 SigLIP-SO400M，直接调用 checkpoint）。</p>
 </blockquote>
@@ -1745,7 +1773,7 @@
 </ul>
 <p><strong>为什么胜出</strong>：</p>
 <ul>
-<li><strong>信息无损</strong>：patch token 数原封不动搬过去，细粒度任务（OCR、文档）不踩坑。</li>
+<li><strong>信息无损</strong>：patch token 数原封不动搬过去，细粒度任务（OCR、文档）不受影响。</li>
 <li><strong>训练稳定 + 数据高效</strong>：MLP 是最简单的可训练变换，从头训的参数量极小。LLaVA 约 <strong>1M</strong> 量级图文对就训得很好，而 Q-Former 路线动辄 <strong>1B+</strong>（因为 Q-Former 自身那套 query + cross-attn 参数也得从头训）。</li>
 <li><strong>要压 token 数也不必上 Q-Former</strong>：简单的 2×2 合并 / average pooling 就能顶上（§3.3 PatchMerger），避免 Q-Former 复杂结构。</li>
 </ul>
@@ -1825,7 +1853,7 @@
 <h3 id="21-llava-mini-vlm">2.1 LLaVA 式 mini VLM</h3>
 <p><strong>先说三段都用什么具体模块</strong>（以 LLaVA-1.5 为例），拼起来就是 forward：</p>
 <ul>
-<li><strong>Vision Tower (全程冻结)</strong>：直接call CLIP ViT-L/14-336，输入 <code>[B, 3, 336, 336]</code>，按 §1.2 的 patchify  → <code>576 个 patch</code> → 输出 <code>[B, 576, 1024]</code>（576 个 patch token，d_vision = 1024）。</li>
+<li><strong>Vision Tower (全程冻结)</strong>：直接调用 CLIP ViT-L/14-336，输入 <code>[B, 3, 336, 336]</code>，按 §1.2 的 patchify → <code>576 个 patch</code> → 输出 <code>[B, 576, 1024]</code>（576 个 patch token，d_vision = 1024）。</li>
 <li><strong>Projector (训练主体)</strong>：<strong>两层 MLP</strong> <code>Linear(1024, 4096) → GELU → Linear(4096, 4096)</code>。把每个 patch token 的 1024 维投到 LLM 的 hidden_dim（4096）。唯一需要从头训的部件。</li>
 <li><strong>LLM (冻结, SFT 时训练)</strong>：现成文本基座，hidden_dim = 4096，<strong>结构完全不改</strong>。LLaVA-1.5 原版用 <strong>Vicuna-7B</strong>（= LLaMA-2 + ShareGPT 对话数据微调出来的 chat 模型）。</li>
 </ul>
@@ -1845,17 +1873,17 @@
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">MiniVLM</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vision_tower</span><span class="p">,</span> <span class="n">llm</span><span class="p">,</span> <span class="n">d_vision</span><span class="p">,</span> <span class="n">d_llm</span><span class="p">):</span>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vision_tower</span> <span class="o">=</span> <span class="n">vision_tower</span>          <span class="c1"># ← 掉包: HuggingFace CLIP ViT, 训练全程冻结</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">vision_tower</span> <span class="o">=</span> <span class="n">vision_tower</span>          <span class="c1"># ← 调用: HuggingFace CLIP ViT, 训练全程冻结</span>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">projector</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>           <span class="c1"># ← 手写: 两层 MLP, 整套结构里唯一从头训的部件</span>
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d_vision</span><span class="p">,</span> <span class="n">d_llm</span><span class="p">),</span> <span class="n">nn</span><span class="o">.</span><span class="n">GELU</span><span class="p">(),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d_llm</span><span class="p">,</span> <span class="n">d_llm</span><span class="p">))</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">llm</span> <span class="o">=</span> <span class="n">llm</span>                            <span class="c1"># ← 掉包: HuggingFace LLM (Vicuna/LLaMA/Qwen)</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">llm</span> <span class="o">=</span> <span class="n">llm</span>                            <span class="c1"># ← 调用: HuggingFace LLM (Vicuna/LLaMA/Qwen)</span>
 <a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
 <a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_ids</span><span class="p">,</span> <span class="n">pixel_values</span><span class="p">,</span> <span class="n">image_token_id</span><span class="p">):</span>
 <a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        <span class="c1"># 1. 文本照常查 embedding (用 LLM 自带的 token embedding 表, 不动)</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="n">inputs_embeds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm</span><span class="o">.</span><span class="n">embed_tokens</span><span class="p">(</span><span class="n">input_ids</span><span class="p">)</span>     <span class="c1"># [B, T, d_llm]      ← 掉包 API</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="n">inputs_embeds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm</span><span class="o">.</span><span class="n">embed_tokens</span><span class="p">(</span><span class="n">input_ids</span><span class="p">)</span>     <span class="c1"># [B, T, d_llm]      ← 调用 API</span>
 <a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
 <a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>        <span class="c1"># 2. 图像走 vision tower + projector → 得到 LLM 空间里的视觉 token</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        <span class="n">img_feats</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vision_tower</span><span class="p">(</span><span class="n">pixel_values</span><span class="p">)</span>         <span class="c1"># [B, N_patch, d_vision]  ← 掉包</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        <span class="n">img_feats</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vision_tower</span><span class="p">(</span><span class="n">pixel_values</span><span class="p">)</span>         <span class="c1"># [B, N_patch, d_vision]  ← 调用</span>
 <a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>        <span class="n">img_embeds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projector</span><span class="p">(</span><span class="n">img_feats</span><span class="p">)</span>               <span class="c1"># [B, N_patch, d_llm]     ← 手写</span>
 <a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
 <a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>        <span class="c1"># 3. 把 &lt;image&gt; 占位 token 的 embedding 替换成视觉 token</span>
@@ -1864,7 +1892,7 @@
 <a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>        <span class="n">inputs_embeds</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">img_embeds</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">img_embeds</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
 <a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
 <a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>        <span class="c1"># 4. 拼好的混合序列照常过 LLM, next-token 预测 (LLM 完全不知道里头混了视觉)</span>
-<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm</span><span class="p">(</span><span class="n">inputs_embeds</span><span class="o">=</span><span class="n">inputs_embeds</span><span class="p">)</span>         <span class="c1"># ← 掉包 forward</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm</span><span class="p">(</span><span class="n">inputs_embeds</span><span class="o">=</span><span class="n">inputs_embeds</span><span class="p">)</span>         <span class="c1"># ← 调用 forward</span>
 </code></pre></div>
 <p><strong>两段独立串行，合并点在 LLM 输入 embedding 层</strong>——这带来两个好处：</p>
 <ul>
@@ -1910,15 +1938,15 @@
 </ul>
 </blockquote>
 <h2 id="3-real-world">3. 走向 real-world：绕不开的问题</h2>
-<p>最小 VLM（§2）有个隐含前提：图像被 resize 成固定分辨率（LLaVA 的 336×336）。</p>
-<p>但真实场景立刻打破：4K 文档、竖屏视频、超宽表格……固定分辨率要么压糊小字、要么强行拉成方形毁掉长宽比。真实 VLM 普遍要解决<strong>三个连环问题</strong>：</p>
+<p>最小 VLM（§2）有个隐含前提：<strong>图像被 resize 成固定分辨率</strong>（LLaVA 的 336×336）。</p>
+<p>真实场景里有 4K 文档、竖屏视频、超宽表格。固定分辨率要么把小字压糊，要么强行改长宽比造成形变。真实 VLM 普遍要解决<strong>三个相互关联的问题</strong>：</p>
 <p><img src="../assets/09-vlm/fig-08.png" alt="image-20260628182845270" style="zoom:50%;" /></p>
 <h3 id="31">3.1 动态分辨率</h3>
 <p><strong>固定分辨率的几个害处</strong>：</p>
 <ul>
 <li><strong>低分辨率丢细节</strong>（小字、图表线条压糊）</li>
-<li>强行改长宽比导致形变（长文档被拉成正方形）</li>
-<li>而且不同图信息密度差异大</li>
+<li>强行改长宽比导致<strong>形变</strong>（长文档被拉成正方形）</li>
+<li>而且<strong>不同图信息密度差异大</strong>（同一个固定 token 数既浪费又不够）</li>
 </ul>
 <p>两条解法：</p>
 <table>
@@ -1935,7 +1963,7 @@
 <td><strong>原生分辨率(NaViT)</strong></td>
 <td>保留原图分辨率和长宽比直接切 patch → 不同图得到不同 patch 数（变长序列）</td>
 <td>Qwen2-VL 起</td>
-<td>ViT 原版绝对位置编码废了，必须换（→ §3.2）</td>
+<td>ViT 原版绝对位置编码失效，必须换（→ §3.2）</td>
 </tr>
 <tr>
 <td><strong>动态切图(Dynamic Tiling)</strong></td>
@@ -1949,7 +1977,7 @@
 <h3 id="32-1d-2d-m-rope">3.2 位置编码：1D → 2D / M-RoPE</h3>
 <p><strong>为什么必须重做</strong>：</p>
 <ul>
-<li>§3.1 动态分辨率后，ViT 原版的可学习绝对位置编码废了（尺寸一变维度对不上）。</li>
+<li>§3.1 动态分辨率后，ViT 原版的可学习绝对位置编码失效（尺寸一变维度对不上）。</li>
 <li>LLM 用的 1D RoPE 也表达不了图像 2D / 视频 3D 的结构。</li>
 </ul>
 <blockquote>
@@ -1960,7 +1988,7 @@
 <p><strong>[LLM 侧] M-RoPE（Multimodal RoPE，Qwen2-VL 提出）—— 本质就是 3D RoPE</strong>：把 1D 序列位置扩成 <code>(t, h, w)</code> 三轴，head 维度切成 时间 t / 高 h / 宽 w 三段分别旋转 Q/K。文本 token 三轴相同 → 自动退化成 1D-RoPE；图像/视频用各自的 <code>(t, h, w)</code></p>
 <p><img src="../assets/09-vlm/fig-06.png" alt="image-20260628185412244" style="zoom:50%;" /></p>
 <h3 id="33-token-patchmerger">3.3 token 压缩：PatchMerger</h3>
-<p>§3.1 动态分辨率的副作用：一张高分辨率图能切出几千个 patch，全塞进 LLM 序列又长又贵（attention 是 <code>O(T²)</code>）。投影进 LLM 之前要先压一道。</p>
+<p>§3.1 动态分辨率的副作用：一张高分辨率图能切出几千个 patch。全部进入 LLM 序列，序列长、计算贵（attention 是 <code>O(T²)</code>），投影进 LLM 之前要先压缩一道。</p>
 <p><strong>主流做法：PatchMerger（= 2×2 合并 + MLP）</strong></p>
 <ul>
 <li>相邻 2×2 的 4 个视觉 token 在 hidden 维上拼起来（<code>d → 4d</code>）</li>
@@ -1971,7 +1999,7 @@
 <p><strong>重要</strong>：PatchMerger 就是 §2 那个 projector——压缩和"投到 LLM 空间"合并成一步。</p>
 <p>这三件事（动态分辨率 + 2D/M-RoPE + PatchMerger）是 2024 后所有真实 VLM 的标配。下面 §4/§5 看两条模型线怎么组装、又各自加了什么。</p>
 <h2 id="4-qwen-vl">4. Qwen-VL 系列</h2>
-<p>Qwen 这条线从 2023 走到 2026 跨了五代，几乎踩过 §3 每一个工程问题。</p>
+<p>Qwen 这条线从 2023 走到 2026 跨了五代，把 §3 的每个工程问题都处理了一遍。</p>
 <p>和 <a href="01_02_MoE.html">01_02_MoE.md</a> §5 一样<strong>挑一代当经典展开——选 Qwen2-VL</strong>：它是 §3 三件事第一次被一次性补齐的转折点，结构最有代表性，之后各代都是 "Qwen2-VL + X" 的增量。</p>
 <h3 id="41">4.1 设计变化对比</h3>
 <p><strong>先回忆每个组件有哪些主流选项</strong>（<strong>加粗 = 2024 后真实模型的主流</strong>）：</p>
@@ -2084,7 +2112,7 @@
 <ul>
 <li>LLM 用 <strong>M-RoPE</strong> 位置编码（§3.2）：<code>position_ids</code> 从 1D 序号变成 <code>(t, h, w)</code> 三轴元组，要根据 <code>image_grid_thw</code> 算。</li>
 </ul>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># 掉包: vision_tower 是 Qwen 自己 CLIP-init 重训出来的 675M ViT，内部用 2D-RoPE + NaViT</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># 调用: vision_tower 是 Qwen 自己 CLIP-init 重训出来的 675M ViT，内部用 2D-RoPE + NaViT</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># vision_tower = AutoModel.from_pretrained(&quot;Qwen/Qwen2-VL-7B-Instruct&quot;, subfolder=&quot;visual&quot;)</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># llm          = AutoModelForCausalLM.from_pretrained(&quot;Qwen/Qwen2-7B&quot;)</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
@@ -2124,8 +2152,8 @@
 </code></pre></div>
 <p>训练策略上还多一处差别：§2.1 冻 ViT 只训 MLP；Qwen2-VL 因为 ViT 内部结构改了（2D-RoPE 换 1D pos embed），必须<strong>解冻让 ViT 一起训</strong>。</p>
 <h2 id="5-deepseek">5. DeepSeek 系列</h2>
-<p>DeepSeek 这条线和 Qwen 路线不同：Qwen 补通用 VLM 能力；DeepSeek 越往后越聚焦在一个问题上——视觉 token 能压到多狠。挑一代当经典展开——选 DeepSeek-OCR：它把"<strong>光学压缩长上下文</strong>"做成了完整方案（详 §5.1 表）。</p>
-<p>不过感觉学习的意义上没有Qwen VL强。</p>
+<p>DeepSeek 这条线和 Qwen 路线不同：Qwen 补通用 VLM 能力；DeepSeek 越往后越聚焦在一个问题上——视觉 token 能压到多小。挑一代当经典展开，选 DeepSeek-OCR：它把"<strong>光学压缩长上下文</strong>"做成了系统方案（详 §5.1 表）。</p>
+<p>（个人感觉学习价值不如 Qwen-VL 线。）</p>
 <h3 id="51">5.1 设计变化对比</h3>
 <p><strong>回忆每个组件的主流选项</strong>（维度框架同 §4.1）：</p>
 <p>基础结构：</p>
@@ -2201,8 +2229,8 @@
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>OCR ：  一万字文档 ──► 渲染成图 ──► DeepEncoder ──► 几百个视觉 token ──► LLM 还原文字
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>                                       ↑ 压缩比是一等目标
 </code></pre></div>
-<p><strong>和 §2.1 MiniVLM 的关系</strong>：forward 骨架完全一样，唯一替换 <code>self.vision_tower = DeepEncoder()</code>——所以这节不展开 codeDeepSeesccsc（毕竟在我们的backbone里这个是直接call的），新东西全在 DeepEncoder 内部。</p>
-<p><strong>DeepEncoder 内部结构</strong>（Base 1024² 配置为例），简单看看吧：</p>
+<p><strong>和 §2.1 MiniVLM 的关系</strong>：forward 骨架完全一样，唯一替换 <code>self.vision_tower = DeepEncoder()</code>——所以本节不展开 code，新东西全在 DeepEncoder 内部。</p>
+<p><strong>DeepEncoder 内部结构</strong>（以 Base 1024² 配置为例）：</p>
 <p><img src="../assets/09-vlm/fig-09.png" alt="image-20260628211129057" style="zoom:40%;" /></p>
 <h3 id="53-vlm">5.3 其它 VLM 线</h3>
 <p>补几条 Qwen / DeepSeek 之外的 VLM 线：</p>
@@ -2221,10 +2249,10 @@
 <li><strong>§4 Qwen-VL 系列</strong>：Qwen2-VL = <strong>§2.1 forward 骨架 + §3 三件事补齐</strong>——分别落在 vision_tower 内（NaViT + 2D-RoPE）/ Connector（MLP → PatchMerger）/ LLM 位置编码（1D → M-RoPE）。</li>
 <li><strong>§5 DeepSeek 系列</strong>：DeepSeek-OCR forward 骨架同 §2.1，只换 <code>vision_tower = DeepEncoder</code>（SAM + 16× conv + CLIP 串行）；压缩比 10× 内 ~97% 解码精度。</li>
 </ul>
-<p><strong>简言之重点</strong>：</p>
+<p>重点：</p>
 <ul>
-<li>核心是训connector，vision和LLM相对固定 / 冻结</li>
-<li>具体模型上有一些 tricks - Vision Encoder中的优化 (整体换 / 动态分辨率)，nD rope位置编码替换</li>
+<li>核心是训 Connector，Vision 和 LLM 相对固定 / 冻结</li>
+<li>具体模型的差异集中在 Vision Encoder（整体换 / 动态分辨率）和位置编码（2D-RoPE / M-RoPE）</li>
 </ul>
 <h2 id="7">7. 代码实现</h2>
 <p>按 doc 顺序写三段可跑代码（MiniVLM / Qwen2-VL / DeepEncoder），并和 HF 对齐。</p>
