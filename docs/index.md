@@ -30,7 +30,8 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 |  | 02-数据并行 DP *WIP* | | | |
 | 训练方法 | [01-预训练 Pretrain](03_训练方法/03_01_Pretrain.md) | [link](https://zhuanlan.zhihu.com/p/2033923074630870192) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/04_mini_pretrain.ipynb) ｜ [colab](https://drive.google.com/file/d/1VUB1WrZx9KkHBrY9N8E3-Dfmql7aHnjw/view?usp=sharing) | mini pretrain |
 |  | [02-监督微调 SFT](03_训练方法/03_02_SFT.md) | [link](https://zhuanlan.zhihu.com/p/2034286003767218701) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/05_mini_lora_sft.ipynb) ｜ [colab](https://drive.google.com/file/d/1NrDWiGrWPoRrk2yszFXIkDe-DeyKW7B0/view?usp=drive_link) | mini lora SFT |
-| RL | *coming soon* | | | |
+|  | 03-知识蒸馏 KD *WIP* | | | |
+| RL | 01-RL 训练基础 *WIP* | | | |
 | 推理优化 | [01-推理基础(PD / 指标 / KV Cache)](05_推理优化/05_01_推理基础.md) | [link](https://zhuanlan.zhihu.com/p/2052410872912418496) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/08_mini_inference.ipynb) ｜ [colab](https://drive.google.com/file/d/1Zlicq3BShtFv4iWECkbHSqJ2iNZT42xW/view?usp=sharing) | mini inference |
 | 算子 | [01-算子手写(1) - CUDA 入门 op](06_算子/05_01_CUDA入门.md) | [link](https://zhuanlan.zhihu.com/p/1892487783110644443) | [ipynb](https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/02-cuda-ops.ipynb) ｜ [colab](https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link) | 一些基础CUDA算子 |
 |  | 02-Flash Attention (上) - FA1/2 *WIP* | | | |
