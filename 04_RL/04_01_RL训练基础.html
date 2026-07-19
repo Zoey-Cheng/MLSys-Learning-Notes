@@ -1,0 +1,2679 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="MLSys 自学笔记，知乎同步更新">
+      
+      
+      
+        <link rel="canonical" href="https://zoey-cheng.github.io/MLSys-Learning-Notes/04_RL/04_01_RL%E8%AE%AD%E7%BB%83%E5%9F%BA%E7%A1%80.html">
+      
+      
+        <link rel="prev" href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_02_SFT.html">
+      
+      
+        <link rel="next" href="../05_%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96/05_01_%E6%8E%A8%E7%90%86%E5%9F%BA%E7%A1%80.html">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>01-RL训练基础: loop与RLHF-PPO - MLSys 菜狗自学笔记</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../katex/katex.min.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#01-rl-loop-rlhf-ppo" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../index.html" title="MLSys 菜狗自学笔记" class="md-header__button md-logo" aria-label="MLSys 菜狗自学笔记" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            MLSys 菜狗自学笔记
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              01-RL训练基础: loop与RLHF-PPO
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换到暗色模式"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到暗色模式" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换到亮色模式"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到亮色模式" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Zoey-Cheng/MLSys-Learning-Notes
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../index.html" title="MLSys 菜狗自学笔记" class="md-nav__button md-logo" aria-label="MLSys 菜狗自学笔记" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    MLSys 菜狗自学笔记
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Zoey-Cheng/MLSys-Learning-Notes
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    模型基础
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    模型基础
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_01_Transformer.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-Transformer 架构详解:以 LLaMA 为例
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_02_MoE.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-MoE 架构详解: 从基础版到 DeepSeek / Qwen3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_03_VLM.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    03-VLM: 从 ViT/CLIP 到 Qwen2-VL / DeepSeek-OCR
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_04_Diffusion%E5%9F%BA%E7%A1%80.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    04-Diffusion (上): 从 VAE 到 DDPM / DDIM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_05_Diffusion%E8%BF%9B%E9%98%B6.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    05-Diffusion (下): 从 Latent Diffusion 到 DiT / FLUX
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    训练策略
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    训练策略
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02_%E8%AE%AD%E7%BB%83%E7%AD%96%E7%95%A5/02_01_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%E5%9F%BA%E7%A1%80.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-分布式背景:通信/单卡计算流
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    训练方法
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    训练方法
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_01_Pretrain.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-预训练 Pretrain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_02_SFT.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-监督微调 SFT
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RL
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RL
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-RL训练基础: loop与RLHF-PPO
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="04_01_RL%E8%AE%AD%E7%BB%83%E5%9F%BA%E7%A1%80.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-RL训练基础: loop与RLHF-PPO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前言
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-sft-rl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 为什么 SFT 后还要 RL
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 为什么 SFT 后还要 RL">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-rl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 从信号缺陷到 RL 范式
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-kl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 概率视角：两种 KL 方向
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-rl-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. RL loop：训练和推理的交替
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. RL loop：训练和推理的交替">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-rl-llm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 RL 概念 ↔ LLM 映射
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 loop 本体
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-ppo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. PPO：每个部件为什么存在
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. PPO：每个部件为什么存在">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#30-pretrain-sft" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.0 先和 pretrain / SFT 对齐结构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#31-seq-policy-gradient" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 起点：seq 级 policy gradient (!!)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-token-1r_t-g_t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 token 级权重（1）：\(r_t\) 与 \(G_t\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-token-2advantage-critic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 token 级权重（2）：advantage 与 critic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-token-3gae" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 token 级权重（3）：GAE 结论
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-logprob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 换 logprob 项：安全复用一批数据
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-actor-loss" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 组装：完整的 actor loss
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-rlhf-instructgpt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. RLHF 四模型 (InstructGPT)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. RLHF 四模型 (InstructGPT)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-rm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 RM：偏好怎么变成分数
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 四模型系统
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-basicppo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 手写 BasicPPO
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 资源画像
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. 资源画像">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 显存账
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 两种负载的计算特性
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 三个结论与后续
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 代码实现
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    推理优化
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    推理优化
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05_%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96/05_01_%E6%8E%A8%E7%90%86%E5%9F%BA%E7%A1%80.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-推理基础: PD/KV Cache
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    算子
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    算子
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../06_%E7%AE%97%E5%AD%90/05_01_CUDA%E5%85%A5%E9%97%A8.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-算子手写(1) - CUDA 入门 op
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ♪ 手写题 Quick Ref
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ♪ 手写题 Quick Ref
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07_%E9%9D%A2%E8%AF%95%E6%89%8B%E5%86%99%E9%A2%98/07_01_%E6%A8%A1%E5%9E%8B.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-模型
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07_%E9%9D%A2%E8%AF%95%E6%89%8B%E5%86%99%E9%A2%98/07_02_%E6%8E%A8%E7%90%86.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-推理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07_%E9%9D%A2%E8%AF%95%E6%89%8B%E5%86%99%E9%A2%98/07_03_%E7%AE%97%E5%AD%90CUDA.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    03-算子
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前言
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-sft-rl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 为什么 SFT 后还要 RL
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 为什么 SFT 后还要 RL">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-rl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 从信号缺陷到 RL 范式
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-kl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 概率视角：两种 KL 方向
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-rl-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. RL loop：训练和推理的交替
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. RL loop：训练和推理的交替">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-rl-llm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 RL 概念 ↔ LLM 映射
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 loop 本体
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-ppo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. PPO：每个部件为什么存在
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. PPO：每个部件为什么存在">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#30-pretrain-sft" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.0 先和 pretrain / SFT 对齐结构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#31-seq-policy-gradient" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 起点：seq 级 policy gradient (!!)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-token-1r_t-g_t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 token 级权重（1）：\(r_t\) 与 \(G_t\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-token-2advantage-critic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 token 级权重（2）：advantage 与 critic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-token-3gae" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 token 级权重（3）：GAE 结论
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-logprob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 换 logprob 项：安全复用一批数据
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-actor-loss" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 组装：完整的 actor loss
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-rlhf-instructgpt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. RLHF 四模型 (InstructGPT)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. RLHF 四模型 (InstructGPT)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-rm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 RM：偏好怎么变成分数
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 四模型系统
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-basicppo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 手写 BasicPPO
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 资源画像
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. 资源画像">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 显存账
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 两种负载的计算特性
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 三个结论与后续
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 代码实现
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="01-rl-loop-rlhf-ppo">01-RL训练基础: loop 与 RLHF-PPO</h1>
+<blockquote>
+<p><strong>TL; DR</strong>：为什么 SFT 后还要 RL（无负反馈 → 从评价性反馈试错学习）→ RL loop：rollout → reward → advantage → update（= 推理 + 训练交替）→ PPO 各部件为什么存在（advantage / critic / GAE / clip / KL 惩罚）→ InstructGPT 四模型 + 手写 BasicPPO → 资源画像：显存账 + 两种负载的计算特性</p>
+</blockquote>
+<ul>
+<li><strong>[Quick Ref for 手写 code]</strong>：BasicPPO（§4.3）｜ <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/11_basic_ppo.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/1h7c6Tdk-xz8QPxnmZ1wRN9KxTDVWNGN7/view?usp=sharing">Colab</a><ul>
+<li>高频手撕四个纯函数：<code>sft_logprob</code> / <code>compute_rewards</code> / <code>compute_gae</code> / <code>ppo_loss</code></li>
+<li>模型组件 + loop 骨架：熟悉结构、能调用即可</li>
+</ul>
+</li>
+<li><strong>[常考面试点]</strong>：PPO 四个模型各是什么、谁训谁冻结；SFT 和 RL 的区别；advantage 是什么、clip 为什么能限步长；RM 怎么训</li>
+</ul>
+<p>本篇是 RL 系列第一篇，系列以 infra 视角为主。Plan的后续篇：02 讲算法演化（DPO / GRPO），03–06 讲训推协同，07 讲 Agentic RL。</p>
+<h2 id="_1">前言</h2>
+<p><a href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_02_SFT.html">03_02_SFT.md</a> 之后，模型能听懂指令、按格式回答。对齐人类偏好、提升推理能力，靠的是 RL（Reinforcement Learning，强化学习）。</p>
+<p>本篇的范围：</p>
+<ul>
+<li><strong>默认已熟</strong>：SFT 基础（数据格式 / loss masking）和推理基础（generate / KV cache / sampling，见 <a href="../05_%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96/05_01_%E6%8E%A8%E7%90%86%E5%9F%BA%E7%A1%80.html">05_01_推理基础.md</a>）</li>
+<li><strong>算法只讲设计层</strong>：每个部件回答"为什么需要它"，公式给形态、不做推导</li>
+<li><strong>落点是 §5 资源画像</strong>：一个 RLHF（人类反馈 RL，§4 定义）step 里有几个模型、显存占多少、两种负载各是什么特性。03–06 的系统问题都从这张画像出发</li>
+</ul>
+<p>整体顺序：为什么要 RL → loop 本体 → PPO 部件 → 四模型系统 → 资源画像。</p>
+<h2 id="1-sft-rl">1. 为什么 SFT 后还要 RL</h2>
+<h3 id="11-rl">1.1 从信号缺陷到 RL 范式</h3>
+<p><strong>[SFT 的信号缺陷]</strong></p>
+<p>SFT 的监督信号是人写的演示：每个位置有唯一 GT（Ground Truth）token。这带来两个限制：</p>
+<ul>
+<li><strong>没有负反馈</strong>：数据里只有"该怎么写"，没有"不该怎么写"，无法通过梯度抑制坏输出</li>
+<li><strong>很多目标写不出 GT</strong>：没有唯一正确答案时，标注员写不出完美演示，但比较两个回答哪个更好又快又一致。信号形态从"演示"变成"偏好"，逐 token 交叉熵（CE）loss 就用不上了</li>
+</ul>
+<p><strong>[RL：从评价性反馈学习]</strong></p>
+<p>SFT 缺的这种信号形态，正是 RL 范式的定义。按学习信号分：</p>
+<ul>
+<li><strong>监督学习（含 SFT）</strong>：指导性反馈——每一步都给出正确动作，<strong>学习 = 模仿</strong></li>
+<li><strong>RL</strong>：评价性反馈——没有正确动作，agent 自己做动作，只收到一个分数。<strong>学习 = 试错</strong>：多做拿高分的动作，少做拿低分的</li>
+</ul>
+<p>经典 RL 的设定是 agent 和环境的循环：</p>
+<ul>
+<li>agent 观察状态 <span class="arithmatex">\(s\)</span> → 按策略 <span class="arithmatex">\(\pi\)</span> 输出动作 <span class="arithmatex">\(a\)</span> → 环境返回 reward <span class="arithmatex">\(r\)</span> 和新状态 <span class="arithmatex">\(s'\)</span> → 目标是最大化累计 reward。</li>
+<li>AlphaGo 是最直观的例子：没有人告诉它每步该下哪，唯一反馈是整局的输赢。</li>
+</ul>
+<pre class="mermaid"><code>flowchart LR
+    AG("agent&lt;br/&gt;(策略 π)") --&gt;|"动作 a"| ENV("环境")
+    ENV --&gt;|"reward r + 新状态 s'"| AG</code></pre>
+<p>这个范式恰好补上 SFT 的两个缺陷：</p>
+<ul>
+<li><strong>反馈有高低</strong>：拿低分的动作被抑制——补上"没有负反馈"</li>
+<li><strong>反馈可以只是整条一个总分</strong>：不需要每步 GT，标注员打得了分——接住"写不出 GT"的目标</li>
+</ul>
+<p>新的代价也来自这里：反馈延迟到一局结束才来，功劳怎么分回中间每一步成了新问题——这是 advantage（§3.3）存在的根本原因。</p>
+<h3 id="12-kl">1.2 概率视角：两种 KL 方向</h3>
+<blockquote>
+<p>回忆 KL 散度：<span class="arithmatex">\(D_{KL}(q \,\|\, p) = \mathbb{E}_{x \sim q}[\log \frac{q(x)}{p(x)}]\)</span>，衡量两个分布有多远，常见于蒸馏</p>
+<p>这里要用它一条性质：<strong>不对称</strong>，<span class="arithmatex">\(D_{KL}(q \,\|\, p) \ne D_{KL}(p \,\|\, q)\)</span></p>
+</blockquote>
+<p>把人类理想分布记作 <span class="arithmatex">\(P\)</span>，模型分布记作 <span class="arithmatex">\(\pi_\theta\)</span>。"让 <span class="arithmatex">\(\pi_\theta\)</span> 逼近 <span class="arithmatex">\(P\)</span>" 可以写成两个方向的 KL，SFT 和 RL 各选了一种：</p>
+<ul>
+<li><strong>SFT 优化 forward KL</strong>：<span class="arithmatex">\(\min_\theta D_{KL}(P \,\|\, \pi_\theta)\)</span>。<ul>
+<li>期望在 <span class="arithmatex">\(P\)</span> 上取：<span class="arithmatex">\(P\)</span> 有概率的地方 <span class="arithmatex">\(\pi_\theta\)</span> 都必须给概率（mass-covering，全覆盖）</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><strong>RL 优化 reverse KL</strong>：<span class="arithmatex">\(\min_\theta D_{KL}(\pi_\theta \,\|\, P)\)</span>。<ul>
+<li>期望在 <span class="arithmatex">\(\pi_\theta\)</span> 自己身上取：自己会生成的地方必须"对"，不会生成的地方不管（mode-seeking，挑重点）。这正是"生成质量"要的性质</li>
+</ul>
+</li>
+</ul>
+<p>方向差异直接决定数据来源：</p>
+<ul>
+<li>SFT 的 forward KL 从 <span class="arithmatex">\(P\)</span> 采样，即人写的数据集</li>
+<li>RL 的 reverse KL 从 <span class="arithmatex">\(\pi_\theta\)</span> 采样，再配一个能打分的函数——采样就是 <strong>rollout</strong>，打分就是 <strong>reward</strong>，正好是 §2 loop 的两个组成</li>
+</ul>
+<p><img src="../assets/11-rl-basics/fig-01.png" alt="fig-01" width="70%" /></p>
+<h2 id="2-rl-loop">2. RL loop：训练和推理的交替</h2>
+<h3 id="21-rl-llm">2.1 RL 概念 ↔ LLM 映射</h3>
+<p>§1 的 agent-环境循环搬到 LLM 上，"环境"退化得非常简单：没有外部世界，状态转移就是把新 token 拼到序列末尾，反馈在生成结束时来一次。逐项映射如下，生成一条 response 就是一条轨迹：</p>
+<table>
+<thead>
+<tr>
+<th>RL 概念</th>
+<th>LLM 对应</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>状态 <span class="arithmatex">\(s_t\)</span></td>
+<td>prompt + 已生成的前 <span class="arithmatex">\(t-1\)</span> 个 token</td>
+<td>每生成一个 token 状态就转移</td>
+</tr>
+<tr>
+<td>动作 <span class="arithmatex">\(a_t\)</span></td>
+<td>第 <span class="arithmatex">\(t\)</span> 步选出的 token</td>
+<td>动作空间 = 词表</td>
+</tr>
+<tr>
+<td>策略 <span class="arithmatex">\(\pi_\theta(a_t \mid s_t)\)</span></td>
+<td>LLM 的 next-token 分布</td>
+<td>就是 logits 过 softmax</td>
+</tr>
+<tr>
+<td>轨迹 <span class="arithmatex">\(\tau\)</span></td>
+<td>一条完整 response</td>
+<td>长度 = 生成 token 数</td>
+</tr>
+<tr>
+<td>奖励 <span class="arithmatex">\(r\)</span></td>
+<td>response 级打分</td>
+<td>整条一个分（§4.1），怎么摊到 token 见 §3</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>🖼️ <strong>[图待补 fig-02]</strong> 主题：一条 response 在 token 轴上的 RL 映射
+画面：横轴是 token 序列，左端灰框 prompt，右侧若干方块是逐个生成的 token。第 <span class="arithmatex">\(t\)</span> 个方块下标 <span class="arithmatex">\(a_t\)</span>（动作=该 token），从 prompt 到该方块左侧的整段花括号标 <span class="arithmatex">\(s_t\)</span>（状态=prompt+前 <span class="arithmatex">\(t-1\)</span> 个 token）；最末方块上方单独标一个 <span class="arithmatex">\(r\)</span>（整条 reward 只在这出现）
+意图：让"状态=前缀、动作=下一 token、reward 末位才来"从抽象映射变成一眼可见的序列图</p>
+</blockquote>
+<p><img src="../assets/11-rl-basics/fig-02.png" alt="fig-02" style="zoom:30%;" /></p>
+<p>策略、状态转移都是现成的——LLM 本身就是一个逐 token 决策的 policy。被训练的这个 LLM，RL 语境里叫 <strong>actor</strong>。整个框架里唯一需要新造的部件是 reward（§4.1）。</p>
+<h3 id="22-loop">2.2 loop 本体</h3>
+<p>一个 RL training step 分四段：rollout → reward → advantage → update。<strong>rollout</strong> 是 RL 术语，指"跑一遍当前策略收集数据"，LLM 下就是 <code>actor.generate()</code>：</p>
+<pre class="mermaid"><code>flowchart LR
+    R("rollout&lt;br/&gt;&lt;br/&gt;actor 自回归生成&lt;br/&gt;response&lt;br/&gt;&lt;b&gt;= 推理负载&lt;/b&gt;")
+    W("reward&lt;br/&gt;&lt;br/&gt;RM 打分&lt;br/&gt;+ per-token KL 惩罚")
+    A("advantage&lt;br/&gt;&lt;br/&gt;critic 估 V&lt;br/&gt;GAE 算每 token 的 A_t")
+    U("update&lt;br/&gt;&lt;br/&gt;PPO loss 更新&lt;br/&gt;actor / critic&lt;br/&gt;&lt;b&gt;= 训练负载&lt;/b&gt;")
+
+    R --&gt; W --&gt; A --&gt; U
+    U --&gt;|"新一批 prompt"| R
+
+    style R fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px,color:#1a237e
+    style U fill:#3f51b5,stroke:#1a237e,stroke-width:2px,color:#fff</code></pre>
+<p>四段各是什么计算：</p>
+<ul>
+<li><strong>rollout（推理）</strong>：actor 逐 token 自回归生成 response——就是 <a href="../05_%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96/05_01_%E6%8E%A8%E7%90%86%E5%9F%BA%E7%A1%80.html">05_01_推理基础.md</a> 的 generate</li>
+<li><strong>reward</strong>：RM 给整条打分，组装成 per-token reward（§4.1 / §3.2）——整条一次前向</li>
+<li><strong>advantage</strong>：critic 估每 token 的 <span class="arithmatex">\(V\)</span>，GAE 算出 <span class="arithmatex">\(A_t\)</span>（§3.3 / §3.4）——整条一次前向</li>
+<li><strong>update（训练）</strong>：算 PPO loss，更新 actor / critic 权重（loss 见 §3）——前向 + 反向</li>
+</ul>
+<p>只有首尾两段是重负载：rollout 走推理、update 走训练。中间 reward / advantage 只对整条 response 各做一次前向，没有自回归循环，很轻。标题的"交替"指的就是首尾这两段。</p>
+<p><strong>一个 RL step 内嵌了一次完整的推理</strong>：rollout 走推理、update 走训练，两种负载交替出现，且共享 actor 的同一份权重。这个耦合是全系列的中心对象。</p>
+<p><strong>on-policy</strong> 的含义也在这张图里：用来算梯度的数据必须来自当前策略。策略一更新，旧 rollout 数据就过期了。想复用几步，需要 §3.5 的 importance ratio 修正。</p>
+<h2 id="3-ppo">3. PPO：每个部件为什么存在</h2>
+<blockquote>
+<p>最复杂的是 loss 怎么算（§3.1 policy gradient），也可以直接记结论</p>
+</blockquote>
+<p>RL 算法用最基础的 <strong>PPO</strong>（Proximal Policy Optimization，近端策略优化，InstructGPT 采用的算法）。这节不推导，方法是<strong>从最朴素的 actor loss 起步，两个因子各自改造，拼成完整的 PPO loss</strong>（支线结构见 §3.0 末尾的图）。读完能对着最终公式说出每一项的来历。</p>
+<h3 id="30-pretrain-sft">3.0 先和 pretrain / SFT 对齐结构</h3>
+<p>PPO 是 RL 篇第一个算法。动手前先把它放回"训练一个 LLM"的框架里，和我们熟悉的 pretrain / SFT 对一遍：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>输入</th>
+<th>监督信号</th>
+<th>loss</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>pretrain</strong></td>
+<td>文本</td>
+<td><strong>有 GT</strong>：下一个 token 的词表 one-hot（自监督）</td>
+<td>逐 token CE</td>
+</tr>
+<tr>
+<td><strong>SFT</strong></td>
+<td>prompt + 演示 response</td>
+<td><strong>有 GT</strong>：response 每个 token 的词表 one-hot（人工监督）</td>
+<td>逐 token CE（mask 掉 prompt）</td>
+</tr>
+<tr>
+<td><strong>RLHF-PPO</strong></td>
+<td>prompt（response 由 actor 自己生成）</td>
+<td><strong>无 GT</strong>：整条 response 一个标量 reward（评价性反馈）</td>
+<td>逐 token 加权 logprob，权重 = reward 摊成 token</td>
+</tr>
+</tbody>
+</table>
+<p>三者都是同一个 LLM backbone（RL 里称 policy / actor），loss 也是同一个形状：
+$$
+\mathcal{L} = -\sum_t w_t \cdot \log \pi_t, \qquad \log \pi_t = \log \pi_\theta(a_t \mid s_t)
+$$
+<strong>logprob 项</strong> <span class="arithmatex">\(\log \pi_t\)</span>：位置 <span class="arithmatex">\(t\)</span> 的 logits 过 log_softmax，取该位置实际 token <span class="arithmatex">\(a_t\)</span> 那一格；<span class="arithmatex">\(w_t\)</span>：该 token 的 loss 权重。三者的差别就两处：</p>
+<ul>
+<li><strong>token <span class="arithmatex">\(a_t\)</span> 从哪来</strong>：pretrain / SFT 来自数据集（GT）；RLHF-PPO 来自 rollout，actor 自己采的</li>
+<li><strong>权重 <span class="arithmatex">\(w_t\)</span> 是多少</strong>：pretrain / SFT 恒为 1，表现为逐 token CE；RLHF-PPO 手里只有整条 response 一个标量 reward，<span class="arithmatex">\(w_t\)</span> 没有现成的</li>
+</ul>
+<blockquote>
+<p><strong>逐 token CE 是一般 CE 的退化形态</strong>。一般 CE 对词表求和 <span class="arithmatex">\(-\sum_v q(v) \log p(v)\)</span>。<span class="arithmatex">\(q\)</span> 为 one-hot 时塌缩成 <span class="arithmatex">\(-\log \pi_\theta(\text{GT}_t \mid s_t)\)</span>，即 pretrain / SFT，<span class="arithmatex">\(w_t \equiv 1\)</span>。<span class="arithmatex">\(q\)</span> 为 soft 标签（如蒸馏）不塌缩，得全词表求和，写成 KL。</p>
+<p>RLHF 没走 soft：仍 one-hot 取一格，只是乘上 <span class="arithmatex">\(w_t \ne 1\)</span>。所以三者共享骨架 <span class="arithmatex">\(-\sum_t w_t \log \pi_t\)</span>，差别只在 <span class="arithmatex">\(w_t\)</span>。</p>
+</blockquote>
+<p>所以 §3 把骨架的两个因子逐一填实。<strong>§3.1 起点</strong>用 policy gradient 推出骨架：<span class="arithmatex">\(w_t \equiv R\)</span>、logprob 项原样。之后两个因子分头改造：</p>
+<ul>
+<li><strong>支线一（§3.2–3.4）改 <span class="arithmatex">\(w_t\)</span></strong>：seq 级 reward 标量摊成逐 token 权重。<ul>
+<li>摊到 token（§3.2）→ 绝对值变相对值（§3.3）→ 降方差（§3.4），终点定义 <span class="arithmatex">\(w_t = A_t\)</span></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><strong>支线二（§3.5）改 logprob 项</strong>：<span class="arithmatex">\(\log \pi_t\)</span> 换成 clip 过的 ratio <span class="arithmatex">\(\rho_t\)</span>，为复用 rollout；与 credit 分配无关</li>
+<li><strong>§3.6 组装</strong>：两条支线拼回完整 loss</li>
+</ul>
+<pre class="mermaid"><code>flowchart LR
+    S1("§3.1 seq 级起点&lt;br/&gt;loss = -Σ R·logπ_t")
+    subgraph WT["支线一：token 级权重 w_t"]
+        direction LR
+        S2("§3.2 摊到 token&lt;br/&gt;r_t / G_t") --&gt; S3("§3.3 减 baseline&lt;br/&gt;A_t = G_t - V") --&gt; S4("§3.4 GAE&lt;br/&gt;降方差")
+    end
+    subgraph LP["支线二：改 logprob 项"]
+        S5("§3.5 ratio + clip&lt;br/&gt;复用 rollout")
+    end
+    S1 --&gt; S2
+    S1 --&gt; S5
+    S4 --&gt; S6("§3.6 组装&lt;br/&gt;PPO actor loss")
+    S5 --&gt; S6</code></pre>
+<h3 id="31-seq-policy-gradient">3.1 起点：seq 级 policy gradient (!!)</h3>
+<blockquote>
+<p>本节是和传统 RL 关系最大的部分，数学最多；也可以跳过推导，直接看 [rollout 梯度结论]</p>
+</blockquote>
+<p>本节回答：actor 的 loss 从哪来。RL 没有 GT，只有一个目标：rollout 的平均 reward 尽量高。<strong>policy gradient</strong> 把这个目标变成能 <code>backward()</code> 的 seq 级 loss。</p>
+<p>本节的两样产出，供后续使用：</p>
+<ul>
+<li><strong>理论基础</strong>：loss 按 token 展开就是 §3.0 的两因子骨架（<span class="arithmatex">\(\mathcal{L} = -\sum_t w_t \cdot \log \pi_t\)</span>）；§3.2–3.5 在这个骨架上改造因子</li>
+<li><strong>seq 打分 <span class="arithmatex">\(R\)</span> 的去向</strong>：本节拿它当整条的权重；§3.2 起降级为 <span class="arithmatex">\(r_t\)</span> 末位的一项</li>
+</ul>
+<p><strong>[目标与数据]</strong></p>
+<p>目标：actor 生成的 response 平均 reward 尽量高。这个平均分记作 <span class="arithmatex">\(J(\theta)\)</span>：
+$$
+\max_\theta \; J(\theta), \qquad J(\theta) = \mathbb{E}<em>{y \sim \pi</em>\theta}[R(y)]
+$$
+- <span class="arithmatex">\(\theta\)</span>：actor（这个 LLM）的全部参数，训练要更新的就是它
+- <span class="arithmatex">\(y \sim \pi_\theta\)</span>：§2.2 的 <strong>rollout</strong>（actor 自己推理采样生成的 response）
+- <span class="arithmatex">\(R(y)\)</span>：<strong>RM</strong>（Reward Model）给整条的标量打分（§4.1 细讲，目前当黑盒）
+- <span class="arithmatex">\(J(\theta)\)</span>：目标本身——当前 actor 采出的 response 的平均打分。<span class="arithmatex">\(\theta\)</span> 一变，采样分布就变，平均分跟着变，所以是 <span class="arithmatex">\(\theta\)</span> 的函数</p>
+<p><strong>[梯度怎么来：数学推导]</strong></p>
+<blockquote>
+<p>这步有点复杂，不想研究数学可以直接跳到 [rollout 梯度结论]</p>
+</blockquote>
+<p>这一步是经典 RL 的 <strong>policy gradient（REINFORCE）</strong>，LLM 场景只是把 policy 换成 actor。</p>
+<p>要算的是目标 <span class="arithmatex">\(J(\theta)\)</span> 对 actor 参数 <span class="arithmatex">\(\theta\)</span> 的梯度。</p>
+<p>先回忆 SFT 的梯度怎么来：每个 token 位置，模型前向输出一个词表概率分布，GT 是这个分布的 one-hot 版本，两者代入 CE 公式得 loss，直接 <code>loss.backward()</code>。</p>
+<blockquote>
+<p>🖼️ <strong>[图待补 fig-03]</strong> 主题：SFT vs policy gradient——同一个前向反向，监督信号不同
+画面：上下两行，各画一条 token 序列，每个 token 位置上方一小组柱状图（模型输出的词表概率分布）。上行 SFT：每个位置的分布旁并列一个单柱分布（GT one-hot），两者之间标 CE；下行 policy gradient：序列标"rollout 采出的 y"，各位置只有模型分布、没有 one-hot，整条末尾一个圆圈标量 R（RM 打分），箭头指向整条序列，标"乘在整条 logprob 前的系数"
+意图：SFT 的监督是每个位置一个 one-hot 分布、逐位置算 CE；policy gradient 没有 one-hot，监督只是整条一个标量；两者的前向反向机制相同</p>
+</blockquote>
+<p><img src="../assets/11-rl-basics/fig-03.png" alt="fig-03" style="zoom:30%;" /></p>
+<p>RL 的 <span class="arithmatex">\(J(\theta)\)</span> 套不上这个流程。把期望展开成加权求和看它的结构：
+$$
+J(\theta) = \sum_{y} \pi_\theta(y)\, R(y)
+$$
+- <span class="arithmatex">\(\pi_\theta(y)\)</span>：每条 <span class="arithmatex">\(y\)</span> 被采到的概率，取决于 actor 参数 <span class="arithmatex">\(\theta\)</span> 
+- <span class="arithmatex">\(R(y)\)</span>：对应 <span class="arithmatex">\(y\)</span> 的 reward 打分
+- <span class="arithmatex">\(R(y)\)</span> 里没有 <span class="arithmatex">\(\theta\)</span>——固定一条 <span class="arithmatex">\(y\)</span>，打分就是常数（RM 有自己的参数，但冻结，不算在 <span class="arithmatex">\(\theta\)</span> 里）</p>
+<p>求导本身不难，对权重逐项导：<span class="arithmatex">\(\nabla_\theta J = \sum_y \nabla_\theta \pi_\theta(y) \cdot R(y)\)</span>。难在算值：这个和要<strong>枚举所有可能的序列，算不动</strong>。两个解决 idea：</p>
+<ul>
+<li><strong>idea 1 恒等式改写（log-derivative trick）</strong>：数学结论 <span class="arithmatex">\(\nabla_\theta \pi_\theta = \pi_\theta \, \nabla_\theta \log \pi_\theta\)</span>，把权重里的 <span class="arithmatex">\(\pi_\theta\)</span> 补回来，idea 2 就能用上。来历是对数求导法则移项（下方速查）；不想深究可以直接当结论用</li>
+<li><strong>idea 2 蒙特卡洛</strong>：用多次采样估<strong>期望</strong>，<span class="arithmatex">\(\mathbb{E}_{y \sim \pi_\theta}[g(y)] = \sum_y \pi_\theta(y)\, g(y)\)</span></li>
+</ul>
+<p>先 idea 1 替换、认出期望定义，随后 idea 2 蒙特卡洛采样估计（rollout 一批 <span class="arithmatex">\(y_i\)</span>，对每条算期望括号里的量，求平均）：
+$$
+\begin{aligned}
+\nabla_\theta J &amp;= \sum_y \nabla_\theta \pi_\theta(y) \cdot R(y)
+\;\overset{\text{idea 1 代入}}{=}\; \sum_y \pi_\theta(y) \, \nabla_\theta \log \pi_\theta(y) \cdot R(y)
+\;\overset{\text{期望定义}}{=}\; \mathbb{E}<em>{y \sim \pi</em>\theta}\big[\, \underbrace{R(y)}<em>{\text{标量系数}} \cdot \underbrace{\nabla</em>\theta \log \pi_\theta(y)}<em i="1">{\text{SFT 那个标准反向}} \,\big] \
+&amp;\overset{\text{idea 2 蒙特卡洛}}{\approx}\; \underbrace{\frac{1}{N} \sum</em>}^{N}<em _text_RM="\text{RM" 打分，常数="打分，常数">{\text{一个 rollout batch 平均}} \underbrace{R(y_i)}</em>
+\end{aligned}
+$$}} \cdot \underbrace{\nabla_\theta \log \pi_\theta(y_i)}_{\text{SFT 那个标准反向}</p>
+<p>前三步是恒等变形，最后一步 <span class="arithmatex">\(\approx\)</span> 才是估计。蒙特卡洛的"多次采样"落到工程上，就是 rollout 一个 batch 一起算。</p>
+<p>式里已经抽象出"SFT 那个标准反向"，所以实际计算就是：每条 <span class="arithmatex">\(y_i\)</span> 做一次 SFT 式前向反向，乘上常数 <span class="arithmatex">\(R(y_i)\)</span>，batch 求平均。</p>
+<blockquote>
+<p><strong>速查 · log-derivative trick</strong>（又名 score function estimator；RL 里就是 REINFORCE）</p>
+<p>通用的期望-梯度恒等式，不是 RL / LLM 专有，统计与变分推断也用。</p>
+<p>记号：<span class="arithmatex">\(p_\theta(y)\)</span> 读作"参数为 <span class="arithmatex">\(\theta\)</span> 的分布给样本 <span class="arithmatex">\(y\)</span> 的概率"，一个随 <span class="arithmatex">\(\theta\)</span> 可导的标量——本节里就是 <span class="arithmatex">\(\pi_\theta(y)\)</span>，actor 给整条 response 的概率。两步：</p>
+<ul>
+<li>对数求导法则 <span class="arithmatex">\((\ln f)' = f'/f\)</span>，<span class="arithmatex">\(f\)</span> 取 <span class="arithmatex">\(p_\theta(y)\)</span>、导数取对 <span class="arithmatex">\(\theta\)</span> 的梯度：<span class="arithmatex">\(\nabla_\theta \log p_\theta = \nabla_\theta p_\theta / p_\theta\)</span>。移项得 <span class="arithmatex">\(\nabla_\theta p_\theta = p_\theta \, \nabla_\theta \log p_\theta\)</span>——初等微积分结论，直接可用</li>
+<li>代入 <span class="arithmatex">\(\nabla_\theta J\)</span> 替换掉 <span class="arithmatex">\(\nabla_\theta p_\theta\)</span>，多出来的 <span class="arithmatex">\(p_\theta\)</span> 正好把求和收回期望形状：</li>
+</ul>
+<div class="arithmatex">\[
+\nabla_\theta \sum_y p_\theta(y)\, f(y) = \sum_y \nabla_\theta p_\theta \cdot f = \sum_y p_\theta \cdot \nabla_\theta \log p_\theta \cdot f = \mathbb{E}_{y \sim p_\theta}\big[\, f(y) \, \nabla_\theta \log p_\theta(y) \,\big]
+\]</div>
+<p>本节取 <span class="arithmatex">\(f = R\)</span>、<span class="arithmatex">\(p_\theta = \pi_\theta\)</span> 就是上面的梯度。关键：<span class="arithmatex">\(f\)</span>（这里是 <span class="arithmatex">\(R\)</span>）不含模型参数 <span class="arithmatex">\(\theta\)</span>，梯度全落在 <span class="arithmatex">\(\log p_\theta\)</span> 上。</p>
+</blockquote>
+<p><strong>[rollout 梯度结论]</strong></p>
+<p><strong>policy gradient 的 update = 把 prompt + rollout 当 SFT 数据训，每条序列的 loss 乘上自己的 reward</strong>（普通 SFT 相当于权重恒为 1）。一个 batch 里 reward 高的序列概率被推高，低的被压低。落成公式：
+$$
+\nabla_\theta J \;\approx\; \underbrace{\frac{1}{N} \sum_{i=1}^{N}}<em _text_RM="\text{RM" 打分，常数="打分，常数">{\text{rollout batch 平均}} \underbrace{R(y_i)}</em>
+$$
+对应的具体计算：}} \cdot \underbrace{\nabla_\theta \log \pi_\theta(y_i)}_{\text{SFT 式前向反向}</p>
+<ul>
+<li><strong>rollout + 打分</strong>：actor 对每条 prompt 采出 <span class="arithmatex">\(y_i\)</span>；RM 给整条打一个分 <span class="arithmatex">\(R(y_i)\)</span>，此后当常数用</li>
+<li><strong>SFT 式 loss</strong>：prompt 拼上 <span class="arithmatex">\(y_i\)</span> 做 teacher-forcing 前向，把 <span class="arithmatex">\(y_i\)</span> 自己当 label 算逐 token CE（shift 一位、mask 掉 prompt，全同 SFT），求和得整条 seq 的 loss</li>
+<li><strong>乘分、平均</strong>：每条 loss 乘 <span class="arithmatex">\(R(y_i)\)</span>，batch 求平均——就是 <span class="arithmatex">\(\nabla_\theta J\)</span> 的蒙特卡洛估计</li>
+</ul>
+<p>和 SFT 逐行对齐：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># SFT: token 序列 y 来自数据集</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">logp</span> <span class="o">=</span> <span class="n">actor</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># teacher-forcing 前向</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">loss</span> <span class="o">=</span> <span class="o">-</span><span class="n">logp</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>         <span class="c1"># 每个位置取 y_t 的 logprob, 即以 y 为 label 的 CE</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># policy gradient: y 来自 rollout, 再乘一个标量</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">y</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>                <span class="c1"># 采样, 不进计算图</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">R</span> <span class="o">=</span> <span class="n">reward_model</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>               <span class="c1"># 标量, 不含 actor 参数</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">logp</span> <span class="o">=</span> <span class="n">actor</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># 同一个前向</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">loss</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">R</span> <span class="o">*</span> <span class="n">logp</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>   <span class="c1"># 唯一差别: 乘 R</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>                      <span class="c1"># 同一个反向</span>
+</code></pre></div>
+<p><strong>[loss 换成逐 token 读法]</strong></p>
+<p>目前的 loss 是整条 seq 一个数，结构 = <span class="arithmatex">\(R \times \text{SFT 式 loss}\)</span>。</p>
+<p>两个因子里，分数 <span class="arithmatex">\(R\)</span> 是常数；SFT 式 loss 就是逐 token CE 求和——<strong>CE 天然逐 token 算、再求和</strong>。按 token 展开（简写 <span class="arithmatex">\(\log \pi_t = \log \pi_\theta(a_t \mid s_t)\)</span>）：
+$$
+\mathcal{L} = -R \cdot \big(\log \pi_1 + \log \pi_2 + \cdots\big)
+= -\big(R \log \pi_1 + R \log \pi_2 + \cdots\big)
+= -\sum_t w_t \cdot \log \pi_t, \qquad w_t = R
+$$
+这就是 §3.0 承诺的形状（<span class="arithmatex">\(w_t\)</span> 当<strong>常数</strong>用，stop-grad，被求导的只有 <span class="arithmatex">\(\log \pi\)</span>）。</p>
+<p>问题：<span class="arithmatex">\(w_t\)</span> 恒 <span class="arithmatex">\(= R\)</span>，写对和写错的 token 同奖同罚，不合理。支线一（§3.2–3.4）把 <span class="arithmatex">\(w_t\)</span> 换成逐位置的量；另一个因子 logprob 项的问题是复用——rollout 贵，一批数据想多次更新，支线二（§3.5）换成 ratio 并 clip。分步见 §3.0 末尾的图。</p>
+<h3 id="32-token-1r_t-g_t">3.2 token 级权重（1）：<span class="arithmatex">\(r_t\)</span> 与 <span class="arithmatex">\(G_t\)</span></h3>
+<p>本节造两个逐 token 的量，引入一个新模型（ref），作 §3.3 权重的原材料。</p>
+<ul>
+<li><span class="arithmatex">\(r_t\)</span>：第 <span class="arithmatex">\(t\)</span> 个 token 的<strong>即时 reward</strong>，由逐 token 的 KL 惩罚和末位的 RM 分组成</li>
+<li><span class="arithmatex">\(G_t\)</span>：第 <span class="arithmatex">\(t\)</span> 个 token 的<strong>回报（return）</strong>：身后 <span class="arithmatex">\(r_k\)</span> 的 suffix sum，从这一步到整条结束的总 reward，含末位的 RM 分</li>
+<li><strong>ref</strong>（reference model）：actor 出发时那份模型权重的冻结副本，= KL 惩罚的基准</li>
+</ul>
+<p><strong>[造 token reward <span class="arithmatex">\(r_t\)</span>]</strong></p>
+<p>RM 只在整条结束时给一个分，中间 token 没有即时 reward。于是我们定义：
+$$
+r_t = \underbrace{-\beta \,\big(\log \pi_\theta(a_t \mid s_t) - \log \pi_{\text{ref}}(a_t \mid s_t)\big)}<em _text_RM="\text{RM">{\text{每个 token：KL 惩罚}} \;+\; \underbrace{\mathbb{1}[t = T] \cdot r</em>
+$$
+关于 KL 惩罚：}}}_{\text{末位：RM 整条打分}</p>
+<ul>
+<li><strong>为什么扣它</strong>：actor 可能找到打分高、实际很差的输出（<strong>reward hacking</strong>）；KL 把 actor 约束在出发点 ref 附近，偏得越远扣得越多</li>
+<li><strong>怎么算</strong>：冻结副本 ref 不参与 rollout。序列采出后，actor 和 ref 各对 prompt + response 做一次前向，logprob 逐位相减；比的是两个模型给同一个 token 的概率（类似蒸馏的 teacher-student）</li>
+<li><strong>不走梯度</strong>：它沿 <span class="arithmatex">\(r_t \to G_t \to A_t\)</span> 一路当常数</li>
+</ul>
+<p><img src="../assets/11-rl-basics/fig-04.png" alt="fig-04" style="zoom:40%;" /></p>
+<p><strong>[回报 <span class="arithmatex">\(G_t\)</span>：定义]</strong></p>
+<ul>
+<li><strong>只算身后</strong>：token 只能影响从这一步起的 reward；身前的 <span class="arithmatex">\(r_k\)</span> 在它生成时已定，不算进它的功劳——所以基础 idea 是 suffix sum</li>
+<li><strong>RM 分怎么摊到 token</strong>：末位的 <span class="arithmatex">\(r_{\text{RM}}\)</span> 通过 suffix sum 传回每个位置；RM 分本身始终只在末位</li>
+<li><strong>折扣因子 <span class="arithmatex">\(\gamma\)</span></strong>：经典 RL 还给远期 reward 打折，通式 <span class="arithmatex">\(G_t = \sum_{k \ge t} \gamma^{k-t} r_k\)</span>；LLM 常取 <span class="arithmatex">\(\gamma = 1\)</span></li>
+<li><strong>递归形式</strong>：等价写法 <span class="arithmatex">\(G_t = r_t + \gamma G_{t+1}\)</span>，实现从末位倒着递推；§3.4 的改造从它出发</li>
+</ul>
+<p><img src="../assets/11-rl-basics/fig-05.png" alt="fig-05" style="zoom:50%;" /></p>
+<h3 id="33-token-2advantage-critic">3.3 token 级权重（2）：advantage 与 critic</h3>
+<p>最直接的想法是拿 <span class="arithmatex">\(G_t\)</span> 当权重，但有两个问题：</p>
+<ul>
+<li><strong>没区分度</strong>：末位 RM 分是 <span class="arithmatex">\(G_t\)</span> 的主项，每个位置都含它（KL 项很小）；各位置数值接近，写对写错同奖同罚</li>
+<li><strong>方差大</strong>：跨样本看，后半段的采样随机性把整条 <span class="arithmatex">\(G_t\)</span> 一起抬高或压低，梯度估计噪声大</li>
+</ul>
+<p><strong>修正</strong>：减一个逐位置的 baseline，权重换成 <strong>advantage（优势）</strong>：
+$$
+A_t = G_t - V(s_t)
+$$
+<span class="arithmatex">\(V(s_t)\)</span> = 从 <span class="arithmatex">\(s_t\)</span> 出发预期拿多少分，<span class="arithmatex">\(A_t\)</span> = 比预期好多少（正 = 推高该 token，负 = 压低）。对上前面的问题：</p>
+<ul>
+<li><strong>区分度</strong>：<span class="arithmatex">\(V\)</span> 逐位置不同，影响 <span class="arithmatex">\(A_t\)</span></li>
+<li><strong>方差</strong>：<span class="arithmatex">\(A_t\)</span> 压到 0 周围，有正有负</li>
+</ul>
+<p><img src="../assets/11-rl-basics/fig-06.png" alt="fig-06" style="zoom:30%;" /></p>
+<p><span class="arithmatex">\(V\)</span> 由 <strong>critic</strong> 估出——第二个要训练的模型：</p>
+<ul>
+<li><strong>结构</strong>：actor 同构的 LLM，lm_head 换标量 head（<code>nn.Linear(d, 1)</code>），每位置输出一个 <span class="arithmatex">\(V(s_t)\)</span></li>
+<li><strong>训练</strong>：loss = <span class="arithmatex">\(\text{MSE}(V(s_t), G_t)\)</span> 回归，梯度更新整个模型（初始化常复用 RM，见 §4.2）</li>
+</ul>
+<h3 id="34-token-3gae">3.4 token 级权重（3）：GAE 结论</h3>
+<p>§3.3 的 <span class="arithmatex">\(A_t = G_t - V(s_t)\)</span> 还剩一个噪声源：<span class="arithmatex">\(G_t\)</span> 是身后每一步实际采样的 <span class="arithmatex">\(r_k\)</span> 加出来的，response 越长随机项越多（方差大）。</p>
+<p>降噪思路：不把身后全部走完，只走一步，剩下的用 critic 预估收尾。分两步：</p>
+<ul>
+<li><strong>恒等展开</strong>：用 §3.2 的递归把 <span class="arithmatex">\(A_t\)</span> 里的 <span class="arithmatex">\(G_t\)</span> 展开一层，<span class="arithmatex">\(A_t = G_t - V(s_t) = r_t + \gamma G_{t+1} - V(s_t)\)</span>，此时无近似</li>
+<li><strong>近似替换</strong>：方差全部藏在 <span class="arithmatex">\(G_{t+1}\)</span> 里（身后实际采样的 suffix sum），用 critic 的预估 <span class="arithmatex">\(V(s_{t+1})\)</span> 顶替它，得到 <span class="arithmatex">\(A_t\)</span> 的新估计：</li>
+</ul>
+<p>$$
+\delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)
+$$
+这就是<strong>单步 TD 残差</strong>（temporal difference）。实际值只用了 <span class="arithmatex">\(r_t\)</span> 一步，方差小；代价是 critic 估不准就有偏。</p>
+<blockquote>
+<p>现在我们有了两个极端：<span class="arithmatex">\(G_t - V(s_t)\)</span> 把身后全走完，无偏但方差大；<span class="arithmatex">\(\delta_t\)</span> 只走一步，方差小但有偏。</p>
+</blockquote>
+<p><strong>GAE（Generalized Advantage Estimation）</strong> 在两者之间折中，形式是一个简单递归：
+$$
+A_t = \delta_t + \gamma\lambda \, A_{t+1}
+$$
+读法：本步的实际残差 <span class="arithmatex">\(\delta_t\)</span> 全额保留，身后的估计 <span class="arithmatex">\(A_{t+1}\)</span> 按 <span class="arithmatex">\(\lambda\)</span> 打折。打折按等比数列累乘：离得越远的 <span class="arithmatex">\(\delta\)</span> 被打折越多次，信得越少。<span class="arithmatex">\(\lambda = 0\)</span> 就是 <span class="arithmatex">\(\delta_t\)</span>；<span class="arithmatex">\(\lambda = 1\)</span> 恰好还原 <span class="arithmatex">\(G_t - V(s_t)\)</span>；中间是 bias-variance 取舍。LLM 常配 <span class="arithmatex">\(\gamma = 1\)</span>、<span class="arithmatex">\(\lambda \approx 0.95\)</span>。计算从末位倒着递推（<span class="arithmatex">\(A_{T+1} = 0\)</span>）。</p>
+<p><img src="../assets/11-rl-basics/fig-07.png" alt="fig-07" style="zoom:45%;" /></p>
+<p>到此支线一走完，权重定型：<span class="arithmatex">\(w_t\)</span> = GAE 递推出的 <span class="arithmatex">\(A_t\)</span>，当常数进 loss。§3.5 转入支线二，改另一个因子 logprob 项。</p>
+<h3 id="35-logprob">3.5 换 logprob 项：安全复用一批数据</h3>
+<p><strong>[复用 = 同一批数据多次更新]</strong></p>
+<p>rollout 要整条自回归生成，是 loop 里最贵的一段（§5）。一批数据只更新一次就扔，太浪费。</p>
+<p>PPO 的做法：rollout 一次，存成一批 <strong>experiences</strong>（序列、每 token 的旧 logprob、算好的 <span class="arithmatex">\(A_t\)</span>），用它连做 <strong>ppo-epochs</strong> 次前向反向。生成只发生一次；复用的是数据，不是重跑 prompt 重新采样。</p>
+<p><strong>[代价：数据过期]</strong></p>
+<p>第一次更新后 <span class="arithmatex">\(\pi_\theta\)</span> 就变了，这批数据却是旧策略 <span class="arithmatex">\(\pi_{\theta_{\text{old}}}\)</span> 采的——on-policy 被打破。§3.1 的梯度公式以"数据来自当前策略"为前提，直接再用有系统性偏差。</p>
+<p><strong>[修正：importance ratio]</strong></p>
+<p>修正的 idea 是 <strong>importance sampling</strong>：拿旧分布的样本估新分布的期望，办法是给每条样本乘一个改正系数 = 新旧分布给它的概率比（不展开推导）。直觉：新策略比旧策略更爱生成的 token，权重调大；反之调小。落到每个 token，<strong>loss 里的 <span class="arithmatex">\(\log \pi_t\)</span> 换成系数 <span class="arithmatex">\(\rho_t\)</span></strong>：
+$$
+\rho_t = \frac{\pi_\theta(a_t \mid s_t)}{\pi_{\theta_{\text{old}}}(a_t \mid s_t)}, \qquad \mathcal{L} = -\,\mathbb{E}_t\big[\, \rho_t \, A_t \,\big]
+$$
+- <strong>分子分母</strong>：都是概率（不是 logits：logits 未归一化，跨前向不可比）。实现里存 logprob，<span class="arithmatex">\(\rho_t = \exp(\log\pi_\theta - \log\pi_{\theta_{\text{old}}})\)</span>；分母来自 experiences，常数；分子由当前 actor 实时前向算出</p>
+<p><strong>[clip：限步长]</strong></p>
+<p>概率在 <span class="arithmatex">\((0, 1]\)</span> 内，但概率的<strong>比值</strong>没有上限：旧策略给某 token 0.001、新策略给 0.5，<span class="arithmatex">\(\rho_t = 500\)</span>。这种 token 会主导梯度，一步把参数推得很远——复用的前提"新旧策略接近"就被破坏了。PPO 截断：
+$$
+\mathcal{L}^{\text{clip}} = -\,\mathbb{E}_t\Big[ \min\big( \rho_t A_t, \; \text{clip}(\rho_t,\, 1-\epsilon,\, 1+\epsilon) \, A_t \big) \Big]
+$$
+<span class="arithmatex">\(\rho_t\)</span> 出了 <span class="arithmatex">\([1-\epsilon, 1+\epsilon]\)</span> 就被换成边界常数，常数没有梯度，该 token 不再推动更新。</p>
+<p>效果：每个 token 的概率每轮最多推到旧策略的 <span class="arithmatex">\(1 \pm \epsilon\)</span> 倍附近，新策略被限制在 <span class="arithmatex">\(\pi_{\theta_{\text{old}}}\)</span> 的邻域内——这就是名字里 Proximal（邻近）的含义。min 让截断只单向生效：只挡"朝优势方向继续推"，往回修正的梯度保留。</p>
+<p><img src="../assets/11-rl-basics/fig-08.png" alt="fig-08" style="zoom:40%;" /></p>
+<p>复用 rollout 多次更新的整体设计：</p>
+<p><img src="../assets/11-rl-basics/fig-09.png" alt="fig-09" style="zoom:45%;" /></p>
+<p>训推一致性（06 篇）的问题源头在这里：这个公式假设 <span class="arithmatex">\(\rho_t\)</span> 的分子分母来自同一套计算。实际系统里分母由推理引擎算、分子由训练引擎算，两边数值本身就有差异。</p>
+<h3 id="36-actor-loss">3.6 组装：完整的 actor loss</h3>
+<p>把 §3.1–3.5 拼起来，就是 PPO 实际用的 actor loss：
+$$
+\mathcal{L}^{\text{actor}} = -\,\mathbb{E}_t\Big[ \min\big( \rho_t A_t, \; \text{clip}(\rho_t,\, 1-\epsilon,\, 1+\epsilon) \, A_t \big) \Big]
+$$
+对照 §3.0 的骨架 <span class="arithmatex">\(\mathcal{L} = -\sum_t w_t \cdot \log \pi_t\)</span>，两条支线在此汇合：</p>
+<ul>
+<li><strong>支线一：<span class="arithmatex">\(w_t \to A_t\)</span></strong>：GAE（§3.4）递推的优势，原材料是 per-token reward <span class="arithmatex">\(r_t\)</span>（§3.2）和 critic 估的 <span class="arithmatex">\(V\)</span>（§3.3）</li>
+<li><strong>支线二：<span class="arithmatex">\(\log \pi_t \to\)</span> clip 过的 <span class="arithmatex">\(\rho_t\)</span></strong>：importance ratio 让一批 rollout 复用 ppo-epochs 次，clip 限每步步长（§3.5）</li>
+</ul>
+<p>外加 critic 自己的 loss <span class="arithmatex">\(\text{MSE}(V, G_t)\)</span>（§3.3），和 actor 同步更新。</p>
+<p>这套 loss 同时要 4 个模型在场：actor、critic、RM、ref——正是 §4 逐个交代、§5 算账的对象。</p>
+<p><strong>[一个 step 的完整计算链]</strong></p>
+<p>现在直接利用所有结论，按一个 training step 走一遍：</p>
+<ol>
+<li><strong>rollout</strong>：actor 对 prompt 采出 response（推理负载）</li>
+<li><strong>no-grad 前向</strong>：四个模型各对 prompt + response 前向一次<ul>
+<li>actor 出 old_logp（<span class="arithmatex">\(\rho_t\)</span> 分母，存进 experiences）</li>
+<li>ref 出 ref_logp、RM 出末位标量 <span class="arithmatex">\(r_{\text{RM}}\)</span>、critic 出逐位置 <span class="arithmatex">\(V(s_t)\)</span>——都是算 <span class="arithmatex">\(A_t\)</span> 的原材料</li>
+</ul>
+</li>
+<li><strong>组装 <span class="arithmatex">\(r_t\)</span></strong>：old_logp − ref_logp 得 KL 惩罚，末位叠 <span class="arithmatex">\(r_{\text{RM}}\)</span>（§3.2）</li>
+<li><strong>GAE</strong>：<span class="arithmatex">\(r_t\)</span> 配 <span class="arithmatex">\(V\)</span> 倒序递推出 <span class="arithmatex">\(A_t\)</span>（actor 权重）；顺带 <span class="arithmatex">\(G_t = A_t + V\)</span>，作 step 5 critic 参数更新的 label（§3.3 / 3.4）</li>
+<li><strong>update × ppo-epochs</strong>：<ul>
+<li>每轮 actor 前向出 new_logp（唯一带梯度的前向）→ <span class="arithmatex">\(\rho_t\)</span> → clip → actor loss；</li>
+<li>critic 前向出新 <span class="arithmatex">\(V\)</span> → <span class="arithmatex">\(\text{MSE}(V, G_t)\)</span>；</li>
+<li>一起反向、step（§3.5）</li>
+</ul>
+</li>
+</ol>
+<p>1–4 每个 step 只算一次，产物全程当常数；只有 5 在更新参数。逐行实现见 §4.3。</p>
+<p><img src="../assets/11-rl-basics/fig-10.png" alt="fig-10" style="zoom:45%;" /></p>
+<h2 id="4-rlhf-instructgpt">4. RLHF 四模型 (InstructGPT)</h2>
+<p>§3 的四个模型里只剩 RM 还是黑盒。整条 response 的分数从哪来？开放对话没有可编程的打分规则，分数只能来自人。</p>
+<p><strong>把人类偏好标注训成打分模型，拿它当 reward 跑 RL，就是 RLHF</strong>（Reinforcement Learning from Human Feedback，人类反馈强化学习）。InstructGPT（OpenAI 2022，ChatGPT 的方法原型）把它定型成<strong>三阶段：SFT → 训 RM → PPO</strong>。</p>
+<h3 id="41-rm">4.1 RM：偏好怎么变成分数</h3>
+<p>数据形态 §1.1 已经给出：标注员写不出完美演示，但比较两个回答哪个更好，又快又一致。所以 RM 要<strong>从"比较"学出"标量分"</strong>。</p>
+<ul>
+<li><strong>数据</strong>：<ul>
+<li>pair <span class="arithmatex">\((x, y_w, y_l)\)</span> = 同一 prompt <span class="arithmatex">\(x\)</span> + 两条完整 response，<span class="arithmatex">\(y_w\)</span> 好（chosen）、<span class="arithmatex">\(y_l\)</span> 差（rejected）</li>
+<li>人类偏好 = 单 pair 二选一，但一批 pair 可以定出连续分——同 ELO：大量单场胜负拟合出每人一个 rating</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><strong>结构 / IO</strong>：<ul>
+<li>与 critic 同构——SFT 后模型的 backbone + 标量 head <code>nn.Linear(d, 1)</code>，从 SFT 初始化</li>
+<li>输入一条 (prompt, response)，输出标量 <span class="arithmatex">\(r_\phi(x, y)\)</span>。差别只在读位：critic 每位置都出 <span class="arithmatex">\(V(s_t)\)</span>，RM 只取末位那个当整条分数（causal mask 下只有末位能看到整条）</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><strong>训练（InstructGPT 第 2 阶段）</strong>：<ul>
+<li>每 pair 前向两次得打分 <span class="arithmatex">\(r_w, r_l\)</span></li>
+<li><span class="arithmatex">\(\sigma\)</span> = sigmoid，<span class="arithmatex">\(\sigma(r_w - r_l)\)</span> = "<span class="arithmatex">\(y_w\)</span> 更好" 的预测概率；loss 是它的二分类 CE（label 恒为 <span class="arithmatex">\(y_w\)</span> 赢），反向更新整个模型：</li>
+</ul>
+</li>
+</ul>
+<div class="arithmatex">\[
+\mathcal{L}_{\text{RM}} = -\log \sigma(r_w - r_l), \qquad r_w = r_\phi(x, y_w),\ \ r_l = r_\phi(x, y_l)
+\]</div>
+<p>模型 forward 始终是"一条 → 一个分"，成对只在 loss；所以训完能直接当 loop 里的单条 reward。训好冻结（§4.2）。</p>
+<blockquote>
+<p>🖼️ <strong>[图待补 fig-11]</strong> 主题：RM 训练——一个 pair 两次 forward，比较只在 loss
+画面：顶部一个 prompt 方块，向下分两支。上支拼成完整序列 prompt + <span class="arithmatex">\(y_w\)</span>（chosen，绿框），下支 prompt + <span class="arithmatex">\(y_l\)</span>（rejected，红框），两条都画成一串 token。两支各输入一个 RM 方块，两个 RM 方块用虚线连起并标"同一模型 · 权重共享（backbone + 标量 head）"。每个 RM 只从序列<strong>末位</strong> token 引出一个标量（前面位置画灰、不引出）：上支得 <span class="arithmatex">\(r_w\)</span>、下支得 <span class="arithmatex">\(r_l\)</span>。两个标量汇入一个 loss 框，框内写 <span class="arithmatex">\(-\log\sigma(r_w - r_l)\)</span>，旁注"<span class="arithmatex">\(\sigma(r_w-r_l)=P(y_w\ 更好)\)</span>，label 恒为 w 赢，梯度推 <span class="arithmatex">\(r_w&gt;r_l\)</span>"。底部一行注：每次 forward 都是"一条序列 → 一个标量"，两条是同一模型跑两遍，"比较"只在 loss 里拼出来
+意图：让"模型 forward 始终 pointwise、pairwise 只活在 loss""标量只取末位"两点一眼可见</p>
+</blockquote>
+<p><img src="../assets/11-rl-basics/fig-11.png" alt="fig-11" style="zoom:50%;" /></p>
+<h3 id="42">4.2 四模型系统</h3>
+<p>RM 就位，四个模型到齐。对照章首的三阶段：前两阶段的产物，在 <strong>第三阶段 PPO</strong> 里各占一个位置：</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>结构</th>
+<th>来自哪个阶段</th>
+<th>训练？</th>
+<th>在 loop 里做什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>actor</strong></td>
+<td>LLM</td>
+<td>SFT 模型</td>
+<td>✅ 训练</td>
+<td>rollout 生成；update 被更新</td>
+</tr>
+<tr>
+<td><strong>critic</strong></td>
+<td>LLM + 标量 head</td>
+<td>常从 RM 初始化</td>
+<td>✅ 训练</td>
+<td>每 token 估 <span class="arithmatex">\(V(s_t)\)</span>，供 GAE</td>
+</tr>
+<tr>
+<td><strong>RM</strong></td>
+<td>LLM + 标量 head</td>
+<td>SFT 模型经 §4.1 偏好训练</td>
+<td>❄️ 冻结</td>
+<td>response 级打分</td>
+</tr>
+<tr>
+<td><strong>ref</strong></td>
+<td>LLM</td>
+<td>SFT 模型副本</td>
+<td>❄️ 冻结</td>
+<td>提供 KL 惩罚的基准 logprob</td>
+</tr>
+</tbody>
+</table>
+<p>每个模型在一个 step 里算什么、什么时候算，§3.6 的计算链已排过时序；§4.3 用代码逐行走一遍。四个模型、两种负载，这就是 §5 要算账的对象。</p>
+<h3 id="43-basicppo">4.3 手写 BasicPPO</h3>
+<p>把 §4.2 的表和 §3.6 的计算链落成能跑的代码，分两档：<strong>高频手撕的纯函数</strong>（面试重点，练到可默写），<strong>模型组件 + loop 骨架</strong>（熟悉结构、能调用即可）。toy 规模（词表 100、hidden 64），CPU 直接跑通；完整可运行版见 <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/11_basic_ppo.ipynb">11_basic_ppo.ipynb</a>。真实系统的工程项省略。</p>
+<p><img src="../assets/11-rl-basics/fig-10.png" alt="fig-10" style="zoom:45%;" /></p>
+<p><strong>[高频手撕：四个纯函数]</strong></p>
+<blockquote>
+<p>面试手撕 PPO 部分，感谢同组做 RL 算法的朋友给的参考 doc！</p>
+</blockquote>
+<p>四个函数 = 一条四段流水线，一段一个：</p>
+<ul>
+<li><code>sft_logprob</code>：SFT 式 logprob <span class="arithmatex">\(\log\pi_t\)</span>（§3.0）</li>
+<li><code>compute_rewards</code>：per-token reward <span class="arithmatex">\(r_t\)</span>（§3.2）</li>
+<li><code>compute_gae</code>：优势 <span class="arithmatex">\(A_t\)</span>，最终的 per-token 权重（§3.4）</li>
+<li><code>ppo_loss</code>：clip 版 actor loss，多轮复用（§3.6）</li>
+</ul>
+<p><strong>后两个是参考 doc 单列的 "PPO" 一节手撕的核心</strong>，前两个是 RLHF 特有的前置（纯 PPO 没有）。下面按这个分界拆成两块。</p>
+<p><strong>① logprob + ② per-token reward</strong>（RLHF 前置）：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">sft_logprob</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">):</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="sd">    计算 response 段每 token 的 logprob（§3.0），即 SFT 逐 token CE 里那个 logprob</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="sd">    参数:</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="sd">    - model: actor 或 ref</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="sd">    - ids: prompt + response 拼好的完整序列，形状为 (B, T)</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="sd">    - p_len: prompt 长度，用来切掉 prompt 段</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="sd">    返回:</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="sd">    - response 每位的 log π(a_t | s_t)，形状为 (B, T_resp)</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="c1"># 整体左移一位: 输入 ids[:-1], 位置 j 的输出去预测真实的下一个 token ids[j+1] (teacher-forcing)</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="n">logp</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">ids</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>      <span class="c1"># (B, T-1, V)  位置 j 的分布 = 对 ids[j+1] 的预测</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="n">tgt</span>  <span class="o">=</span> <span class="n">ids</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>                <span class="c1"># (B, T-1, 1)  label = 右移一位取真实 token, 同 SFT</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="n">logp</span> <span class="o">=</span> <span class="n">logp</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">tgt</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>        <span class="c1"># (B, T-1)     每位取实际 token a_t 那一格的 logprob</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="c1"># response 首 token 落在位置 p_len; 因左移一位, 它的预测分在索引 p_len-1, 往后全是 response 段</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    <span class="k">return</span> <span class="n">logp</span><span class="p">[:,</span> <span class="n">p_len</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:]</span>                     <span class="c1"># (B, T_resp)  只留 response 段, prompt 段不进 loss</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_rewards</span><span class="p">(</span><span class="n">old_logp</span><span class="p">,</span> <span class="n">ref_logp</span><span class="p">,</span> <span class="n">r_rm</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="sd">    组装 per-token reward r_t（§3.2）：每 token 一份 KL 惩罚，最后一个有效 token 叠 RM 分</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="sd">    参数:</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="sd">    - old_logp / ref_logp: actor / ref 对同一序列的 logprob，形状为 (B, T_resp)</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="sd">    - r_rm: RM 给整条的标量分，形状为 (B,)</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="sd">    - mask: 1=有效 response token，0=EOS 之后的 pad，形状为 (B, T_resp)</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="sd">    返回:</span>
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="sd">    - 每 token 的即时 reward，形状为 (B, T_resp)</span>
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>    <span class="n">r</span> <span class="o">=</span> <span class="o">-</span><span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="n">old_logp</span> <span class="o">-</span> <span class="n">ref_logp</span><span class="p">)</span> <span class="o">*</span> <span class="n">mask</span>       <span class="c1"># KL 惩罚, pad 位清零</span>
+<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>    <span class="n">last</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span>                   <span class="c1"># 每条最后一个有效 token 的下标</span>
+<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>    <span class="n">r</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">)),</span> <span class="n">last</span><span class="p">]</span> <span class="o">+=</span> <span class="n">r_rm</span>           <span class="c1"># RM 分加在最后有效位 (§3.2 的 1[t=T]·r_RM)</span>
+<a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a>    <span class="k">return</span> <span class="n">r</span>
+</code></pre></div>
+<p><strong>③ GAE 优势 + ④ clip loss</strong>——PPO 核心。</p>
+<p><code>compute_gae</code> 把参考 doc 的 <code>dones</code> 换成 LLM 的 EOS/pad 边界：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_gae</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">lam</span><span class="o">=</span><span class="mf">0.95</span><span class="p">):</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="sd">    计算 Generalized Advantage Estimation (GAE)（§3.4），倒序递推</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="sd">    δ_t = r_t + γV_{t+1} − V_t，A_t = δ_t + γλ·A_{t+1}</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="sd">    参数:</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="sd">    - r: 每 token 即时 reward，形状为 (B, T_resp)</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="sd">    - v: critic 估的 V(s_t)，形状为 (B, T_resp)</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="sd">    - mask: 1=有效 token，0=pad，兼作 (1 − done)，形状为 (B, T_resp)</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="sd">    - gamma / lam: 折扣因子 / GAE 衰减因子</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="sd">    返回:</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="sd">    - adv: 优势 A_t，给 actor 当权重，形状为 (B, T_resp)</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="sd">    - ret: A_t + V_t，给 critic 当回归 label（pad 位均 0），形状为 (B, T_resp)</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="n">adv</span><span class="p">,</span> <span class="n">A</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">r</span><span class="p">),</span> <span class="mi">0</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])):</span>          <span class="c1"># 从末位往前推</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>        <span class="k">if</span> <span class="n">t</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="n">r</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>            <span class="n">nonterm</span> <span class="o">=</span> <span class="n">mask</span><span class="p">[:,</span> <span class="n">t</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>               <span class="c1"># 下一位是否仍是有效 token</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>            <span class="n">v_next</span>  <span class="o">=</span> <span class="n">v</span><span class="p">[:,</span> <span class="n">t</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">nonterm</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>            <span class="n">nonterm</span><span class="p">,</span> <span class="n">v_next</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>                 <span class="c1"># 序列最右端, 无下一状态</span>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>        <span class="n">delta</span> <span class="o">=</span> <span class="n">r</span><span class="p">[:,</span> <span class="n">t</span><span class="p">]</span> <span class="o">+</span> <span class="n">gamma</span> <span class="o">*</span> <span class="n">v_next</span> <span class="o">-</span> <span class="n">v</span><span class="p">[:,</span> <span class="n">t</span><span class="p">]</span>         <span class="c1"># 单步 TD 残差 δ_t</span>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>        <span class="n">A</span> <span class="o">=</span> <span class="n">delta</span> <span class="o">+</span> <span class="n">gamma</span> <span class="o">*</span> <span class="n">lam</span> <span class="o">*</span> <span class="n">nonterm</span> <span class="o">*</span> <span class="n">A</span>               <span class="c1"># 跨到 pad 时 nonterm=0, 重置</span>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>        <span class="n">adv</span><span class="p">[:,</span> <span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>    <span class="k">return</span> <span class="n">adv</span> <span class="o">*</span> <span class="n">mask</span><span class="p">,</span> <span class="p">(</span><span class="n">adv</span> <span class="o">+</span> <span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">mask</span>            <span class="c1"># pad 位清零</span>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="k">def</span><span class="w"> </span><span class="nf">ppo_loss</span><span class="p">(</span><span class="n">new_logp</span><span class="p">,</span> <span class="n">old_logp</span><span class="p">,</span> <span class="n">adv</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">0.2</span><span class="p">):</span>
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a><span class="sd">    计算 clip 版 actor loss（§3.6）：−E[ min(ρ_t·A_t, clip(ρ_t, 1±ε)·A_t) ]，只在有效位取均值</span>
+<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>
+<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a><span class="sd">    参数:</span>
+<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a><span class="sd">    - new_logp: 当前 actor 实时前向，唯一带梯度，形状为 (B, T_resp)</span>
+<a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a><span class="sd">    - old_logp: rollout 时存下的旧 logprob（常数），形状为 (B, T_resp)</span>
+<a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a><span class="sd">    - adv: GAE 优势 A_t（常数），形状为 (B, T_resp)</span>
+<a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a><span class="sd">    - mask: 1=有效，0=pad，形状为 (B, T_resp)</span>
+<a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>
+<a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a><span class="sd">    返回:</span>
+<a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a><span class="sd">    - 标量 loss</span>
+<a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a>    <span class="n">ratio</span> <span class="o">=</span> <span class="p">(</span><span class="n">new_logp</span> <span class="o">-</span> <span class="n">old_logp</span><span class="p">)</span><span class="o">.</span><span class="n">exp</span><span class="p">()</span>            <span class="c1"># ρ_t = π_θ/π_old, logprob 差取 exp (§3.5)</span>
+<a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a>    <span class="n">surr1</span> <span class="o">=</span> <span class="n">ratio</span> <span class="o">*</span> <span class="n">adv</span>                            <span class="c1"># 不截断</span>
+<a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a>    <span class="n">surr2</span> <span class="o">=</span> <span class="n">ratio</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">eps</span><span class="p">,</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">eps</span><span class="p">)</span> <span class="o">*</span> <span class="n">adv</span>    <span class="c1"># 截断到 [1-ε, 1+ε]</span>
+<a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a>    <span class="n">loss</span>  <span class="o">=</span> <span class="o">-</span><span class="n">torch</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">surr1</span><span class="p">,</span> <span class="n">surr2</span><span class="p">)</span>               <span class="c1"># 取更小者 (§3.6): 出界那侧梯度 = 0</span>
+<a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a>    <span class="k">return</span> <span class="p">(</span><span class="n">loss</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>        <span class="c1"># masked mean, pad 位不算</span>
+</code></pre></div>
+<p>四段里前三段（<code>sft_logprob</code> / <code>compute_rewards</code> / <code>compute_gae</code>）在 loop 里输入都是 no-grad 张量、输出当常数；只有 <code>ppo_loss</code> 的 <code>new_logp</code> 带梯度。</p>
+<p><strong>[补充结构：四个模型与 rollout]</strong></p>
+<p>这部分面试一般不要求手写，熟悉结构、能调用即可。结构只有两种：带 lm_head 的 Actor，和带标量 head 的 ScalarLM（critic 与 RM 同构，§3.3 / §4.1）：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">V</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">64</span>                                   <span class="c1"># 词表 / hidden, toy 规模</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">EOS</span> <span class="o">=</span> <span class="mi">0</span>                                           <span class="c1"># 约定 token 0 为 EOS, 标 response 结束</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">MiniLM</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;共用 backbone: embedding + 2 层 causal transformer, 输出每位置 hidden&quot;&quot;&quot;</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">emb</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="n">D</span><span class="p">)</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>        <span class="n">layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">TransformerEncoderLayer</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="n">nhead</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">dim_feedforward</span><span class="o">=</span><span class="mi">4</span> <span class="o">*</span> <span class="n">D</span><span class="p">,</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>                                           <span class="n">dropout</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">batch_first</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># 关 dropout: 前向确定</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">TransformerEncoder</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">num_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ids</span><span class="p">):</span>                      <span class="c1"># [B,T] -&gt; [B,T,D]</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>        <span class="n">mask</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Transformer</span><span class="o">.</span><span class="n">generate_square_subsequent_mask</span><span class="p">(</span><span class="n">ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">emb</span><span class="p">(</span><span class="n">ids</span><span class="p">),</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="n">is_causal</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="k">class</span><span class="w"> </span><span class="nc">Actor</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;LLM 本体: backbone + lm_head&quot;&quot;&quot;</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_head</span> <span class="o">=</span> <span class="n">MiniLM</span><span class="p">(),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="n">V</span><span class="p">)</span>
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ids</span><span class="p">):</span>                      <span class="c1"># -&gt; [B,T,V] logits</span>
+<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_head</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="p">(</span><span class="n">ids</span><span class="p">))</span>
+<a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>    <span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+<a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">n_new</span><span class="p">):</span>              <span class="c1"># toy 版 rollout, 无 KV cache</span>
+<a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_new</span><span class="p">):</span>                   <span class="c1"># 真实系统这段走推理引擎 (§5.2)</span>
+<a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a>            <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">ids</span><span class="p">)[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>     <span class="c1"># 真实会在所有序列都出 EOS 时提前停</span>
+<a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a>            <span class="n">ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">ids</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">multinomial</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">1</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>        <span class="k">return</span> <span class="n">ids</span>                               <span class="c1"># 仍生成定长 n_new, EOS 之后靠 mask 屏蔽</span>
+<a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>
+<a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a><span class="k">class</span><span class="w"> </span><span class="nc">ScalarLM</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;critic 与 RM 同构: backbone + 标量 head&quot;&quot;&quot;</span>
+<a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+<a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="n">MiniLM</span><span class="p">(),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ids</span><span class="p">):</span>                      <span class="c1"># -&gt; [B,T] 每位置一个标量</span>
+<a id="__codelineno-3-38" name="__codelineno-3-38" href="#__codelineno-3-38"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="p">(</span><span class="n">ids</span><span class="p">))</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-3-39" name="__codelineno-3-39" href="#__codelineno-3-39"></a>
+<a id="__codelineno-3-40" name="__codelineno-3-40" href="#__codelineno-3-40"></a><span class="n">actor</span>  <span class="o">=</span> <span class="n">Actor</span><span class="p">()</span>                                 <span class="c1"># ✅ 训练</span>
+<a id="__codelineno-3-41" name="__codelineno-3-41" href="#__codelineno-3-41"></a><span class="n">critic</span> <span class="o">=</span> <span class="n">ScalarLM</span><span class="p">()</span>                              <span class="c1"># ✅ 训练 (实际常从 RM 初始化)</span>
+<a id="__codelineno-3-42" name="__codelineno-3-42" href="#__codelineno-3-42"></a><span class="n">rm</span>     <span class="o">=</span> <span class="n">ScalarLM</span><span class="p">()</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>                       <span class="c1"># ❄️ 冻结; 随机权重代替 §4.1 训好的 RM</span>
+<a id="__codelineno-3-43" name="__codelineno-3-43" href="#__codelineno-3-43"></a><span class="n">ref</span>    <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">actor</span><span class="p">)</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>             <span class="c1"># ❄️ 冻结; actor 出发点的副本</span>
+</code></pre></div>
+<p><strong>[一个 training step]</strong></p>
+<p>四段注释是 §3.6 计算链的浓缩（组装 <span class="arithmatex">\(r_t\)</span> + GAE 并成第 3 段）；只有第 4 段带梯度：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">opt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">([</span><span class="o">*</span><span class="n">actor</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="o">*</span><span class="n">critic</span><span class="o">.</span><span class="n">parameters</span><span class="p">()],</span> <span class="n">lr</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">)</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">ppo_step</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">n_new</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">ppo_epochs</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">p_len</span><span class="p">,</span> <span class="n">B</span> <span class="o">=</span> <span class="n">prompt</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">prompt</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="c1"># 1) rollout: 推理负载</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">ids</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">n_new</span><span class="p">)</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="c1"># prompt 段已由 sft_logprob 用 p_len 切掉; 这里的 mask 只切 response 内部的 pad</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="c1"># response 变长: 各条在不同位置生成 EOS, EOS 之后的位置是 pad, 要 mask 掉</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">eos</span>  <span class="o">=</span> <span class="p">(</span><span class="n">ids</span><span class="p">[:,</span> <span class="n">p_len</span><span class="p">:]</span> <span class="o">==</span> <span class="n">EOS</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>            <span class="c1"># (B, n_new)  EOS 处为 1</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="c1"># cumsum 数&quot;到本位为止的 EOS 数&quot;, 减本位得&quot;本位之前&quot;的 EOS 数; ==0 即仍在首个 EOS(含)之前</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">eos</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">eos</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>        <span class="c1"># (B, n_new)  到首个 EOS(含)为 1, 之后 pad 为 0</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="n">last</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span>                     <span class="c1"># (B,)  每条最后一个有效 token 在 response 段内的下标</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>    <span class="c1"># 2) no-grad 前向 x4, 产物即 experiences, 更新期间全程当常数</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>        <span class="n">old_logp</span> <span class="o">=</span> <span class="n">sft_logprob</span><span class="p">(</span><span class="n">actor</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">)</span>  <span class="c1"># (B, T_resp) ρ_t 的分母 (§3.5)</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>        <span class="n">ref_logp</span> <span class="o">=</span> <span class="n">sft_logprob</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">)</span>    <span class="c1"># (B, T_resp) KL 基准 (§3.2)</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>        <span class="c1"># V(s_t) = 生成 response 第 t 个 token 前的状态价值 = critic 在位置 t-1 的输出;</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>        <span class="c1"># 同 logp 一样左移一位对齐, 故 response 段取 [p_len-1:-1]</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>        <span class="n">v</span>        <span class="o">=</span> <span class="n">critic</span><span class="p">(</span><span class="n">ids</span><span class="p">)[:,</span> <span class="n">p_len</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>     <span class="c1"># (B, T_resp) 每个 response 位置的 V(s_t)</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>        <span class="n">r_rm</span>     <span class="o">=</span> <span class="n">rm</span><span class="p">(</span><span class="n">ids</span><span class="p">)[</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">B</span><span class="p">),</span> <span class="n">p_len</span> <span class="o">+</span> <span class="n">last</span><span class="p">]</span>  <span class="c1"># (B,) p_len+last=末位绝对下标, 取该处标量作整条分 (§4.1)</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>    <span class="c1"># 3) reward 组装 + GAE</span>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>    <span class="n">rewards</span>  <span class="o">=</span> <span class="n">compute_rewards</span><span class="p">(</span><span class="n">old_logp</span><span class="p">,</span> <span class="n">ref_logp</span><span class="p">,</span> <span class="n">r_rm</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>    <span class="n">adv</span><span class="p">,</span> <span class="n">ret</span> <span class="o">=</span> <span class="n">compute_gae</span><span class="p">(</span><span class="n">rewards</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>    <span class="c1"># 4) update: 同一批 experiences 复用 ppo-epochs 次, 训练负载</span>
+<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a>    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ppo_epochs</span><span class="p">):</span>
+<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>        <span class="n">new_logp</span> <span class="o">=</span> <span class="n">sft_logprob</span><span class="p">(</span><span class="n">actor</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">)</span>  <span class="c1"># 唯一带梯度的 logprob</span>
+<a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a>        <span class="n">actor_loss</span> <span class="o">=</span> <span class="n">ppo_loss</span><span class="p">(</span><span class="n">new_logp</span><span class="p">,</span> <span class="n">old_logp</span><span class="p">,</span> <span class="n">adv</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>           <span class="c1"># §3.5 / 3.6</span>
+<a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a>        <span class="n">v_pred</span>     <span class="o">=</span> <span class="n">critic</span><span class="p">(</span><span class="n">ids</span><span class="p">)[:,</span> <span class="n">p_len</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a>        <span class="n">value_loss</span> <span class="o">=</span> <span class="p">((</span><span class="n">v_pred</span> <span class="o">-</span> <span class="n">ret</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>   <span class="c1"># masked MSE (§3.3)</span>
+<a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a>        <span class="n">opt</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">();</span> <span class="p">(</span><span class="n">actor_loss</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">value_loss</span><span class="p">)</span><span class="o">.</span><span class="n">backward</span><span class="p">();</span> <span class="n">opt</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a>    <span class="k">return</span> <span class="n">actor_loss</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="n">value_loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a>
+<a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>                                <span class="c1"># 跑 3 个 step</span>
+<a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">ppo_step</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">))))</span>
+</code></pre></div>
+<p>RM 随机，reward 无意义，所以这段只验接线、不验收敛——loss 上下跳正常。正确性怎么测见 §6。</p>
+<p>toy 为了跑通省掉了这些工程项，真实实现都要补上：</p>
+<ul>
+<li><strong>变长 prompt 的 attention mask</strong>：BasicPPO 已用 EOS + response_mask 处理变长 response，但 prompt 都等长，省了另一半——真实 batch 里 prompt 也长短不一，要左 pad 并加 attention mask 让注意力跳过 pad token。toy 的 <code>MiniLM</code> 只有 causal mask（管自回归），没有这个 padding mask。</li>
+<li><strong>KL 惩罚的另一种放法</strong>：§3.2 把 KL 并进 <span class="arithmatex">\(r_t\)</span>。也可以不并，单独作一项加到 loss（<span class="arithmatex">\(\mathcal{L}^{\text{actor}} + \beta \cdot \text{KL}\)</span>）——目标等价、实现不同。GRPO 用后者，02 篇展开。</li>
+<li><strong>双引擎</strong>：toy 里 <code>generate</code> 和 update 用同一个 <code>actor</code> 对象。真实系统 <code>generate</code> 走推理引擎（vLLM）、update 走训练引擎（Megatron / FSDP），同一份权重在两套系统各存一份。§5 起全系列都在处理这件事。</li>
+<li><strong>训练稳定性 trick</strong>：一批只影响"训得稳不稳"、不改设计的调参项，本篇不展开——advantage 按 batch 白化（减均值除标准差，稳梯度尺度）、reward clip、entropy bonus（loss 加一项策略熵，防策略过早塌缩成只输出几个 token）、value clip（限 critic 的 <span class="arithmatex">\(V\)</span> 单步别跳太远）、actor / critic 分开 optimizer。</li>
+</ul>
+<h2 id="5">5. 资源画像</h2>
+<p>§4 四个模型到齐。本节给一个 RLHF step 算一笔账：显存占多少（§5.1）、rollout 和 update 各是什么负载（§5.2）。这笔账是后续系列的出发点——每一篇要解决的问题都能在这里找到起因，§5.3 汇总成一条后续路线。</p>
+<h3 id="51">5.1 显存账</h3>
+<p>以 7B、bf16 混合精度、Adam 为例，每个模型按状态分两档：</p>
+<ul>
+<li><strong>训练态</strong>（actor / critic）：权重 2 + 梯度 2 + fp32 master 4 + Adam 状态 8 = <strong>16 bytes/param</strong></li>
+<li><strong>冻结态</strong>（RM / ref）：只存 bf16 权重 = <strong>2 bytes/param</strong></li>
+</ul>
+<p>7B 代入：</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>状态</th>
+<th>显存（7B）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>actor</td>
+<td>训练态</td>
+<td>~112 GB</td>
+</tr>
+<tr>
+<td>critic</td>
+<td>训练态</td>
+<td>~112 GB</td>
+</tr>
+<tr>
+<td>RM</td>
+<td>冻结</td>
+<td>~14 GB</td>
+</tr>
+<tr>
+<td>ref</td>
+<td>冻结</td>
+<td>~14 GB</td>
+</tr>
+<tr>
+<td>合计（未算激活 / KV cache）</td>
+<td></td>
+<td><strong>~250 GB</strong></td>
+</tr>
+</tbody>
+</table>
+<p>这张表带出两个问题：</p>
+<ul>
+<li><strong>单卡装不下</strong>：~250 GB 远超单卡显存，四个模型怎么摆到一组 GPU 上要专门设计</li>
+<li><strong>同一份权重、两种运行时</strong>：rollout 时 actor 要额外的 KV cache 和推理引擎运行时，而它训练态的优化器状态此刻全程闲置——放置策略得处理这种切换</li>
+</ul>
+<h3 id="52">5.2 两种负载的计算特性</h3>
+<p>rollout 和 update 的差异，就是推理和训练的差异（细节见 <a href="../05_%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96/05_01_%E6%8E%A8%E7%90%86%E5%9F%BA%E7%A1%80.html">05_01_推理基础.md</a>，此处只列对系统设计有影响的几条）：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>rollout（推理）</th>
+<th>update（训练）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>计算模式</td>
+<td>自回归，逐 token decode</td>
+<td>teacher-forcing，全序列一次前向 + 反向</td>
+</tr>
+<tr>
+<td>特性</td>
+<td>memory-bound</td>
+<td>compute-bound</td>
+</tr>
+<tr>
+<td>时长</td>
+<td>不定，由最长 response 决定</td>
+<td>相对固定</td>
+</tr>
+<tr>
+<td>想要的引擎</td>
+<td>vLLM / SGLang（KV cache / continuous batching）</td>
+<td>Megatron / FSDP（并行 / 优化器分片）</td>
+</tr>
+</tbody>
+</table>
+<p>最关键的是最后一行：<strong>两种负载的最优引擎不是同一个</strong>。工业实践里 rollout 用推理引擎、update 用训练引擎，同一份权重在两套系统里各存一份。这一个事实派生出后续一整串系统问题。</p>
+<p><img src="../assets/11-rl-basics/fig-12.png" alt="fig-12" style="zoom:33%;" /></p>
+<p>时间上 rollout 通常占大部分，且 response 越长占比越高——reasoning 任务里生成几万 token，rollout 占比可以远超一半。一批 rollout 的时长由最长那条 response 决定：短的先生成完、之后一直空等。这个长尾是后续异步化要处理的对象。</p>
+<h3 id="53">5.3 三个结论与后续</h3>
+<p>收束这张画像：</p>
+<ul>
+<li><strong>贵</strong>：四个模型、~250 GB 起步，显存主要压在两个训练态模型上</li>
+<li><strong>慢</strong>：每个 step 内嵌一次完整推理，rollout 长尾决定 step 时长</li>
+<li><strong>冲突</strong>：两种负载各要一套引擎，同一份权重要在两套系统间保持同步</li>
+</ul>
+<p>后续从这三条分两条线走：</p>
+<ul>
+<li><strong>算法线（02）</strong>：从"贵"入手，减少在场的模型数——DPO 删掉 rollout 和 RM、GRPO 删掉 critic。算法能删的到此为止</li>
+<li><strong>系统线（03–06，训推协同四篇）</strong>：剩下的模型和负载拆不掉，在系统层支撑，沿一条因果链推进：<ul>
+<li><strong>03 架构与放置</strong>：四个模型怎么摆到一组 GPU 上——colocate 合放还是分离部署</li>
+<li><strong>04 权重同步</strong>：训练引擎每步更新完，权重要 reshard 成推理引擎的布局再同步过去</li>
+<li><strong>05 异步化</strong>：同步卡在 critical path 上，提速只能让 rollout 和 update 异步跑，代价是数据变旧（staleness）</li>
+<li><strong>06 一致性</strong>：异步 + 双引擎让 §3.5 的 ratio 分子分母来自两套计算，数值对不上，修正它正好绕回算法</li>
+</ul>
+</li>
+</ul>
+<p>再往后 <strong>07 Agentic RL</strong>：引入多轮、工具调用和环境后，03–06 的问题被放大重演。</p>
+<h2 id="6">6. 代码实现</h2>
+<p>toy 规模（词表 100、hidden 64），CPU 秒级跑通（真实规模的四模型单卡装不下，见 §5.1 的账）：<a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/11_basic_ppo.ipynb">11_basic_ppo.ipynb</a>。ipynb 的 §1–3 是 §4.3 的代码，§4 验证正确性。RL 没有逐 token GT，跑通 ≠ 算法对，分两步查。</p>
+<p><strong>① 逐个函数对参照</strong>：四个纯函数各有一个能算准的参照，bug 能定位到单个函数。</p>
+<table>
+<thead>
+<tr>
+<th>函数</th>
+<th>参照</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sft_logprob</code></td>
+<td>真 token logprob <span class="arithmatex">\(= -\text{CE}\)</span>，与 <code>F.cross_entropy</code> 取负对齐</td>
+</tr>
+<tr>
+<td><code>compute_rewards</code></td>
+<td>actor==ref → KL 恒 0，只剩末位 RM 分，落在最后一个有效 token</td>
+</tr>
+<tr>
+<td><code>compute_gae</code></td>
+<td><span class="arithmatex">\(\lambda{=}1\)</span> 还原 <span class="arithmatex">\(G_t-V_t\)</span>、<span class="arithmatex">\(\lambda{=}0\)</span> 等于 <span class="arithmatex">\(\delta_t\)</span>；中间与 <span class="arithmatex">\(\sum_l(\gamma\lambda)^l\delta_{t+l}\)</span> 对齐；pad 清零</td>
+</tr>
+<tr>
+<td><code>ppo_loss</code></td>
+<td>ratio 出界朝"继续推"方向梯度 0、"往回修"保留；<span class="arithmatex">\(\rho{=}1\)</span> 退化成 policy gradient</td>
+</tr>
+</tbody>
+</table>
+<p><strong>② 整体看 reward 涨</strong>：拼起来没有可对的参照，只能看它学不学得动——换成确定性的 toy reward 训几百 step，batch 平均 reward 单调涨即整体自洽。</p>
+<p><img src="../assets/11-rl-basics/fig-13.png" alt="fig-13" width="70%" /></p>
+<p>CPU 跑通：①②两步检查均 Pass，batch 平均 reward 0.28 → 11.9（warmup → 陡升 → ~11.8 平台）。</p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "navigation.expand", "toc.follow", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../javascripts/heading-font.js"></script>
+      
+        <script src="../javascripts/katex.js"></script>
+      
+        <script src="../javascripts/mmv.js"></script>
+      
+        <script src="../katex/katex.min.js"></script>
+      
+        <script src="../katex/auto-render.min.js"></script>
+      
+    
+  </body>
+</html>
