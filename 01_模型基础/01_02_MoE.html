@@ -2224,10 +2224,10 @@ L_{aux} = \alpha \cdot N \cdot \sum_{i=1}^{N} f_i \cdot P_i
 <h3 id="43">4.3 共享专家</h3>
 <p>共享专家 治通用知识冗余，原文叫 Shared Expert Isolation：从 expert 池里"切出" <span class="arithmatex">\(K_s\)</span> 个作为 <strong>Shared Expert</strong>（所有 token 必经），剩下作为 <strong>Routed Expert</strong>（按 router 选 Top-K）：</p>
 <p><img src="../assets/06-moe/fig-07.png" alt="image-20260507134557984" style="zoom:50%;" /></p>
-<p>直觉是：通用知识（语法、常识等）让 shared expert 承担，routed expert 只装真正需要"按需路由"的专业知识。这样 router 的决策压力变小——只决定专业部分，不需要再决定"通用知识在哪个 expert"。
-$$
-y = \sum_{i=1}^{K_s} E^{(s)}<em _in="\in" _text_TopK="\text{TopK" j="j">i(x) + \sum</em>_j(x)
-$$}(\text{router})} g_j \cdot E^{(r)</p>
+<p>直觉是：通用知识（语法、常识等）让 shared expert 承担，routed expert 只装真正需要"按需路由"的专业知识。这样 router 的决策压力变小——只决定专业部分，不需要再决定"通用知识在哪个 expert"。</p>
+<div class="arithmatex">\[
+y = \sum_{i=1}^{K_s} E^{(s)}_i(x) + \sum_{j \in \text{TopK}(\text{router})} g_j \cdot E^{(r)}_j(x)
+\]</div>
 <h3 id="44">4.4 简化版代码</h3>
 <p>在 §2 BasicMoE / §3 Mixtral 的 per-expert dispatch 上加两件事—— 细粒度expert + 并联一组 shared expert：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">DeepSeekMoE</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
@@ -2298,10 +2298,10 @@ $$}(\text{router})} g_j \cdot E^{(r)</p>
 </tr>
 </tbody>
 </table>
-<p><strong>继承的 Expert-Level Balance</strong>：就是前面的Switch aux loss，唯一区别是<strong>只对 routed expert 算</strong>（shared expert 必经，不参与均衡）：
-$$
+<p><strong>继承的 Expert-Level Balance</strong>：就是前面的Switch aux loss，唯一区别是<strong>只对 routed expert 算</strong>（shared expert 必经，不参与均衡）：</p>
+<div class="arithmatex">\[
 L_{ExpBal} = \alpha_1 \cdot \sum_{i=1}^{N_r} f_i \cdot P_i
-$$</p>
+\]</div>
 <p><strong>新增的 Device-Level Balance</strong>：只到 expert 级别还不够，用 EP（把 <span class="arithmatex">\(N_r\)</span> 个 routed expert 摊到 D 张 GPU 上）时会出现：</p>
 <ul>
 <li>Device 0（4 个 expert）：token 路由后总和 eg. 390</li>

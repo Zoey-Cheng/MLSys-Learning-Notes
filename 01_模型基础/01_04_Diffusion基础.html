@@ -1911,14 +1911,14 @@ D_{\mathrm{KL}}(q \,\|\, p) = \mathbb E_{x \sim q}\!\left[\log \tfrac{q(x)}{p(x)
 \log p(x) = \log \mathbb E_{q_\phi(z|x)}\!\left[\frac{p(x|z)\,p(z)}{q_\phi(z|x)}\right] \;\;\overset{\text{Jensen}}{\ge}\;\; \mathbb E_{q_\phi(z|x)}\!\left[\log \frac{p(x|z)\,p(z)}{q_\phi(z|x)}\right] \;=\; \text{ELBO}
 \]</div>
 <p>把右边的 <span class="arithmatex">\(\log\)</span> 拆开（乘除变加减）就是「重建项 − prior-KL」。</p>
-<p><strong>[结论——ELBO 的两种等价写法]</strong>
-$$
+<p><strong>[结论——ELBO 的两种等价写法]</strong></p>
+<div class="arithmatex">\[
 \begin{aligned}
 \text{ELBO}(\theta, \phi;\, x)
-&amp;= \underbrace{\log p(x)}<em _mathrm_KL="\mathrm{KL">{\text{目标}} \;\;-\; \underbrace{D</em>}}!\big(q_\phi(z|x) \,|\, p(z|x)\big)<em q__phi_z_x_="q_\phi(z|x)">{\text{上图里那块 gap = posterior-KL}} &amp;&amp; \text{（图的具象化, 两项都算不动）} \[4pt]
-&amp;= \underbrace{\mathbb E</em>}[\log p_\theta(x|z)]<em _mathrm_KL="\mathrm{KL">{\text{重建项：decoder 要能还原}} - \underbrace{D</em>
+&amp;= \underbrace{\log p(x)}_{\text{目标}} \;\;-\; \underbrace{D_{\mathrm{KL}}\!\big(q_\phi(z|x) \,\|\, p(z|x)\big)}_{\text{上图里那块 gap = posterior-KL}} &amp;&amp; \text{（图的具象化, 两项都算不动）} \\[4pt]
+&amp;= \underbrace{\mathbb E_{q_\phi(z|x)}[\log p_\theta(x|z)]}_{\text{重建项：decoder 要能还原}} - \underbrace{D_{\mathrm{KL}}\!\big(q_\phi(z|x) \,\|\, p(z)\big)}_{\text{KL 正则项 = prior-KL}} &amp;&amp; \text{（loss 用的形式）}
 \end{aligned}
-$$}}!\big(q_\phi(z|x) \,|\, p(z)\big)}_{\text{KL 正则项 = prior-KL}} &amp;&amp; \text{（loss 用的形式）</p>
+\]</div>
 <ul>
 <li><strong>第一行</strong>：ELBO = <span class="arithmatex">\(\log p(x)\)</span> （由所有z算x，算不动），减去 gap（gap ≥ 0，也算不动）</li>
 <li><strong>第二行</strong>：ELBO = 重建项 − prior-KL<ul>

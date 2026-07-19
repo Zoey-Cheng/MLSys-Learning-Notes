@@ -1747,7 +1747,7 @@
 
 <h1 id="01-rl-loop-rlhf-ppo">01-RL训练基础: loop 与 RLHF-PPO</h1>
 <blockquote>
-<p><strong>TL; DR</strong>：为什么 SFT 后还要 RL（无负反馈 → 从评价性反馈试错学习）→ RL loop：rollout → reward → advantage → update（= 推理 + 训练交替）→ PPO 各部件为什么存在（advantage / critic / GAE / clip / KL 惩罚）→ InstructGPT 四模型 + 手写 BasicPPO → 资源画像：显存账 + 两种负载的计算特性</p>
+<p><strong>TL; DR</strong>：为什么 SFT 后还要 RL → RL loop: rollout → reward → advantage → update（= 推理 + 训练交替）→ PPO 各部件为什么存在 → RLHF 四模型 + 手写 BasicPPO → 资源画像：显存账 + 两种负载的计算特性</p>
 </blockquote>
 <ul>
 <li><strong>[Quick Ref for 手写 code]</strong>：BasicPPO（§4.3）｜ <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/11_basic_ppo.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/1h7c6Tdk-xz8QPxnmZ1wRN9KxTDVWNGN7/view?usp=sharing">Colab</a><ul>
@@ -1755,16 +1755,16 @@
 <li>模型组件 + loop 骨架：熟悉结构、能调用即可</li>
 </ul>
 </li>
-<li><strong>[常考面试点]</strong>：PPO 四个模型各是什么、谁训谁冻结；SFT 和 RL 的区别；advantage 是什么、clip 为什么能限步长；RM 怎么训</li>
+<li><strong>[常考面试点]</strong>：PPO 四个模型；SFT 和 RL 的区别；手撕函数</li>
 </ul>
 <p>本篇是 RL 系列第一篇，系列以 infra 视角为主。Plan的后续篇：02 讲算法演化（DPO / GRPO），03–06 讲训推协同，07 讲 Agentic RL。</p>
 <h2 id="_1">前言</h2>
 <p><a href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_02_SFT.html">03_02_SFT.md</a> 之后，模型能听懂指令、按格式回答。对齐人类偏好、提升推理能力，靠的是 RL（Reinforcement Learning，强化学习）。</p>
 <p>本篇的范围：</p>
 <ul>
-<li><strong>默认已熟</strong>：SFT 基础（数据格式 / loss masking）和推理基础（generate / KV cache / sampling，见 <a href="../05_%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96/05_01_%E6%8E%A8%E7%90%86%E5%9F%BA%E7%A1%80.html">05_01_推理基础.md</a>）</li>
+<li><strong>默认已熟</strong>：SFT 基础（数据格式 / loss masking）和推理基础（generate / sampling，见 <a href="../05_%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96/05_01_%E6%8E%A8%E7%90%86%E5%9F%BA%E7%A1%80.html">05_01_推理基础.md</a>）</li>
 <li><strong>算法只讲设计层</strong>：每个部件回答"为什么需要它"，公式给形态、不做推导</li>
-<li><strong>落点是 §5 资源画像</strong>：一个 RLHF（人类反馈 RL，§4 定义）step 里有几个模型、显存占多少、两种负载各是什么特性。03–06 的系统问题都从这张画像出发</li>
+<li><strong>落点是 §5 资源画像</strong>：一个 RLHF（人类反馈 RL，§4 定义）step 里有几个模型、显存占多少、两种负载（训练推理）</li>
 </ul>
 <p>整体顺序：为什么要 RL → loop 本体 → PPO 部件 → 四模型系统 → 资源画像。</p>
 <h2 id="1-sft-rl">1. 为什么 SFT 后还要 RL</h2>
@@ -1858,12 +1858,7 @@
 </tr>
 </tbody>
 </table>
-<blockquote>
-<p>🖼️ <strong>[图待补 fig-02]</strong> 主题：一条 response 在 token 轴上的 RL 映射
-画面：横轴是 token 序列，左端灰框 prompt，右侧若干方块是逐个生成的 token。第 <span class="arithmatex">\(t\)</span> 个方块下标 <span class="arithmatex">\(a_t\)</span>（动作=该 token），从 prompt 到该方块左侧的整段花括号标 <span class="arithmatex">\(s_t\)</span>（状态=prompt+前 <span class="arithmatex">\(t-1\)</span> 个 token）；最末方块上方单独标一个 <span class="arithmatex">\(r\)</span>（整条 reward 只在这出现）
-意图：让"状态=前缀、动作=下一 token、reward 末位才来"从抽象映射变成一眼可见的序列图</p>
-</blockquote>
-<p><img src="../assets/11-rl-basics/fig-02.png" alt="fig-02" style="zoom:30%;" /></p>
+<p><img src="../assets/11-rl-basics/fig-02.png" alt="fig-02" style="zoom:40%;" /></p>
 <p>策略、状态转移都是现成的——LLM 本身就是一个逐 token 决策的 policy。被训练的这个 LLM，RL 语境里叫 <strong>actor</strong>。整个框架里唯一需要新造的部件是 reward（§4.1）。</p>
 <h3 id="22-loop">2.2 loop 本体</h3>
 <p>一个 RL training step 分四段：rollout → reward → advantage → update。<strong>rollout</strong> 是 RL 术语，指"跑一遍当前策略收集数据"，LLM 下就是 <code>actor.generate()</code>：</p>
@@ -1871,7 +1866,7 @@
     R("rollout&lt;br/&gt;&lt;br/&gt;actor 自回归生成&lt;br/&gt;response&lt;br/&gt;&lt;b&gt;= 推理负载&lt;/b&gt;")
     W("reward&lt;br/&gt;&lt;br/&gt;RM 打分&lt;br/&gt;+ per-token KL 惩罚")
     A("advantage&lt;br/&gt;&lt;br/&gt;critic 估 V&lt;br/&gt;GAE 算每 token 的 A_t")
-    U("update&lt;br/&gt;&lt;br/&gt;PPO loss 更新&lt;br/&gt;actor / critic&lt;br/&gt;&lt;b&gt;= 训练负载&lt;/b&gt;")
+    U("&lt;span style='color:#fff'&gt;update&lt;br/&gt;&lt;br/&gt;PPO loss 更新&lt;br/&gt;actor / critic&lt;br/&gt;&lt;b&gt;= 训练负载&lt;/b&gt;&lt;/span&gt;")
 
     R --&gt; W --&gt; A --&gt; U
     U --&gt;|"新一批 prompt"| R
@@ -1925,11 +1920,11 @@
 </tr>
 </tbody>
 </table>
-<p>三者都是同一个 LLM backbone（RL 里称 policy / actor），loss 也是同一个形状：
-$$
+<p>三者都是同一个 LLM backbone（RL 里称 policy / actor），loss 也是同一个形状：</p>
+<div class="arithmatex">\[
 \mathcal{L} = -\sum_t w_t \cdot \log \pi_t, \qquad \log \pi_t = \log \pi_\theta(a_t \mid s_t)
-$$
-<strong>logprob 项</strong> <span class="arithmatex">\(\log \pi_t\)</span>：位置 <span class="arithmatex">\(t\)</span> 的 logits 过 log_softmax，取该位置实际 token <span class="arithmatex">\(a_t\)</span> 那一格；<span class="arithmatex">\(w_t\)</span>：该 token 的 loss 权重。三者的差别就两处：</p>
+\]</div>
+<p><strong>logprob 项</strong> <span class="arithmatex">\(\log \pi_t\)</span>：位置 <span class="arithmatex">\(t\)</span> 的 logits 过 log_softmax，取该位置实际 token <span class="arithmatex">\(a_t\)</span> 那一格；<span class="arithmatex">\(w_t\)</span>：该 token 的 loss 权重。三者的差别就两处：</p>
 <ul>
 <li><strong>token <span class="arithmatex">\(a_t\)</span> 从哪来</strong>：pretrain / SFT 来自数据集（GT）；RLHF-PPO 来自 rollout，actor 自己采的</li>
 <li><strong>权重 <span class="arithmatex">\(w_t\)</span> 是多少</strong>：pretrain / SFT 恒为 1，表现为逐 token CE；RLHF-PPO 手里只有整条 response 一个标量 reward，<span class="arithmatex">\(w_t\)</span> 没有现成的</li>
@@ -1973,14 +1968,16 @@ $$
 <li><strong>seq 打分 <span class="arithmatex">\(R\)</span> 的去向</strong>：本节拿它当整条的权重；§3.2 起降级为 <span class="arithmatex">\(r_t\)</span> 末位的一项</li>
 </ul>
 <p><strong>[目标与数据]</strong></p>
-<p>目标：actor 生成的 response 平均 reward 尽量高。这个平均分记作 <span class="arithmatex">\(J(\theta)\)</span>：
-$$
-\max_\theta \; J(\theta), \qquad J(\theta) = \mathbb{E}<em>{y \sim \pi</em>\theta}[R(y)]
-$$
-- <span class="arithmatex">\(\theta\)</span>：actor（这个 LLM）的全部参数，训练要更新的就是它
-- <span class="arithmatex">\(y \sim \pi_\theta\)</span>：§2.2 的 <strong>rollout</strong>（actor 自己推理采样生成的 response）
-- <span class="arithmatex">\(R(y)\)</span>：<strong>RM</strong>（Reward Model）给整条的标量打分（§4.1 细讲，目前当黑盒）
-- <span class="arithmatex">\(J(\theta)\)</span>：目标本身——当前 actor 采出的 response 的平均打分。<span class="arithmatex">\(\theta\)</span> 一变，采样分布就变，平均分跟着变，所以是 <span class="arithmatex">\(\theta\)</span> 的函数</p>
+<p>目标：actor 生成的 response 平均 reward 尽量高。这个平均分记作 <span class="arithmatex">\(J(\theta)\)</span>：</p>
+<div class="arithmatex">\[
+\max_\theta \; J(\theta), \qquad J(\theta) = \mathbb{E}_{y \sim \pi_\theta}[R(y)]
+\]</div>
+<ul>
+<li><span class="arithmatex">\(\theta\)</span>：actor（这个 LLM）的全部参数，训练要更新的就是它</li>
+<li><span class="arithmatex">\(y \sim \pi_\theta\)</span>：§2.2 的 <strong>rollout</strong>（actor 自己推理采样生成的 response）</li>
+<li><span class="arithmatex">\(R(y)\)</span>：<strong>RM</strong>（Reward Model）给整条的标量打分（§4.1 细讲，目前当黑盒）</li>
+<li><span class="arithmatex">\(J(\theta)\)</span>：目标本身——当前 actor 采出的 response 的平均打分。<span class="arithmatex">\(\theta\)</span> 一变，采样分布就变，平均分跟着变，所以是 <span class="arithmatex">\(\theta\)</span> 的函数</li>
+</ul>
 <p><strong>[梯度怎么来：数学推导]</strong></p>
 <blockquote>
 <p>这步有点复杂，不想研究数学可以直接跳到 [rollout 梯度结论]</p>
@@ -1988,33 +1985,30 @@ $$
 <p>这一步是经典 RL 的 <strong>policy gradient（REINFORCE）</strong>，LLM 场景只是把 policy 换成 actor。</p>
 <p>要算的是目标 <span class="arithmatex">\(J(\theta)\)</span> 对 actor 参数 <span class="arithmatex">\(\theta\)</span> 的梯度。</p>
 <p>先回忆 SFT 的梯度怎么来：每个 token 位置，模型前向输出一个词表概率分布，GT 是这个分布的 one-hot 版本，两者代入 CE 公式得 loss，直接 <code>loss.backward()</code>。</p>
-<blockquote>
-<p>🖼️ <strong>[图待补 fig-03]</strong> 主题：SFT vs policy gradient——同一个前向反向，监督信号不同
-画面：上下两行，各画一条 token 序列，每个 token 位置上方一小组柱状图（模型输出的词表概率分布）。上行 SFT：每个位置的分布旁并列一个单柱分布（GT one-hot），两者之间标 CE；下行 policy gradient：序列标"rollout 采出的 y"，各位置只有模型分布、没有 one-hot，整条末尾一个圆圈标量 R（RM 打分），箭头指向整条序列，标"乘在整条 logprob 前的系数"
-意图：SFT 的监督是每个位置一个 one-hot 分布、逐位置算 CE；policy gradient 没有 one-hot，监督只是整条一个标量；两者的前向反向机制相同</p>
-</blockquote>
 <p><img src="../assets/11-rl-basics/fig-03.png" alt="fig-03" style="zoom:30%;" /></p>
-<p>RL 的 <span class="arithmatex">\(J(\theta)\)</span> 套不上这个流程。把期望展开成加权求和看它的结构：
-$$
+<p>RL 的 <span class="arithmatex">\(J(\theta)\)</span> 套不上这个流程。把期望展开成加权求和看它的结构：</p>
+<div class="arithmatex">\[
 J(\theta) = \sum_{y} \pi_\theta(y)\, R(y)
-$$
-- <span class="arithmatex">\(\pi_\theta(y)\)</span>：每条 <span class="arithmatex">\(y\)</span> 被采到的概率，取决于 actor 参数 <span class="arithmatex">\(\theta\)</span> 
-- <span class="arithmatex">\(R(y)\)</span>：对应 <span class="arithmatex">\(y\)</span> 的 reward 打分
-- <span class="arithmatex">\(R(y)\)</span> 里没有 <span class="arithmatex">\(\theta\)</span>——固定一条 <span class="arithmatex">\(y\)</span>，打分就是常数（RM 有自己的参数，但冻结，不算在 <span class="arithmatex">\(\theta\)</span> 里）</p>
+\]</div>
+<ul>
+<li><span class="arithmatex">\(\pi_\theta(y)\)</span>：每条 <span class="arithmatex">\(y\)</span> 被采到的概率，取决于 actor 参数 <span class="arithmatex">\(\theta\)</span> </li>
+<li><span class="arithmatex">\(R(y)\)</span>：对应 <span class="arithmatex">\(y\)</span> 的 reward 打分</li>
+<li><span class="arithmatex">\(R(y)\)</span> 里没有 <span class="arithmatex">\(\theta\)</span>——固定一条 <span class="arithmatex">\(y\)</span>，打分就是常数（RM 有自己的参数，但冻结，不算在 <span class="arithmatex">\(\theta\)</span> 里）</li>
+</ul>
 <p>求导本身不难，对权重逐项导：<span class="arithmatex">\(\nabla_\theta J = \sum_y \nabla_\theta \pi_\theta(y) \cdot R(y)\)</span>。难在算值：这个和要<strong>枚举所有可能的序列，算不动</strong>。两个解决 idea：</p>
 <ul>
 <li><strong>idea 1 恒等式改写（log-derivative trick）</strong>：数学结论 <span class="arithmatex">\(\nabla_\theta \pi_\theta = \pi_\theta \, \nabla_\theta \log \pi_\theta\)</span>，把权重里的 <span class="arithmatex">\(\pi_\theta\)</span> 补回来，idea 2 就能用上。来历是对数求导法则移项（下方速查）；不想深究可以直接当结论用</li>
 <li><strong>idea 2 蒙特卡洛</strong>：用多次采样估<strong>期望</strong>，<span class="arithmatex">\(\mathbb{E}_{y \sim \pi_\theta}[g(y)] = \sum_y \pi_\theta(y)\, g(y)\)</span></li>
 </ul>
-<p>先 idea 1 替换、认出期望定义，随后 idea 2 蒙特卡洛采样估计（rollout 一批 <span class="arithmatex">\(y_i\)</span>，对每条算期望括号里的量，求平均）：
-$$
+<p>先 idea 1 替换、认出期望定义，随后 idea 2 蒙特卡洛采样估计（rollout 一批 <span class="arithmatex">\(y_i\)</span>，对每条算期望括号里的量，求平均）：</p>
+<div class="arithmatex">\[
 \begin{aligned}
 \nabla_\theta J &amp;= \sum_y \nabla_\theta \pi_\theta(y) \cdot R(y)
 \;\overset{\text{idea 1 代入}}{=}\; \sum_y \pi_\theta(y) \, \nabla_\theta \log \pi_\theta(y) \cdot R(y)
-\;\overset{\text{期望定义}}{=}\; \mathbb{E}<em>{y \sim \pi</em>\theta}\big[\, \underbrace{R(y)}<em>{\text{标量系数}} \cdot \underbrace{\nabla</em>\theta \log \pi_\theta(y)}<em i="1">{\text{SFT 那个标准反向}} \,\big] \
-&amp;\overset{\text{idea 2 蒙特卡洛}}{\approx}\; \underbrace{\frac{1}{N} \sum</em>}^{N}<em _text_RM="\text{RM" 打分，常数="打分，常数">{\text{一个 rollout batch 平均}} \underbrace{R(y_i)}</em>
+\;\overset{\text{期望定义}}{=}\; \mathbb{E}_{y \sim \pi_\theta}\big[\, \underbrace{R(y)}_{\text{标量系数}} \cdot \underbrace{\nabla_\theta \log \pi_\theta(y)}_{\text{SFT 那个标准反向}} \,\big] \\
+&amp;\overset{\text{idea 2 蒙特卡洛}}{\approx}\; \underbrace{\frac{1}{N} \sum_{i=1}^{N}}_{\text{一个 rollout batch 平均}} \underbrace{R(y_i)}_{\text{RM 打分，常数}} \cdot \underbrace{\nabla_\theta \log \pi_\theta(y_i)}_{\text{SFT 那个标准反向}}
 \end{aligned}
-$$}} \cdot \underbrace{\nabla_\theta \log \pi_\theta(y_i)}_{\text{SFT 那个标准反向}</p>
+\]</div>
 <p>前三步是恒等变形，最后一步 <span class="arithmatex">\(\approx\)</span> 才是估计。蒙特卡洛的"多次采样"落到工程上，就是 rollout 一个 batch 一起算。</p>
 <p>式里已经抽象出"SFT 那个标准反向"，所以实际计算就是：每条 <span class="arithmatex">\(y_i\)</span> 做一次 SFT 式前向反向，乘上常数 <span class="arithmatex">\(R(y_i)\)</span>，batch 求平均。</p>
 <blockquote>
@@ -2031,11 +2025,11 @@ $$}} \cdot \underbrace{\nabla_\theta \log \pi_\theta(y_i)}_{\text{SFT 那个标�
 <p>本节取 <span class="arithmatex">\(f = R\)</span>、<span class="arithmatex">\(p_\theta = \pi_\theta\)</span> 就是上面的梯度。关键：<span class="arithmatex">\(f\)</span>（这里是 <span class="arithmatex">\(R\)</span>）不含模型参数 <span class="arithmatex">\(\theta\)</span>，梯度全落在 <span class="arithmatex">\(\log p_\theta\)</span> 上。</p>
 </blockquote>
 <p><strong>[rollout 梯度结论]</strong></p>
-<p><strong>policy gradient 的 update = 把 prompt + rollout 当 SFT 数据训，每条序列的 loss 乘上自己的 reward</strong>（普通 SFT 相当于权重恒为 1）。一个 batch 里 reward 高的序列概率被推高，低的被压低。落成公式：
-$$
-\nabla_\theta J \;\approx\; \underbrace{\frac{1}{N} \sum_{i=1}^{N}}<em _text_RM="\text{RM" 打分，常数="打分，常数">{\text{rollout batch 平均}} \underbrace{R(y_i)}</em>
-$$
-对应的具体计算：}} \cdot \underbrace{\nabla_\theta \log \pi_\theta(y_i)}_{\text{SFT 式前向反向}</p>
+<p><strong>policy gradient 的 update = 把 prompt + rollout 当 SFT 数据训，每条序列的 loss 乘上自己的 reward</strong>（普通 SFT 相当于权重恒为 1）。一个 batch 里 reward 高的序列概率被推高，低的被压低。落成公式：</p>
+<div class="arithmatex">\[
+\nabla_\theta J \;\approx\; \underbrace{\frac{1}{N} \sum_{i=1}^{N}}_{\text{rollout batch 平均}} \underbrace{R(y_i)}_{\text{RM 打分，常数}} \cdot \underbrace{\nabla_\theta \log \pi_\theta(y_i)}_{\text{SFT 式前向反向}}
+\]</div>
+<p>对应的具体计算：</p>
 <ul>
 <li><strong>rollout + 打分</strong>：actor 对每条 prompt 采出 <span class="arithmatex">\(y_i\)</span>；RM 给整条打一个分 <span class="arithmatex">\(R(y_i)\)</span>，此后当常数用</li>
 <li><strong>SFT 式 loss</strong>：prompt 拼上 <span class="arithmatex">\(y_i\)</span> 做 teacher-forcing 前向，把 <span class="arithmatex">\(y_i\)</span> 自己当 label 算逐 token CE（shift 一位、mask 掉 prompt，全同 SFT），求和得整条 seq 的 loss</li>
@@ -2056,13 +2050,13 @@ $$
 </code></pre></div>
 <p><strong>[loss 换成逐 token 读法]</strong></p>
 <p>目前的 loss 是整条 seq 一个数，结构 = <span class="arithmatex">\(R \times \text{SFT 式 loss}\)</span>。</p>
-<p>两个因子里，分数 <span class="arithmatex">\(R\)</span> 是常数；SFT 式 loss 就是逐 token CE 求和——<strong>CE 天然逐 token 算、再求和</strong>。按 token 展开（简写 <span class="arithmatex">\(\log \pi_t = \log \pi_\theta(a_t \mid s_t)\)</span>）：
-$$
+<p>两个因子里，分数 <span class="arithmatex">\(R\)</span> 是常数；SFT 式 loss 就是逐 token CE 求和——<strong>CE 天然逐 token 算、再求和</strong>。按 token 展开（简写 <span class="arithmatex">\(\log \pi_t = \log \pi_\theta(a_t \mid s_t)\)</span>）：</p>
+<div class="arithmatex">\[
 \mathcal{L} = -R \cdot \big(\log \pi_1 + \log \pi_2 + \cdots\big)
 = -\big(R \log \pi_1 + R \log \pi_2 + \cdots\big)
 = -\sum_t w_t \cdot \log \pi_t, \qquad w_t = R
-$$
-这就是 §3.0 承诺的形状（<span class="arithmatex">\(w_t\)</span> 当<strong>常数</strong>用，stop-grad，被求导的只有 <span class="arithmatex">\(\log \pi\)</span>）。</p>
+\]</div>
+<p>这就是 §3.0 承诺的形状（<span class="arithmatex">\(w_t\)</span> 当<strong>常数</strong>用，stop-grad，被求导的只有 <span class="arithmatex">\(\log \pi\)</span>）。</p>
 <p>问题：<span class="arithmatex">\(w_t\)</span> 恒 <span class="arithmatex">\(= R\)</span>，写对和写错的 token 同奖同罚，不合理。支线一（§3.2–3.4）把 <span class="arithmatex">\(w_t\)</span> 换成逐位置的量；另一个因子 logprob 项的问题是复用——rollout 贵，一批数据想多次更新，支线二（§3.5）换成 ratio 并 clip。分步见 §3.0 末尾的图。</p>
 <h3 id="32-token-1r_t-g_t">3.2 token 级权重（1）：<span class="arithmatex">\(r_t\)</span> 与 <span class="arithmatex">\(G_t\)</span></h3>
 <p>本节造两个逐 token 的量，引入一个新模型（ref），作 §3.3 权重的原材料。</p>
@@ -2072,11 +2066,11 @@ $$
 <li><strong>ref</strong>（reference model）：actor 出发时那份模型权重的冻结副本，= KL 惩罚的基准</li>
 </ul>
 <p><strong>[造 token reward <span class="arithmatex">\(r_t\)</span>]</strong></p>
-<p>RM 只在整条结束时给一个分，中间 token 没有即时 reward。于是我们定义：
-$$
-r_t = \underbrace{-\beta \,\big(\log \pi_\theta(a_t \mid s_t) - \log \pi_{\text{ref}}(a_t \mid s_t)\big)}<em _text_RM="\text{RM">{\text{每个 token：KL 惩罚}} \;+\; \underbrace{\mathbb{1}[t = T] \cdot r</em>
-$$
-关于 KL 惩罚：}}}_{\text{末位：RM 整条打分}</p>
+<p>RM 只在整条结束时给一个分，中间 token 没有即时 reward。于是我们定义：</p>
+<div class="arithmatex">\[
+r_t = \underbrace{-\beta \,\big(\log \pi_\theta(a_t \mid s_t) - \log \pi_{\text{ref}}(a_t \mid s_t)\big)}_{\text{每个 token：KL 惩罚}} \;+\; \underbrace{\mathbb{1}[t = T] \cdot r_{\text{RM}}}_{\text{末位：RM 整条打分}}
+\]</div>
+<p>关于 KL 惩罚：</p>
 <ul>
 <li><strong>为什么扣它</strong>：actor 可能找到打分高、实际很差的输出（<strong>reward hacking</strong>）；KL 把 actor 约束在出发点 ref 附近，偏得越远扣得越多</li>
 <li><strong>怎么算</strong>：冻结副本 ref 不参与 rollout。序列采出后，actor 和 ref 各对 prompt + response 做一次前向，logprob 逐位相减；比的是两个模型给同一个 token 的概率（类似蒸馏的 teacher-student）</li>
@@ -2090,18 +2084,18 @@ $$
 <li><strong>折扣因子 <span class="arithmatex">\(\gamma\)</span></strong>：经典 RL 还给远期 reward 打折，通式 <span class="arithmatex">\(G_t = \sum_{k \ge t} \gamma^{k-t} r_k\)</span>；LLM 常取 <span class="arithmatex">\(\gamma = 1\)</span></li>
 <li><strong>递归形式</strong>：等价写法 <span class="arithmatex">\(G_t = r_t + \gamma G_{t+1}\)</span>，实现从末位倒着递推；§3.4 的改造从它出发</li>
 </ul>
-<p><img src="../assets/11-rl-basics/fig-05.png" alt="fig-05" style="zoom:50%;" /></p>
+<p><img src="../assets/11-rl-basics/fig-05.png" alt="fig-05" style="zoom:40%;" /></p>
 <h3 id="33-token-2advantage-critic">3.3 token 级权重（2）：advantage 与 critic</h3>
 <p>最直接的想法是拿 <span class="arithmatex">\(G_t\)</span> 当权重，但有两个问题：</p>
 <ul>
 <li><strong>没区分度</strong>：末位 RM 分是 <span class="arithmatex">\(G_t\)</span> 的主项，每个位置都含它（KL 项很小）；各位置数值接近，写对写错同奖同罚</li>
 <li><strong>方差大</strong>：跨样本看，后半段的采样随机性把整条 <span class="arithmatex">\(G_t\)</span> 一起抬高或压低，梯度估计噪声大</li>
 </ul>
-<p><strong>修正</strong>：减一个逐位置的 baseline，权重换成 <strong>advantage（优势）</strong>：
-$$
+<p><strong>修正</strong>：减一个逐位置的 baseline，权重换成 <strong>advantage（优势）</strong>：</p>
+<div class="arithmatex">\[
 A_t = G_t - V(s_t)
-$$
-<span class="arithmatex">\(V(s_t)\)</span> = 从 <span class="arithmatex">\(s_t\)</span> 出发预期拿多少分，<span class="arithmatex">\(A_t\)</span> = 比预期好多少（正 = 推高该 token，负 = 压低）。对上前面的问题：</p>
+\]</div>
+<p><span class="arithmatex">\(V(s_t)\)</span> = 从 <span class="arithmatex">\(s_t\)</span> 出发预期拿多少分，<span class="arithmatex">\(A_t\)</span> = 比预期好多少（正 = 推高该 token，负 = 压低）。对上前面的问题：</p>
 <ul>
 <li><strong>区分度</strong>：<span class="arithmatex">\(V\)</span> 逐位置不同，影响 <span class="arithmatex">\(A_t\)</span></li>
 <li><strong>方差</strong>：<span class="arithmatex">\(A_t\)</span> 压到 0 周围，有正有负</li>
@@ -2119,18 +2113,18 @@ $$
 <li><strong>恒等展开</strong>：用 §3.2 的递归把 <span class="arithmatex">\(A_t\)</span> 里的 <span class="arithmatex">\(G_t\)</span> 展开一层，<span class="arithmatex">\(A_t = G_t - V(s_t) = r_t + \gamma G_{t+1} - V(s_t)\)</span>，此时无近似</li>
 <li><strong>近似替换</strong>：方差全部藏在 <span class="arithmatex">\(G_{t+1}\)</span> 里（身后实际采样的 suffix sum），用 critic 的预估 <span class="arithmatex">\(V(s_{t+1})\)</span> 顶替它，得到 <span class="arithmatex">\(A_t\)</span> 的新估计：</li>
 </ul>
-<p>$$
+<div class="arithmatex">\[
 \delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)
-$$
-这就是<strong>单步 TD 残差</strong>（temporal difference）。实际值只用了 <span class="arithmatex">\(r_t\)</span> 一步，方差小；代价是 critic 估不准就有偏。</p>
+\]</div>
+<p>这就是<strong>单步 TD 残差</strong>（temporal difference）。实际值只用了 <span class="arithmatex">\(r_t\)</span> 一步，方差小；代价是 critic 估不准就有偏。</p>
 <blockquote>
 <p>现在我们有了两个极端：<span class="arithmatex">\(G_t - V(s_t)\)</span> 把身后全走完，无偏但方差大；<span class="arithmatex">\(\delta_t\)</span> 只走一步，方差小但有偏。</p>
 </blockquote>
-<p><strong>GAE（Generalized Advantage Estimation）</strong> 在两者之间折中，形式是一个简单递归：
-$$
+<p><strong>GAE（Generalized Advantage Estimation）</strong> 在两者之间折中，形式是一个简单递归：</p>
+<div class="arithmatex">\[
 A_t = \delta_t + \gamma\lambda \, A_{t+1}
-$$
-读法：本步的实际残差 <span class="arithmatex">\(\delta_t\)</span> 全额保留，身后的估计 <span class="arithmatex">\(A_{t+1}\)</span> 按 <span class="arithmatex">\(\lambda\)</span> 打折。打折按等比数列累乘：离得越远的 <span class="arithmatex">\(\delta\)</span> 被打折越多次，信得越少。<span class="arithmatex">\(\lambda = 0\)</span> 就是 <span class="arithmatex">\(\delta_t\)</span>；<span class="arithmatex">\(\lambda = 1\)</span> 恰好还原 <span class="arithmatex">\(G_t - V(s_t)\)</span>；中间是 bias-variance 取舍。LLM 常配 <span class="arithmatex">\(\gamma = 1\)</span>、<span class="arithmatex">\(\lambda \approx 0.95\)</span>。计算从末位倒着递推（<span class="arithmatex">\(A_{T+1} = 0\)</span>）。</p>
+\]</div>
+<p>读法：本步的实际残差 <span class="arithmatex">\(\delta_t\)</span> 全额保留，身后的估计 <span class="arithmatex">\(A_{t+1}\)</span> 按 <span class="arithmatex">\(\lambda\)</span> 打折。打折按等比数列累乘：离得越远的 <span class="arithmatex">\(\delta\)</span> 被打折越多次，信得越少。<span class="arithmatex">\(\lambda = 0\)</span> 就是 <span class="arithmatex">\(\delta_t\)</span>；<span class="arithmatex">\(\lambda = 1\)</span> 恰好还原 <span class="arithmatex">\(G_t - V(s_t)\)</span>；中间是 bias-variance 取舍。LLM 常配 <span class="arithmatex">\(\gamma = 1\)</span>、<span class="arithmatex">\(\lambda \approx 0.95\)</span>。计算从末位倒着递推（<span class="arithmatex">\(A_{T+1} = 0\)</span>）。</p>
 <p><img src="../assets/11-rl-basics/fig-07.png" alt="fig-07" style="zoom:45%;" /></p>
 <p>到此支线一走完，权重定型：<span class="arithmatex">\(w_t\)</span> = GAE 递推出的 <span class="arithmatex">\(A_t\)</span>，当常数进 loss。§3.5 转入支线二，改另一个因子 logprob 项。</p>
 <h3 id="35-logprob">3.5 换 logprob 项：安全复用一批数据</h3>
@@ -2140,28 +2134,30 @@ $$
 <p><strong>[代价：数据过期]</strong></p>
 <p>第一次更新后 <span class="arithmatex">\(\pi_\theta\)</span> 就变了，这批数据却是旧策略 <span class="arithmatex">\(\pi_{\theta_{\text{old}}}\)</span> 采的——on-policy 被打破。§3.1 的梯度公式以"数据来自当前策略"为前提，直接再用有系统性偏差。</p>
 <p><strong>[修正：importance ratio]</strong></p>
-<p>修正的 idea 是 <strong>importance sampling</strong>：拿旧分布的样本估新分布的期望，办法是给每条样本乘一个改正系数 = 新旧分布给它的概率比（不展开推导）。直觉：新策略比旧策略更爱生成的 token，权重调大；反之调小。落到每个 token，<strong>loss 里的 <span class="arithmatex">\(\log \pi_t\)</span> 换成系数 <span class="arithmatex">\(\rho_t\)</span></strong>：
-$$
+<p>修正的 idea 是 <strong>importance sampling</strong>：拿旧分布的样本估新分布的期望，办法是给每条样本乘一个改正系数 = 新旧分布给它的概率比（不展开推导）。直觉：新策略比旧策略更爱生成的 token，权重调大；反之调小。落到每个 token，<strong>loss 里的 <span class="arithmatex">\(\log \pi_t\)</span> 换成系数 <span class="arithmatex">\(\rho_t\)</span></strong>：</p>
+<div class="arithmatex">\[
 \rho_t = \frac{\pi_\theta(a_t \mid s_t)}{\pi_{\theta_{\text{old}}}(a_t \mid s_t)}, \qquad \mathcal{L} = -\,\mathbb{E}_t\big[\, \rho_t \, A_t \,\big]
-$$
-- <strong>分子分母</strong>：都是概率（不是 logits：logits 未归一化，跨前向不可比）。实现里存 logprob，<span class="arithmatex">\(\rho_t = \exp(\log\pi_\theta - \log\pi_{\theta_{\text{old}}})\)</span>；分母来自 experiences，常数；分子由当前 actor 实时前向算出</p>
+\]</div>
+<ul>
+<li><strong>分子分母</strong>：都是概率（不是 logits：logits 未归一化，跨前向不可比）。实现里存 logprob，<span class="arithmatex">\(\rho_t = \exp(\log\pi_\theta - \log\pi_{\theta_{\text{old}}})\)</span>；分母来自 experiences，常数；分子由当前 actor 实时前向算出</li>
+</ul>
 <p><strong>[clip：限步长]</strong></p>
-<p>概率在 <span class="arithmatex">\((0, 1]\)</span> 内，但概率的<strong>比值</strong>没有上限：旧策略给某 token 0.001、新策略给 0.5，<span class="arithmatex">\(\rho_t = 500\)</span>。这种 token 会主导梯度，一步把参数推得很远——复用的前提"新旧策略接近"就被破坏了。PPO 截断：
-$$
+<p>概率在 <span class="arithmatex">\((0, 1]\)</span> 内，但概率的<strong>比值</strong>没有上限：旧策略给某 token 0.001、新策略给 0.5，<span class="arithmatex">\(\rho_t = 500\)</span>。这种 token 会主导梯度，一步把参数推得很远——复用的前提"新旧策略接近"就被破坏了。PPO 截断：</p>
+<div class="arithmatex">\[
 \mathcal{L}^{\text{clip}} = -\,\mathbb{E}_t\Big[ \min\big( \rho_t A_t, \; \text{clip}(\rho_t,\, 1-\epsilon,\, 1+\epsilon) \, A_t \big) \Big]
-$$
-<span class="arithmatex">\(\rho_t\)</span> 出了 <span class="arithmatex">\([1-\epsilon, 1+\epsilon]\)</span> 就被换成边界常数，常数没有梯度，该 token 不再推动更新。</p>
+\]</div>
+<p><span class="arithmatex">\(\rho_t\)</span> 出了 <span class="arithmatex">\([1-\epsilon, 1+\epsilon]\)</span> 就被换成边界常数，常数没有梯度，该 token 不再推动更新。</p>
 <p>效果：每个 token 的概率每轮最多推到旧策略的 <span class="arithmatex">\(1 \pm \epsilon\)</span> 倍附近，新策略被限制在 <span class="arithmatex">\(\pi_{\theta_{\text{old}}}\)</span> 的邻域内——这就是名字里 Proximal（邻近）的含义。min 让截断只单向生效：只挡"朝优势方向继续推"，往回修正的梯度保留。</p>
 <p><img src="../assets/11-rl-basics/fig-08.png" alt="fig-08" style="zoom:40%;" /></p>
 <p>复用 rollout 多次更新的整体设计：</p>
-<p><img src="../assets/11-rl-basics/fig-09.png" alt="fig-09" style="zoom:45%;" /></p>
+<p><img src="../assets/11-rl-basics/fig-09.png" alt="fig-09" style="zoom:40%;" /></p>
 <p>训推一致性（06 篇）的问题源头在这里：这个公式假设 <span class="arithmatex">\(\rho_t\)</span> 的分子分母来自同一套计算。实际系统里分母由推理引擎算、分子由训练引擎算，两边数值本身就有差异。</p>
 <h3 id="36-actor-loss">3.6 组装：完整的 actor loss</h3>
-<p>把 §3.1–3.5 拼起来，就是 PPO 实际用的 actor loss：
-$$
+<p>把 §3.1–3.5 拼起来，就是 PPO 实际用的 actor loss：</p>
+<div class="arithmatex">\[
 \mathcal{L}^{\text{actor}} = -\,\mathbb{E}_t\Big[ \min\big( \rho_t A_t, \; \text{clip}(\rho_t,\, 1-\epsilon,\, 1+\epsilon) \, A_t \big) \Big]
-$$
-对照 §3.0 的骨架 <span class="arithmatex">\(\mathcal{L} = -\sum_t w_t \cdot \log \pi_t\)</span>，两条支线在此汇合：</p>
+\]</div>
+<p>对照 §3.0 的骨架 <span class="arithmatex">\(\mathcal{L} = -\sum_t w_t \cdot \log \pi_t\)</span>，两条支线在此汇合：</p>
 <ul>
 <li><strong>支线一：<span class="arithmatex">\(w_t \to A_t\)</span></strong>：GAE（§3.4）递推的优势，原材料是 per-token reward <span class="arithmatex">\(r_t\)</span>（§3.2）和 critic 估的 <span class="arithmatex">\(V\)</span>（§3.3）</li>
 <li><strong>支线二：<span class="arithmatex">\(\log \pi_t \to\)</span> clip 过的 <span class="arithmatex">\(\rho_t\)</span></strong>：importance ratio 让一批 rollout 复用 ppo-epochs 次，clip 限每步步长（§3.5）</li>
@@ -2218,12 +2214,7 @@ $$
 \mathcal{L}_{\text{RM}} = -\log \sigma(r_w - r_l), \qquad r_w = r_\phi(x, y_w),\ \ r_l = r_\phi(x, y_l)
 \]</div>
 <p>模型 forward 始终是"一条 → 一个分"，成对只在 loss；所以训完能直接当 loop 里的单条 reward。训好冻结（§4.2）。</p>
-<blockquote>
-<p>🖼️ <strong>[图待补 fig-11]</strong> 主题：RM 训练——一个 pair 两次 forward，比较只在 loss
-画面：顶部一个 prompt 方块，向下分两支。上支拼成完整序列 prompt + <span class="arithmatex">\(y_w\)</span>（chosen，绿框），下支 prompt + <span class="arithmatex">\(y_l\)</span>（rejected，红框），两条都画成一串 token。两支各输入一个 RM 方块，两个 RM 方块用虚线连起并标"同一模型 · 权重共享（backbone + 标量 head）"。每个 RM 只从序列<strong>末位</strong> token 引出一个标量（前面位置画灰、不引出）：上支得 <span class="arithmatex">\(r_w\)</span>、下支得 <span class="arithmatex">\(r_l\)</span>。两个标量汇入一个 loss 框，框内写 <span class="arithmatex">\(-\log\sigma(r_w - r_l)\)</span>，旁注"<span class="arithmatex">\(\sigma(r_w-r_l)=P(y_w\ 更好)\)</span>，label 恒为 w 赢，梯度推 <span class="arithmatex">\(r_w&gt;r_l\)</span>"。底部一行注：每次 forward 都是"一条序列 → 一个标量"，两条是同一模型跑两遍，"比较"只在 loss 里拼出来
-意图：让"模型 forward 始终 pointwise、pairwise 只活在 loss""标量只取末位"两点一眼可见</p>
-</blockquote>
-<p><img src="../assets/11-rl-basics/fig-11.png" alt="fig-11" style="zoom:50%;" /></p>
+<p><img src="../assets/11-rl-basics/fig-11.png" alt="fig-11" style="zoom:40%;" /></p>
 <h3 id="42">4.2 四模型系统</h3>
 <p>RM 就位，四个模型到齐。对照章首的三阶段：前两阶段的产物，在 <strong>第三阶段 PPO</strong> 里各占一个位置：</p>
 <table>
@@ -2557,7 +2548,7 @@ $$
 <li><strong>慢</strong>：每个 step 内嵌一次完整推理，rollout 长尾决定 step 时长</li>
 <li><strong>冲突</strong>：两种负载各要一套引擎，同一份权重要在两套系统间保持同步</li>
 </ul>
-<p>后续从这三条分两条线走：</p>
+<p>Plan 后续从这三条分两条线走🤔：</p>
 <ul>
 <li><strong>算法线（02）</strong>：从"贵"入手，减少在场的模型数——DPO 删掉 rollout 和 RM、GRPO 删掉 critic。算法能删的到此为止</li>
 <li><strong>系统线（03–06，训推协同四篇）</strong>：剩下的模型和负载拆不掉，在系统层支撑，沿一条因果链推进：<ul>
@@ -2599,7 +2590,7 @@ $$
 </tbody>
 </table>
 <p><strong>② 整体看 reward 涨</strong>：拼起来没有可对的参照，只能看它学不学得动——换成确定性的 toy reward 训几百 step，batch 平均 reward 单调涨即整体自洽。</p>
-<p><img src="../assets/11-rl-basics/fig-13.png" alt="fig-13" width="70%" /></p>
+<p><img src="../assets/11-rl-basics/fig-13.png" alt="fig-13" width="60%" /></p>
 <p>CPU 跑通：①②两步检查均 Pass，batch 平均 reward 0.28 → 11.9（warmup → 陡升 → ~11.8 平台）。</p>
 
 

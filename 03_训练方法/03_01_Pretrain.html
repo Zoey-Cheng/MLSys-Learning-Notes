@@ -1950,11 +1950,11 @@
 <li>评估训得怎么样</li>
 </ul>
 <h3 id="41-logits-loss-gradient">4.1 logits → loss → gradient</h3>
-<p>拿到 logits ∈ ℝ^[B, T, V] 之后，每个位置 t 上的 V 维向量先过 <strong>softmax</strong> 归一化成合法的概率分布 p_t：
-$$
-p_t = \text{softmax}(\text{logits}<em t_i="t,i">t), \quad p</em>} = \frac{\exp(\text{logits<em t_j="t,j">{t,i})}{\sum_j \exp(\text{logits}</em>
-$$
-直观说就是从 V 维"原始分数"变成 V 维概率分布（元素 ≥ 0，总和 = 1）：})</p>
+<p>拿到 logits ∈ ℝ^[B, T, V] 之后，每个位置 t 上的 V 维向量先过 <strong>softmax</strong> 归一化成合法的概率分布 p_t：</p>
+<div class="arithmatex">\[
+p_t = \text{softmax}(\text{logits}_t), \quad p_{t,i} = \frac{\exp(\text{logits}_{t,i})}{\sum_j \exp(\text{logits}_{t,j})}
+\]</div>
+<p>直观说就是从 V 维"原始分数"变成 V 维概率分布（元素 ≥ 0，总和 = 1）：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>logits[t]:  [-0.2, 1.8, 0.5, ..., 3.2, ..., -1.0]    shape: [V]
 <a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>                                       ↑
 <a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>       │                        假设这位对应真实 token &quot;world&quot;

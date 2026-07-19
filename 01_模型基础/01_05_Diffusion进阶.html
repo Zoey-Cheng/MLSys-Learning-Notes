@@ -1955,15 +1955,15 @@
 </blockquote>
 <h3 id="23-cfgclassifier-free-guidance">2.3 CFG（classifier-free guidance）</h3>
 <p>只把 <span class="arithmatex">\(c\)</span> 加进去，模型对文本的服从度往往不够。CFG（Ho &amp; Salimans, 2021）手动放大服从度，几乎所有条件 diffusion 都用它。</p>
-<p>网络每步做两次预测：有文本的 $\epsilon(c) $ 和没文本的 $\epsilon(\varnothing) $。两者的差
-$$
+<p>网络每步做两次预测：有文本的 $\epsilon(c) $ 和没文本的 $\epsilon(\varnothing) $。两者的差</p>
+<div class="arithmatex">\[
 d = \epsilon_\theta(x_t,t,c) - \epsilon_\theta(x_t,t,\varnothing)
-$$
-就是<strong>文本对预测的全部影响</strong>，一个"朝文本方向"的修正向量。CFG 把这个修正向量放大 <span class="arithmatex">\(w\)</span> 倍，再加回无条件预测：
-$$
+\]</div>
+<p>就是<strong>文本对预测的全部影响</strong>，一个"朝文本方向"的修正向量。CFG 把这个修正向量放大 <span class="arithmatex">\(w\)</span> 倍，再加回无条件预测：</p>
+<div class="arithmatex">\[
 \tilde\epsilon = \epsilon_\theta(x_t,t,\varnothing) + w\cdot d
-$$
-<span class="arithmatex">\(w=1\)</span> 还原成普通条件预测 $\epsilon(c) <span class="arithmatex">\(；\)</span>w&gt;1$ 沿文本方向<strong>过量外推</strong>，服从度随之增加。<span class="arithmatex">\(w\)</span> 就是 SD 里的 guidance scale（默认 7.5 左右，越大越贴 prompt，太大会过饱和、丢多样性）。</p>
+\]</div>
+<p><span class="arithmatex">\(w=1\)</span> 还原成普通条件预测 $\epsilon(c) <span class="arithmatex">\(；\)</span>w&gt;1$ 沿文本方向<strong>过量外推</strong>，服从度随之增加。<span class="arithmatex">\(w\)</span> 就是 SD 里的 guidance scale（默认 7.5 左右，越大越贴 prompt，太大会过饱和、丢多样性）。</p>
 <p><strong>具体做法</strong>：</p>
 <ul>
 <li><strong>训练时</strong>：以约 10% 概率把条件 $c $ 换成空条件 $\varnothing $，同一个网络两种模式一起训，这样它才会算 $\epsilon(\varnothing) $</li>
