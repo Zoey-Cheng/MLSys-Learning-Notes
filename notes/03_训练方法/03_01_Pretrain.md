@@ -369,9 +369,11 @@ SFT:
 ### 4.1 logits → loss → gradient
 
 拿到 logits ∈ ℝ^[B, T, V] 之后，每个位置 t 上的 V 维向量先过 **softmax** 归一化成合法的概率分布 p_t：
+
 $$
 p_t = \text{softmax}(\text{logits}_t), \quad p_{t,i} = \frac{\exp(\text{logits}_{t,i})}{\sum_j \exp(\text{logits}_{t,j})}
 $$
+
 直观说就是从 V 维"原始分数"变成 V 维概率分布（元素 ≥ 0，总和 = 1）：
 
 ```

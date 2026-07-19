@@ -129,6 +129,7 @@ $$
 把右边的 $\log$ 拆开（乘除变加减）就是「重建项 − prior-KL」。
 
 **[结论——ELBO 的两种等价写法]**
+
 $$
 \begin{aligned}
 \text{ELBO}(\theta, \phi;\, x)

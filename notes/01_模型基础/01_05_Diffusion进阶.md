@@ -239,13 +239,17 @@ SD1.x / SDXL 一直用 cross-attention，因为 U-Net 里"拼接进 token 序列
 只把 $c$ 加进去，模型对文本的服从度往往不够。CFG（Ho & Salimans, 2021）手动放大服从度，几乎所有条件 diffusion 都用它。
 
 网络每步做两次预测：有文本的 $\epsilon(c) $ 和没文本的 $\epsilon(\varnothing) $。两者的差
+
 $$
 d = \epsilon_\theta(x_t,t,c) - \epsilon_\theta(x_t,t,\varnothing)
 $$
+
 就是**文本对预测的全部影响**，一个"朝文本方向"的修正向量。CFG 把这个修正向量放大 $w$ 倍，再加回无条件预测：
+
 $$
 \tilde\epsilon = \epsilon_\theta(x_t,t,\varnothing) + w\cdot d
 $$
+
 $w=1$ 还原成普通条件预测 $\epsilon(c) $；$w>1$ 沿文本方向**过量外推**，服从度随之增加。$w$ 就是 SD 里的 guidance scale（默认 7.5 左右，越大越贴 prompt，太大会过饱和、丢多样性）。
 
 **具体做法**：
