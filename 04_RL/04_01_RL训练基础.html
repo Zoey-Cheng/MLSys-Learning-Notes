@@ -947,7 +947,7 @@
   <a href="#35-logprob" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.5 换 logprob 项：安全复用一批数据
+        3.5 换 logprob 项：安全复用数据
       
     </span>
   </a>
@@ -1591,7 +1591,7 @@
   <a href="#35-logprob" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.5 换 logprob 项：安全复用一批数据
+        3.5 换 logprob 项：安全复用数据
       
     </span>
   </a>
@@ -1755,16 +1755,16 @@
 <li>模型组件 + loop 骨架：熟悉结构、能调用即可</li>
 </ul>
 </li>
-<li><strong>[常考面试点]</strong>：PPO 四个模型；SFT 和 RL 的区别；手撕函数</li>
 </ul>
-<p>本篇是 RL 系列第一篇，系列以 infra 视角为主。Plan的后续篇：02 讲算法演化（DPO / GRPO），03–06 讲训推协同，07 讲 Agentic RL。</p>
+<p>本篇是 RL 系列第一篇，系列以 infra 视角为主。Plan的后续篇：02 算法演化（DPO / GRPO），03–06 训推协同，07 Agentic RL。</p>
+<p>PS: 面试手撕 PPO 部分，感谢同组做 RL 算法的朋友给的参考 doc！</p>
 <h2 id="_1">前言</h2>
 <p><a href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_02_SFT.html">03_02_SFT.md</a> 之后，模型能听懂指令、按格式回答。对齐人类偏好、提升推理能力，靠的是 RL（Reinforcement Learning，强化学习）。</p>
 <p>本篇的范围：</p>
 <ul>
-<li><strong>默认已熟</strong>：SFT 基础（数据格式 / loss masking）和推理基础（generate / sampling，见 <a href="../05_%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96/05_01_%E6%8E%A8%E7%90%86%E5%9F%BA%E7%A1%80.html">05_01_推理基础.md</a>）</li>
-<li><strong>算法只讲设计层</strong>：每个部件回答"为什么需要它"，公式给形态、不做推导</li>
-<li><strong>落点是 §5 资源画像</strong>：一个 RLHF（人类反馈 RL，§4 定义）step 里有几个模型、显存占多少、两种负载（训练推理）</li>
+<li><strong>默认已熟</strong>：SFT 基础 和 推理基础（generate / sampling，见 <a href="../05_%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96/05_01_%E6%8E%A8%E7%90%86%E5%9F%BA%E7%A1%80.html">05_01_推理基础.md</a>）</li>
+<li><strong>算法只讲设计层</strong>：每个部件只回答"为什么需要它"，不追求细节</li>
+<li><strong>落点是 §5 资源画像</strong>：一个 RLHF (§4) 有几个模型、显存占多少、两种负载（训练推理）</li>
 </ul>
 <p>整体顺序：为什么要 RL → loop 本体 → PPO 部件 → 四模型系统 → 资源画像。</p>
 <h2 id="1-sft-rl">1. 为什么 SFT 后还要 RL</h2>
@@ -1784,7 +1784,6 @@
 <p>经典 RL 的设定是 agent 和环境的循环：</p>
 <ul>
 <li>agent 观察状态 <span class="arithmatex">\(s\)</span> → 按策略 <span class="arithmatex">\(\pi\)</span> 输出动作 <span class="arithmatex">\(a\)</span> → 环境返回 reward <span class="arithmatex">\(r\)</span> 和新状态 <span class="arithmatex">\(s'\)</span> → 目标是最大化累计 reward。</li>
-<li>AlphaGo 是最直观的例子：没有人告诉它每步该下哪，唯一反馈是整局的输赢。</li>
 </ul>
 <pre class="mermaid"><code>flowchart LR
     AG("agent&lt;br/&gt;(策略 π)") --&gt;|"动作 a"| ENV("环境")
@@ -1794,7 +1793,7 @@
 <li><strong>反馈有高低</strong>：拿低分的动作被抑制——补上"没有负反馈"</li>
 <li><strong>反馈可以只是整条一个总分</strong>：不需要每步 GT，标注员打得了分——接住"写不出 GT"的目标</li>
 </ul>
-<p>新的代价也来自这里：反馈延迟到一局结束才来，功劳怎么分回中间每一步成了新问题——这是 advantage（§3.3）存在的根本原因。</p>
+<p>新的思考也来自这里：反馈延迟到一局结束才来，功劳怎么分回中间每一步成了新问题。</p>
 <h3 id="12-kl">1.2 概率视角：两种 KL 方向</h3>
 <blockquote>
 <p>回忆 KL 散度：<span class="arithmatex">\(D_{KL}(q \,\|\, p) = \mathbb{E}_{x \sim q}[\log \frac{q(x)}{p(x)}]\)</span>，衡量两个分布有多远，常见于蒸馏</p>
@@ -1821,7 +1820,7 @@
 <p><img src="../assets/11-rl-basics/fig-01.png" alt="fig-01" width="70%" /></p>
 <h2 id="2-rl-loop">2. RL loop：训练和推理的交替</h2>
 <h3 id="21-rl-llm">2.1 RL 概念 ↔ LLM 映射</h3>
-<p>§1 的 agent-环境循环搬到 LLM 上，"环境"退化得非常简单：没有外部世界，状态转移就是把新 token 拼到序列末尾，反馈在生成结束时来一次。逐项映射如下，生成一条 response 就是一条轨迹：</p>
+<p>§1 的 agent-环境循环搬到 LLM 上，"环境"退化得非常简单：没有外部世界。状态转移就是把新 token 拼到序列末尾；反馈在生成结束时来一次。逐项映射如下，生成一条 response 就是一条轨迹：</p>
 <table>
 <thead>
 <tr>
@@ -1858,7 +1857,7 @@
 </tr>
 </tbody>
 </table>
-<p><img src="../assets/11-rl-basics/fig-02.png" alt="fig-02" style="zoom:40%;" /></p>
+<p><img src="../assets/11-rl-basics/fig-02.png" alt="fig-02" style="zoom:35%;" /></p>
 <p>策略、状态转移都是现成的——LLM 本身就是一个逐 token 决策的 policy。被训练的这个 LLM，RL 语境里叫 <strong>actor</strong>。整个框架里唯一需要新造的部件是 reward（§4.1）。</p>
 <h3 id="22-loop">2.2 loop 本体</h3>
 <p>一个 RL training step 分四段：rollout → reward → advantage → update。<strong>rollout</strong> 是 RL 术语，指"跑一遍当前策略收集数据"，LLM 下就是 <code>actor.generate()</code>：</p>
@@ -1875,13 +1874,13 @@
     style U fill:#3f51b5,stroke:#1a237e,stroke-width:2px,color:#fff</code></pre>
 <p>四段各是什么计算：</p>
 <ul>
-<li><strong>rollout（推理）</strong>：actor 逐 token 自回归生成 response——就是 <a href="../05_%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96/05_01_%E6%8E%A8%E7%90%86%E5%9F%BA%E7%A1%80.html">05_01_推理基础.md</a> 的 generate</li>
+<li><strong>rollout（推理）</strong>：actor 逐 token 自回归生成 response</li>
 <li><strong>reward</strong>：RM 给整条打分，组装成 per-token reward（§4.1 / §3.2）——整条一次前向</li>
 <li><strong>advantage</strong>：critic 估每 token 的 <span class="arithmatex">\(V\)</span>，GAE 算出 <span class="arithmatex">\(A_t\)</span>（§3.3 / §3.4）——整条一次前向</li>
 <li><strong>update（训练）</strong>：算 PPO loss，更新 actor / critic 权重（loss 见 §3）——前向 + 反向</li>
 </ul>
-<p>只有首尾两段是重负载：rollout 走推理、update 走训练。中间 reward / advantage 只对整条 response 各做一次前向，没有自回归循环，很轻。标题的"交替"指的就是首尾这两段。</p>
-<p><strong>一个 RL step 内嵌了一次完整的推理</strong>：rollout 走推理、update 走训练，两种负载交替出现，且共享 actor 的同一份权重。这个耦合是全系列的中心对象。</p>
+<p>只有首尾两段是<strong>重负载：rollout 走推理、update 走训练</strong>，两种负载交替出现，且共享 actor 的同一份权重。</p>
+<p>中间 reward / advantage 只对整条 response 各做一次前向，没有自回归循环，很轻。</p>
 <p><strong>on-policy</strong> 的含义也在这张图里：用来算梯度的数据必须来自当前策略。策略一更新，旧 rollout 数据就过期了。想复用几步，需要 §3.5 的 importance ratio 修正。</p>
 <h2 id="3-ppo">3. PPO：每个部件为什么存在</h2>
 <blockquote>
@@ -1930,8 +1929,7 @@
 <li><strong>权重 <span class="arithmatex">\(w_t\)</span> 是多少</strong>：pretrain / SFT 恒为 1，表现为逐 token CE；RLHF-PPO 手里只有整条 response 一个标量 reward，<span class="arithmatex">\(w_t\)</span> 没有现成的</li>
 </ul>
 <blockquote>
-<p><strong>逐 token CE 是一般 CE 的退化形态</strong>。一般 CE 对词表求和 <span class="arithmatex">\(-\sum_v q(v) \log p(v)\)</span>。<span class="arithmatex">\(q\)</span> 为 one-hot 时塌缩成 <span class="arithmatex">\(-\log \pi_\theta(\text{GT}_t \mid s_t)\)</span>，即 pretrain / SFT，<span class="arithmatex">\(w_t \equiv 1\)</span>。<span class="arithmatex">\(q\)</span> 为 soft 标签（如蒸馏）不塌缩，得全词表求和，写成 KL。</p>
-<p>RLHF 没走 soft：仍 one-hot 取一格，只是乘上 <span class="arithmatex">\(w_t \ne 1\)</span>。所以三者共享骨架 <span class="arithmatex">\(-\sum_t w_t \log \pi_t\)</span>，差别只在 <span class="arithmatex">\(w_t\)</span>。</p>
+<p><strong>逐 token CE 是一般 CE 的退化形态</strong>。一般 CE 对词表求和 <span class="arithmatex">\(-\sum_v q(v) \log p(v)\)</span>。<span class="arithmatex">\(q\)</span> 为 one-hot 时塌缩成 <span class="arithmatex">\(-\log \pi_\theta(\text{GT}_t \mid s_t)\)</span>，即 pretrain / SFT，<span class="arithmatex">\(w_t \equiv 1\)</span>。</p>
 </blockquote>
 <p>所以 §3 把骨架的两个因子逐一填实。<strong>§3.1 起点</strong>用 policy gradient 推出骨架：<span class="arithmatex">\(w_t \equiv R\)</span>、logprob 项原样。之后两个因子分头改造：</p>
 <ul>
@@ -2050,14 +2048,14 @@ J(\theta) = \sum_{y} \pi_\theta(y)\, R(y)
 </code></pre></div>
 <p><strong>[loss 换成逐 token 读法]</strong></p>
 <p>目前的 loss 是整条 seq 一个数，结构 = <span class="arithmatex">\(R \times \text{SFT 式 loss}\)</span>。</p>
-<p>两个因子里，分数 <span class="arithmatex">\(R\)</span> 是常数；SFT 式 loss 就是逐 token CE 求和——<strong>CE 天然逐 token 算、再求和</strong>。按 token 展开（简写 <span class="arithmatex">\(\log \pi_t = \log \pi_\theta(a_t \mid s_t)\)</span>）：</p>
+<p>两个因子里，分数 <span class="arithmatex">\(R\)</span> 是常数。SFT 式 loss 就是逐 token CE 求和——<strong>CE 天然逐 token 算、再求和</strong>。按 token 展开（简写 <span class="arithmatex">\(\log \pi_t = \log \pi_\theta(a_t \mid s_t)\)</span>）：</p>
 <div class="arithmatex">\[
 \mathcal{L} = -R \cdot \big(\log \pi_1 + \log \pi_2 + \cdots\big)
 = -\big(R \log \pi_1 + R \log \pi_2 + \cdots\big)
 = -\sum_t w_t \cdot \log \pi_t, \qquad w_t = R
 \]</div>
 <p>这就是 §3.0 承诺的形状（<span class="arithmatex">\(w_t\)</span> 当<strong>常数</strong>用，stop-grad，被求导的只有 <span class="arithmatex">\(\log \pi\)</span>）。</p>
-<p>问题：<span class="arithmatex">\(w_t\)</span> 恒 <span class="arithmatex">\(= R\)</span>，写对和写错的 token 同奖同罚，不合理。支线一（§3.2–3.4）把 <span class="arithmatex">\(w_t\)</span> 换成逐位置的量；另一个因子 logprob 项的问题是复用——rollout 贵，一批数据想多次更新，支线二（§3.5）换成 ratio 并 clip。分步见 §3.0 末尾的图。</p>
+<p>问题：<span class="arithmatex">\(w_t\)</span> 恒 <span class="arithmatex">\(= R\)</span>，写对和写错的 token 同奖同罚，不合理。支线一（§3.2–3.4）把 <span class="arithmatex">\(w_t\)</span> 换成逐位置的量。logprob 项的问题是复用：rollout 贵，一批数据想多次更新。支线二（§3.5）把它换成 ratio 并 clip。分步见 §3.0 末尾的图。</p>
 <h3 id="32-token-1r_t-g_t">3.2 token 级权重（1）：<span class="arithmatex">\(r_t\)</span> 与 <span class="arithmatex">\(G_t\)</span></h3>
 <p>本节造两个逐 token 的量，引入一个新模型（ref），作 §3.3 权重的原材料。</p>
 <ul>
@@ -2127,19 +2125,19 @@ A_t = \delta_t + \gamma\lambda \, A_{t+1}
 <p>读法：本步的实际残差 <span class="arithmatex">\(\delta_t\)</span> 全额保留，身后的估计 <span class="arithmatex">\(A_{t+1}\)</span> 按 <span class="arithmatex">\(\lambda\)</span> 打折。打折按等比数列累乘：离得越远的 <span class="arithmatex">\(\delta\)</span> 被打折越多次，信得越少。<span class="arithmatex">\(\lambda = 0\)</span> 就是 <span class="arithmatex">\(\delta_t\)</span>；<span class="arithmatex">\(\lambda = 1\)</span> 恰好还原 <span class="arithmatex">\(G_t - V(s_t)\)</span>；中间是 bias-variance 取舍。LLM 常配 <span class="arithmatex">\(\gamma = 1\)</span>、<span class="arithmatex">\(\lambda \approx 0.95\)</span>。计算从末位倒着递推（<span class="arithmatex">\(A_{T+1} = 0\)</span>）。</p>
 <p><img src="../assets/11-rl-basics/fig-07.png" alt="fig-07" style="zoom:45%;" /></p>
 <p>到此支线一走完，权重定型：<span class="arithmatex">\(w_t\)</span> = GAE 递推出的 <span class="arithmatex">\(A_t\)</span>，当常数进 loss。§3.5 转入支线二，改另一个因子 logprob 项。</p>
-<h3 id="35-logprob">3.5 换 logprob 项：安全复用一批数据</h3>
+<h3 id="35-logprob">3.5 换 logprob 项：安全复用数据</h3>
 <p><strong>[复用 = 同一批数据多次更新]</strong></p>
 <p>rollout 要整条自回归生成，是 loop 里最贵的一段（§5）。一批数据只更新一次就扔，太浪费。</p>
 <p>PPO 的做法：rollout 一次，存成一批 <strong>experiences</strong>（序列、每 token 的旧 logprob、算好的 <span class="arithmatex">\(A_t\)</span>），用它连做 <strong>ppo-epochs</strong> 次前向反向。生成只发生一次；复用的是数据，不是重跑 prompt 重新采样。</p>
 <p><strong>[代价：数据过期]</strong></p>
 <p>第一次更新后 <span class="arithmatex">\(\pi_\theta\)</span> 就变了，这批数据却是旧策略 <span class="arithmatex">\(\pi_{\theta_{\text{old}}}\)</span> 采的——on-policy 被打破。§3.1 的梯度公式以"数据来自当前策略"为前提，直接再用有系统性偏差。</p>
 <p><strong>[修正：importance ratio]</strong></p>
-<p>修正的 idea 是 <strong>importance sampling</strong>：拿旧分布的样本估新分布的期望，办法是给每条样本乘一个改正系数 = 新旧分布给它的概率比（不展开推导）。直觉：新策略比旧策略更爱生成的 token，权重调大；反之调小。落到每个 token，<strong>loss 里的 <span class="arithmatex">\(\log \pi_t\)</span> 换成系数 <span class="arithmatex">\(\rho_t\)</span></strong>：</p>
+<p>修正的 idea 是 <strong>importance sampling</strong>：拿旧分布的样本估新分布的期望。办法是给每条样本乘一个改正系数 = 新旧分布给它的概率比（不展开推导）。直觉：新策略比旧策略更爱生成的 token，权重调大；反之调小。落到每个 token，<strong>loss 里的 <span class="arithmatex">\(\log \pi_t\)</span> 换成系数 <span class="arithmatex">\(\rho_t\)</span></strong>：</p>
 <div class="arithmatex">\[
 \rho_t = \frac{\pi_\theta(a_t \mid s_t)}{\pi_{\theta_{\text{old}}}(a_t \mid s_t)}, \qquad \mathcal{L} = -\,\mathbb{E}_t\big[\, \rho_t \, A_t \,\big]
 \]</div>
 <ul>
-<li><strong>分子分母</strong>：都是概率（不是 logits：logits 未归一化，跨前向不可比）。实现里存 logprob，<span class="arithmatex">\(\rho_t = \exp(\log\pi_\theta - \log\pi_{\theta_{\text{old}}})\)</span>；分母来自 experiences，常数；分子由当前 actor 实时前向算出</li>
+<li><strong>分子分母</strong>：都是概率，不是 logits（logits 未归一化，跨前向不可比）。实现里存 logprob，<span class="arithmatex">\(\rho_t = \exp(\log\pi_\theta - \log\pi_{\theta_{\text{old}}})\)</span>；分母来自 experiences，常数；分子由当前 actor 实时前向算出</li>
 </ul>
 <p><strong>[clip：限步长]</strong></p>
 <p>概率在 <span class="arithmatex">\((0, 1]\)</span> 内，但概率的<strong>比值</strong>没有上限：旧策略给某 token 0.001、新策略给 0.5，<span class="arithmatex">\(\rho_t = 500\)</span>。这种 token 会主导梯度，一步把参数推得很远——复用的前提"新旧策略接近"就被破坏了。PPO 截断：</p>
@@ -2147,7 +2145,7 @@ A_t = \delta_t + \gamma\lambda \, A_{t+1}
 \mathcal{L}^{\text{clip}} = -\,\mathbb{E}_t\Big[ \min\big( \rho_t A_t, \; \text{clip}(\rho_t,\, 1-\epsilon,\, 1+\epsilon) \, A_t \big) \Big]
 \]</div>
 <p><span class="arithmatex">\(\rho_t\)</span> 出了 <span class="arithmatex">\([1-\epsilon, 1+\epsilon]\)</span> 就被换成边界常数，常数没有梯度，该 token 不再推动更新。</p>
-<p>效果：每个 token 的概率每轮最多推到旧策略的 <span class="arithmatex">\(1 \pm \epsilon\)</span> 倍附近，新策略被限制在 <span class="arithmatex">\(\pi_{\theta_{\text{old}}}\)</span> 的邻域内——这就是名字里 Proximal（邻近）的含义。min 让截断只单向生效：只挡"朝优势方向继续推"，往回修正的梯度保留。</p>
+<p>效果：每个 token 的概率每轮最多推到旧策略的 <span class="arithmatex">\(1 \pm \epsilon\)</span> 倍附近，新策略被限制在 <span class="arithmatex">\(\pi_{\theta_{\text{old}}}\)</span> 的邻域内。这就是名字里 Proximal（邻近）的含义。min 让截断只单向生效：只挡"朝优势方向继续推"，往回修正的梯度保留。</p>
 <p><img src="../assets/11-rl-basics/fig-08.png" alt="fig-08" style="zoom:40%;" /></p>
 <p>复用 rollout 多次更新的整体设计：</p>
 <p><img src="../assets/11-rl-basics/fig-09.png" alt="fig-09" style="zoom:40%;" /></p>
@@ -2260,7 +2258,7 @@ A_t = \delta_t + \gamma\lambda \, A_{t+1}
 </table>
 <p>每个模型在一个 step 里算什么、什么时候算，§3.6 的计算链已排过时序；§4.3 用代码逐行走一遍。四个模型、两种负载，这就是 §5 要算账的对象。</p>
 <h3 id="43-basicppo">4.3 手写 BasicPPO</h3>
-<p>把 §4.2 的表和 §3.6 的计算链落成能跑的代码，分两档：<strong>高频手撕的纯函数</strong>（面试重点，练到可默写），<strong>模型组件 + loop 骨架</strong>（熟悉结构、能调用即可）。toy 规模（词表 100、hidden 64），CPU 直接跑通；完整可运行版见 <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/11_basic_ppo.ipynb">11_basic_ppo.ipynb</a>。真实系统的工程项省略。</p>
+<p>把 §4.2 的表和 §3.6 的计算链落成能跑的代码，分两档。<strong>高频手撕的纯函数</strong>是面试重点，练到可默写；<strong>模型组件 + loop 骨架</strong>熟悉结构、能调用即可。toy 规模（词表 100、hidden 64），CPU 直接跑通；完整可运行版见 <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/11_basic_ppo.ipynb">11_basic_ppo.ipynb</a>。真实系统的工程项省略。</p>
 <p><img src="../assets/11-rl-basics/fig-10.png" alt="fig-10" style="zoom:45%;" /></p>
 <p><strong>[高频手撕：四个纯函数]</strong></p>
 <blockquote>
@@ -2273,7 +2271,7 @@ A_t = \delta_t + \gamma\lambda \, A_{t+1}
 <li><code>compute_gae</code>：优势 <span class="arithmatex">\(A_t\)</span>，最终的 per-token 权重（§3.4）</li>
 <li><code>ppo_loss</code>：clip 版 actor loss，多轮复用（§3.6）</li>
 </ul>
-<p><strong>后两个是参考 doc 单列的 "PPO" 一节手撕的核心</strong>，前两个是 RLHF 特有的前置（纯 PPO 没有）。下面按这个分界拆成两块。</p>
+<p><strong>后两个是纯 PPO 手撕的核心</strong>；前两个是 RLHF 特有的前置，纯 PPO 没有。下面按这个分界拆成两块。</p>
 <p><strong>① logprob + ② per-token reward</strong>（RLHF 前置）：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
@@ -2450,7 +2448,7 @@ A_t = \delta_t + \gamma\lambda \, A_{t+1}
 <p>RM 随机，reward 无意义，所以这段只验接线、不验收敛——loss 上下跳正常。正确性怎么测见 §6。</p>
 <p>toy 为了跑通省掉了这些工程项，真实实现都要补上：</p>
 <ul>
-<li><strong>变长 prompt 的 attention mask</strong>：BasicPPO 已用 EOS + response_mask 处理变长 response，但 prompt 都等长，省了另一半——真实 batch 里 prompt 也长短不一，要左 pad 并加 attention mask 让注意力跳过 pad token。toy 的 <code>MiniLM</code> 只有 causal mask（管自回归），没有这个 padding mask。</li>
+<li><strong>变长 prompt 的 attention mask</strong>：BasicPPO 处理了变长 response（EOS + response_mask），prompt 却都等长。真实 batch 里 prompt 也长短不一：要左 pad，并加 attention mask 让注意力跳过 pad token。toy 的 <code>MiniLM</code> 只有 causal mask（管自回归），没有这个 padding mask。</li>
 <li><strong>KL 惩罚的另一种放法</strong>：§3.2 把 KL 并进 <span class="arithmatex">\(r_t\)</span>。也可以不并，单独作一项加到 loss（<span class="arithmatex">\(\mathcal{L}^{\text{actor}} + \beta \cdot \text{KL}\)</span>）——目标等价、实现不同。GRPO 用后者，02 篇展开。</li>
 <li><strong>双引擎</strong>：toy 里 <code>generate</code> 和 update 用同一个 <code>actor</code> 对象。真实系统 <code>generate</code> 走推理引擎（vLLM）、update 走训练引擎（Megatron / FSDP），同一份权重在两套系统各存一份。§5 起全系列都在处理这件事。</li>
 <li><strong>训练稳定性 trick</strong>：一批只影响"训得稳不稳"、不改设计的调参项，本篇不展开——advantage 按 batch 白化（减均值除标准差，稳梯度尺度）、reward clip、entropy bonus（loss 加一项策略熵，防策略过早塌缩成只输出几个 token）、value clip（限 critic 的 <span class="arithmatex">\(V\)</span> 单步别跳太远）、actor / critic 分开 optimizer。</li>
@@ -2503,7 +2501,7 @@ A_t = \delta_t + \gamma\lambda \, A_{t+1}
 <p>这张表带出两个问题：</p>
 <ul>
 <li><strong>单卡装不下</strong>：~250 GB 远超单卡显存，四个模型怎么摆到一组 GPU 上要专门设计</li>
-<li><strong>同一份权重、两种运行时</strong>：rollout 时 actor 要额外的 KV cache 和推理引擎运行时，而它训练态的优化器状态此刻全程闲置——放置策略得处理这种切换</li>
+<li><strong>同一份权重、两种运行时</strong>：rollout 时 actor 要额外的 KV cache 和推理引擎运行时，而它训练态的优化器状态此刻全程闲置。放置策略得处理这种切换</li>
 </ul>
 <h3 id="52">5.2 两种负载的计算特性</h3>
 <p>rollout 和 update 的差异，就是推理和训练的差异（细节见 <a href="../05_%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96/05_01_%E6%8E%A8%E7%90%86%E5%9F%BA%E7%A1%80.html">05_01_推理基础.md</a>，此处只列对系统设计有影响的几条）：</p>
@@ -2540,7 +2538,7 @@ A_t = \delta_t + \gamma\lambda \, A_{t+1}
 </table>
 <p>最关键的是最后一行：<strong>两种负载的最优引擎不是同一个</strong>。工业实践里 rollout 用推理引擎、update 用训练引擎，同一份权重在两套系统里各存一份。这一个事实派生出后续一整串系统问题。</p>
 <p><img src="../assets/11-rl-basics/fig-12.png" alt="fig-12" style="zoom:33%;" /></p>
-<p>时间上 rollout 通常占大部分，且 response 越长占比越高——reasoning 任务里生成几万 token，rollout 占比可以远超一半。一批 rollout 的时长由最长那条 response 决定：短的先生成完、之后一直空等。这个长尾是后续异步化要处理的对象。</p>
+<p>时间上 rollout 通常占大部分，且 response 越长占比越高。reasoning 任务里生成几万 token，rollout 占比可以远超一半。一批 rollout 的时长由最长那条 response 决定：短的先生成完、之后一直空等。这个长尾是后续异步化要处理的对象。</p>
 <h3 id="53">5.3 三个结论与后续</h3>
 <p>收束这张画像：</p>
 <ul>
