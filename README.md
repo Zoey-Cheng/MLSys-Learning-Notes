@@ -40,7 +40,7 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 |  | 02-数据并行 DP *WIP* | | | |
 | 训练方法 | [01-预训练 Pretrain](notes/03_训练方法/03_01_Pretrain.md) | [link](https://zhuanlan.zhihu.com/p/2033923074630870192) | [ipynb](code/04_mini_pretrain.ipynb) ｜ [colab](https://drive.google.com/file/d/1VUB1WrZx9KkHBrY9N8E3-Dfmql7aHnjw/view?usp=sharing) | mini pretrain |
 |  | [02-监督微调 SFT](notes/03_训练方法/03_02_SFT.md) | [link](https://zhuanlan.zhihu.com/p/2034286003767218701) | [ipynb](code/05_mini_lora_sft.ipynb) ｜ [colab](https://drive.google.com/file/d/1NrDWiGrWPoRrk2yszFXIkDe-DeyKW7B0/view?usp=drive_link) | mini lora SFT |
-| RL | *coming soon* | | | |
+| RL | [01-RL训练基础 (loop 与 RLHF-PPO)](notes/04_RL/04_01_RL训练基础.md) | | [ipynb](code/11_basic_ppo.ipynb) ｜ [colab](https://drive.google.com/file/d/1h7c6Tdk-xz8QPxnmZ1wRN9KxTDVWNGN7/view?usp=sharing) | Basic PPO |
 | 推理优化 | [01-推理基础(PD / 指标 / KV Cache)](notes/05_推理优化/05_01_推理基础.md) | [link](https://zhuanlan.zhihu.com/p/2052410872912418496) | [ipynb](code/08_mini_inference.ipynb) ｜ [colab](https://drive.google.com/file/d/1Zlicq3BShtFv4iWECkbHSqJ2iNZT42xW/view?usp=sharing) | mini inference |
 | 算子 | [01-算子手写(1) - CUDA 入门 op](notes/06_算子/05_01_CUDA入门.md) | [link](https://zhuanlan.zhihu.com/p/1892487783110644443) | [ipynb](code/02-cuda-ops.ipynb) ｜ [colab](https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link) | 一些基础CUDA算子 |
 |  | 02-Flash Attention (上) - FA1/2 *WIP* | | | |
@@ -48,6 +48,7 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 
 ## 更新历史
 
+- **07/19/2026**: RL → 01-RL训练基础 (loop 与 RLHF-PPO) [[link]](notes/04_RL/04_01_RL训练基础.md)，网页版发布
 - **07/12/2026**: 模型基础 → 05-Diffusion(下) [[link]](notes/01_模型基础/01_05_Diffusion进阶.md)，网页版和知乎同步发布
 - **06/28/2026**: 模型基础 → 03-VLM [[link]](notes/01_模型基础/01_03_VLM.md)，网页版和知乎同步发布
 - **06/21/2026**: 新增「♪ 手写题 Quick Ref」部分 🐶🐶
