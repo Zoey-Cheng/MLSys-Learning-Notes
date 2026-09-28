@@ -41,6 +41,7 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 | 训练方法 | [01-预训练 Pretrain](notes/03_训练方法/03_01_Pretrain.md) | [link](https://zhuanlan.zhihu.com/p/2033923074630870192) | [ipynb](code/04_mini_pretrain.ipynb) ｜ [colab](https://drive.google.com/file/d/1VUB1WrZx9KkHBrY9N8E3-Dfmql7aHnjw/view?usp=sharing) | mini pretrain |
 |  | [02-监督微调 SFT](notes/03_训练方法/03_02_SFT.md) | [link](https://zhuanlan.zhihu.com/p/2034286003767218701) | [ipynb](code/05_mini_lora_sft.ipynb) ｜ [colab](https://drive.google.com/file/d/1NrDWiGrWPoRrk2yszFXIkDe-DeyKW7B0/view?usp=drive_link) | mini lora SFT |
 | RL | [01-RL训练基础 (loop 与 RLHF-PPO)](notes/04_RL/04_01_RL训练基础.md) | [link](https://zhuanlan.zhihu.com/p/2062167864627443180) | [ipynb](code/11_basic_ppo.ipynb) ｜ [colab](https://drive.google.com/file/d/1h7c6Tdk-xz8QPxnmZ1wRN9KxTDVWNGN7/view?usp=sharing) | Basic PPO |
+|  | [02-算法演化 (DPO / GRPO / OPD)](notes/04_RL/04_02_算法演化.md) | 待发布 | [ipynb](code/12_dpo_grpo_opd.ipynb) ｜ [colab](https://drive.google.com/file/d/1dzNP4RzIoox-Ef29yuW48fRInDXdq5pU/view?usp=drive_link) | DPO / GRPO / OPD loss 与 toy demo |
 | 推理优化 | [01-推理基础(PD / 指标 / KV Cache)](notes/05_推理优化/05_01_推理基础.md) | [link](https://zhuanlan.zhihu.com/p/2052410872912418496) | [ipynb](code/08_mini_inference.ipynb) ｜ [colab](https://drive.google.com/file/d/1Zlicq3BShtFv4iWECkbHSqJ2iNZT42xW/view?usp=sharing) | mini inference |
 | 算子 | [01-算子手写(1) - CUDA 入门 op](notes/06_算子/05_01_CUDA入门.md) | [link](https://zhuanlan.zhihu.com/p/1892487783110644443) | [ipynb](code/02-cuda-ops.ipynb) ｜ [colab](https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link) | 一些基础CUDA算子 |
 |  | 02-Flash Attention (上) - FA1/2 *WIP* | | | |
@@ -48,6 +49,7 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 
 ## 更新历史
 
+- **09/27/2026**: RL → 02-算法演化 (DPO / GRPO / OPD) [[link]](notes/04_RL/04_02_算法演化.md)，含配图与可运行 demo，待发布
 - **07/19/2026**: RL → 01-RL训练基础 (loop 与 RLHF-PPO) [[link]](notes/04_RL/04_01_RL训练基础.md)，网页版和知乎同步发布
 - **07/12/2026**: 模型基础 → 05-Diffusion(下) [[link]](notes/01_模型基础/01_05_Diffusion进阶.md)，网页版和知乎同步发布
 - **06/28/2026**: 模型基础 → 03-VLM [[link]](notes/01_模型基础/01_03_VLM.md)，网页版和知乎同步发布
@@ -61,5 +63,3 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 - **04/20/2025**: 训练策略 → 01-分布式背景知识(通信/单卡计算流)，发布在知乎
 - **04/06/2025**: 算子 → 01-常见CUDA手写实现，发布在知乎
 - **03/06/2025**: 模型结构 → 01-Transformer详解，发布在知乎
-
-
