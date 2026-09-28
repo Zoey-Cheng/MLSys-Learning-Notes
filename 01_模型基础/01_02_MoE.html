@@ -1123,6 +1123,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../04_RL/04_02_%E7%AE%97%E6%B3%95%E6%BC%94%E5%8C%96.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-算法演化: DPO、GRPO与OPD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2004,7 +2032,7 @@ y = \sum_{i=1}^{N} G(x)_i \cdot E_i(x)
 <li>通过gate得到N expert初始分数 -&gt; Softmax -&gt; 选top K -&gt; renorm</li>
 </ul>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Router</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;softmax → topk → renorm: 决定每个 token 走哪 K 个 expert&quot;&quot;&quot;</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="sd">"""softmax → topk → renorm: 决定每个 token 走哪 K 个 expert"""</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">num_experts</span><span class="p">,</span> <span class="n">top_k</span><span class="p">):</span>
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 <a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">gate</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">num_experts</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>                                   <span class="c1"># 参数仅 d × N</span>
@@ -2158,7 +2186,7 @@ L_{aux} = \alpha \cdot N \cdot \sum_{i=1}^{N} f_i \cdot P_i
 <p>和 §2.2 BasicMoE 算法上几乎一样。BasicMoE 并不是照着 Mixtral 写的——只是把经典设计加到一个基础 MoE 上，结果就和 Mixtral 一致了🤔。</p>
 <p>代码里只有 dispatch 的<strong>写法</strong>不同（换成更标准的 <code>expert_mask</code> + <code>index_add_</code>），过一眼即可。和 §2.2 不一样的行用 <code># ≠§2.2</code> 标出：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">MixtralExpert</span><span class="p">(</span><span class="n">SwiGLU</span><span class="p">):</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Mixtral 的 expert 就是一个标准 SwiGLU&quot;&quot;&quot;</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">    </span><span class="sd">"""Mixtral 的 expert 就是一个标准 SwiGLU"""</span>
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="k">pass</span>
 <a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
 <a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">MixtralSparseMoeBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
@@ -2231,7 +2259,7 @@ y = \sum_{i=1}^{K_s} E^{(s)}_i(x) + \sum_{j \in \text{TopK}(\text{router})} g_j 
 <h3 id="44">4.4 简化版代码</h3>
 <p>在 §2 BasicMoE / §3 Mixtral 的 per-expert dispatch 上加两件事—— 细粒度expert + 并联一组 shared expert：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">DeepSeekMoE</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Routed Experts (Top-K, 细粒度) + Shared Experts (always on)&quot;&quot;&quot;</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">    </span><span class="sd">"""Routed Experts (Top-K, 细粒度) + Shared Experts (always on)"""</span>
 <a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span>
 <a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>                 <span class="n">num_routed_experts</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">num_shared_experts</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
 <a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>                 <span class="n">top_k</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">moe_intermediate_size</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>

@@ -16,7 +16,7 @@
         <link rel="prev" href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_02_SFT.html">
       
       
-        <link rel="next" href="../05_%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96/05_01_%E6%8E%A8%E7%90%86%E5%9F%BA%E7%A1%80.html">
+        <link rel="next" href="04_02_%E7%AE%97%E6%B3%95%E6%BC%94%E5%8C%96.html">
       
       
         
@@ -900,10 +900,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#31-seq-policy-gradient" class="md-nav__link">
+  <a href="#31-seq-j_0-j_textkl" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.1 起点：seq 级 policy gradient (!!)
+        3.1 seq 级目标：从 \(J_0\) 到 \(J_{\text{KL}}\) (!!)
       
     </span>
   </a>
@@ -947,7 +947,7 @@
   <a href="#35-logprob" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.5 换 logprob 项：安全复用数据
+        3.5 换 logprob 项：安全复用一批数据
       
     </span>
   </a>
@@ -1085,6 +1085,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="04_02_%E7%AE%97%E6%B3%95%E6%BC%94%E5%8C%96.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-算法演化: DPO、GRPO与OPD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1544,10 +1572,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#31-seq-policy-gradient" class="md-nav__link">
+  <a href="#31-seq-j_0-j_textkl" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.1 起点：seq 级 policy gradient (!!)
+        3.1 seq 级目标：从 \(J_0\) 到 \(J_{\text{KL}}\) (!!)
       
     </span>
   </a>
@@ -1591,7 +1619,7 @@
   <a href="#35-logprob" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.5 换 logprob 项：安全复用数据
+        3.5 换 logprob 项：安全复用一批数据
       
     </span>
   </a>
@@ -1757,7 +1785,7 @@
 </li>
 </ul>
 <p>本篇是 RL 系列第一篇，系列以 infra 视角为主。Plan的后续篇：02 算法演化（DPO / GRPO），03–06 训推协同，07 Agentic RL。</p>
-<p>PS: 面试手撕 PPO 部分，感谢同组做 RL 算法的朋友给的参考 doc！</p>
+<p>PS: 面试手撕 PPO 部分，感谢同组做 RL 算法的朋友给的 ref doc！</p>
 <h2 id="_1">前言</h2>
 <p><a href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_02_SFT.html">03_02_SFT.md</a> 之后，模型能听懂指令、按格式回答。对齐人类偏好、提升推理能力，靠的是 RL（Reinforcement Learning，强化学习）。</p>
 <p>本篇的范围：</p>
@@ -1886,114 +1914,218 @@
 <blockquote>
 <p>最复杂的是 loss 怎么算（§3.1 policy gradient），也可以直接记结论</p>
 </blockquote>
-<p>RL 算法用最基础的 <strong>PPO</strong>（Proximal Policy Optimization，近端策略优化，InstructGPT 采用的算法）。这节不推导，方法是<strong>从最朴素的 actor loss 起步，两个因子各自改造，拼成完整的 PPO loss</strong>（支线结构见 §3.0 末尾的图）。读完能对着最终公式说出每一项的来历。</p>
+<p>RL 算法用最基础的 <strong>PPO</strong>（Proximal Policy Optimization，近端策略优化，InstructGPT 采用的算法）。</p>
 <h3 id="30-pretrain-sft">3.0 先和 pretrain / SFT 对齐结构</h3>
-<p>PPO 是 RL 篇第一个算法。动手前先把它放回"训练一个 LLM"的框架里，和我们熟悉的 pretrain / SFT 对一遍：</p>
+<p>PPO 是 RL 篇第一个算法。动手前先把它放回"训练一个 LLM"的框架里，和 pretrain / SFT 对齐"什么叫好"：</p>
 <table>
 <thead>
 <tr>
-<th></th>
-<th>输入</th>
-<th>监督信号</th>
-<th>loss</th>
+<th>阶段</th>
+<th>"好"的定义</th>
+<th>反馈</th>
+<th>计算路径</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>pretrain</strong></td>
-<td>文本</td>
-<td><strong>有 GT</strong>：下一个 token 的词表 one-hot（自监督）</td>
-<td>逐 token CE</td>
-</tr>
-<tr>
-<td><strong>SFT</strong></td>
-<td>prompt + 演示 response</td>
-<td><strong>有 GT</strong>：response 每个 token 的词表 one-hot（人工监督）</td>
-<td>逐 token CE（mask 掉 prompt）</td>
+<td><strong>pretrain / SFT</strong></td>
+<td>给定 prefix，提高 next token 预测正确的概率</td>
+<td>训练语料 / 示范 response 中的下一 token</td>
+<td>teacher forcing：一次全序列 forward；pretrain 计算所有位置，SFT mask prompt</td>
 </tr>
 <tr>
 <td><strong>RLHF-PPO</strong></td>
-<td>prompt（response 由 actor 自己生成）</td>
-<td><strong>无 GT</strong>：整条 response 一个标量 reward（评价性反馈）</td>
-<td>逐 token 加权 logprob，权重 = reward 摊成 token</td>
+<td>rollout response 的平均 RM 分高，同时不要偏离 ref 太多</td>
+<td>RM 的 seq 分数 + ref 的 token logprob</td>
+<td>rollout：一次 prefill + 多步串行 decode；update：一次全序列 forward</td>
 </tr>
 </tbody>
 </table>
-<p>三者都是同一个 LLM backbone（RL 里称 policy / actor），loss 也是同一个形状：</p>
+<p>pretrain / SFT 的序列已知。teacher forcing 用一次全序列 forward 并行得到各位置的 CE。</p>
+<p>PPO 的 response 未知。rollout 先走一次推理：prefill + 串行 decode；完整 response 得分后，update 才做一次全序列 forward。</p>
+<p><img src="../assets/11-rl-basics/fig-14.png" alt="fig-14" style="zoom:50%;" /></p>
+<p>右列每个 per-token 项 <span class="arithmatex">\(\ell_t=-\,w_t\log\pi_\theta(a_t\mid s_t)\)</span>：权重 × logprob。左列 CE 是 <span class="arithmatex">\(w_t\equiv 1\)</span>、<span class="arithmatex">\(a_t=\mathrm{GT}_t\)</span> 的特例。<span class="arithmatex">\(w_t\)</span> 有正有负——§1.1 缺的负反馈落在这里；怎么定 <span class="arithmatex">\(w_t\)</span> 是 §3.2–3.4 的主线。</p>
+<p><strong>[三者共用的量：next-token / seq 概率]</strong></p>
+<p>根据前缀 <span class="arithmatex">\(s_t\)</span>，预测下一个 token <span class="arithmatex">\(a_t\)</span> 或 response <span class="arithmatex">\(y\)</span>。</p>
+<p>(Pretrain / SFT) 预测下一个 token (位置 <span class="arithmatex">\(t\)</span>) 的词表分布 <span class="arithmatex">\(p_t(v)\)</span>。实际 token <span class="arithmatex">\(a_t\)</span> 的条件概率是：
+$$
+\pi_t=\pi_\theta(a_t\mid s_t)=p_t(a_t)
+$$</p>
+<ul>
+<li><span class="arithmatex">\(s_t\)</span>：当前位置之前的前缀</li>
+<li><span class="arithmatex">\(a_t\)</span>：当前位置实际采用的 token</li>
+</ul>
+<p>(PPO rollout) 预测完整 response <span class="arithmatex">\(y=(a_1,\ldots,a_T)\)</span> 的 seq 概率，是这些 token 条件概率的乘积：</p>
 <div class="arithmatex">\[
-\mathcal{L} = -\sum_t w_t \cdot \log \pi_t, \qquad \log \pi_t = \log \pi_\theta(a_t \mid s_t)
+\pi_\theta(y\mid x)
+=\prod_t\pi_\theta(a_t\mid s_t),
+\qquad
+\log\pi_\theta(y\mid x)
+=\sum_t\log\pi_\theta(a_t\mid s_t)
 \]</div>
-<p><strong>logprob 项</strong> <span class="arithmatex">\(\log \pi_t\)</span>：位置 <span class="arithmatex">\(t\)</span> 的 logits 过 log_softmax，取该位置实际 token <span class="arithmatex">\(a_t\)</span> 那一格；<span class="arithmatex">\(w_t\)</span>：该 token 的 loss 权重。三者的差别就两处：</p>
-<ul>
-<li><strong>token <span class="arithmatex">\(a_t\)</span> 从哪来</strong>：pretrain / SFT 来自数据集（GT）；RLHF-PPO 来自 rollout，actor 自己采的</li>
-<li><strong>权重 <span class="arithmatex">\(w_t\)</span> 是多少</strong>：pretrain / SFT 恒为 1，表现为逐 token CE；RLHF-PPO 手里只有整条 response 一个标量 reward，<span class="arithmatex">\(w_t\)</span> 没有现成的</li>
-</ul>
+<p><strong>[pretrain / SFT 的目标 &amp; Loss]</strong></p>
+<p>pretrain / SFT 的 <strong>目标</strong> 很直接：提高预测出 GT next token 的概率。</p>
+<p>于是 <strong>Loss</strong> 的产生也很自然：最小化 CE（交叉熵损失函数），就等价于最大化 GT token 的 logprob。</p>
 <blockquote>
-<p><strong>逐 token CE 是一般 CE 的退化形态</strong>。一般 CE 对词表求和 <span class="arithmatex">\(-\sum_v q(v) \log p(v)\)</span>。<span class="arithmatex">\(q\)</span> 为 one-hot 时塌缩成 <span class="arithmatex">\(-\log \pi_\theta(\text{GT}_t \mid s_t)\)</span>，即 pretrain / SFT，<span class="arithmatex">\(w_t \equiv 1\)</span>。</p>
+<p>回忆交叉熵损失函数：<span class="arithmatex">\(-\sum_v q_t(v)\log p_t(v)\)</span>。</p>
+<p><span class="arithmatex">\(q_t(v)\)</span> 是 GT。由于此处是 one hot，词表求和只剩 GT token 对应的一项。</p>
 </blockquote>
-<p>所以 §3 把骨架的两个因子逐一填实。<strong>§3.1 起点</strong>用 policy gradient 推出骨架：<span class="arithmatex">\(w_t \equiv R\)</span>、logprob 项原样。之后两个因子分头改造：</p>
-<ul>
-<li><strong>支线一（§3.2–3.4）改 <span class="arithmatex">\(w_t\)</span></strong>：seq 级 reward 标量摊成逐 token 权重。<ul>
-<li>摊到 token（§3.2）→ 绝对值变相对值（§3.3）→ 降方差（§3.4），终点定义 <span class="arithmatex">\(w_t = A_t\)</span></li>
-</ul>
-</li>
-</ul>
-<ul>
-<li><strong>支线二（§3.5）改 logprob 项</strong>：<span class="arithmatex">\(\log \pi_t\)</span> 换成 clip 过的 ratio <span class="arithmatex">\(\rho_t\)</span>，为复用 rollout；与 credit 分配无关</li>
-<li><strong>§3.6 组装</strong>：两条支线拼回完整 loss</li>
-</ul>
-<pre class="mermaid"><code>flowchart LR
-    S1("§3.1 seq 级起点&lt;br/&gt;loss = -Σ R·logπ_t")
-    subgraph WT["支线一：token 级权重 w_t"]
-        direction LR
-        S2("§3.2 摊到 token&lt;br/&gt;r_t / G_t") --&gt; S3("§3.3 减 baseline&lt;br/&gt;A_t = G_t - V") --&gt; S4("§3.4 GAE&lt;br/&gt;降方差")
-    end
-    subgraph LP["支线二：改 logprob 项"]
-        S5("§3.5 ratio + clip&lt;br/&gt;复用 rollout")
-    end
-    S1 --&gt; S2
-    S1 --&gt; S5
-    S4 --&gt; S6("§3.6 组装&lt;br/&gt;PPO actor loss")
-    S5 --&gt; S6</code></pre>
-<h3 id="31-seq-policy-gradient">3.1 起点：seq 级 policy gradient (!!)</h3>
-<blockquote>
-<p>本节是和传统 RL 关系最大的部分，数学最多；也可以跳过推导，直接看 [rollout 梯度结论]</p>
-</blockquote>
-<p>本节回答：actor 的 loss 从哪来。RL 没有 GT，只有一个目标：rollout 的平均 reward 尽量高。<strong>policy gradient</strong> 把这个目标变成能 <code>backward()</code> 的 seq 级 loss。</p>
-<p>本节的两样产出，供后续使用：</p>
-<ul>
-<li><strong>理论基础</strong>：loss 按 token 展开就是 §3.0 的两因子骨架（<span class="arithmatex">\(\mathcal{L} = -\sum_t w_t \cdot \log \pi_t\)</span>）；§3.2–3.5 在这个骨架上改造因子</li>
-<li><strong>seq 打分 <span class="arithmatex">\(R\)</span> 的去向</strong>：本节拿它当整条的权重；§3.2 起降级为 <span class="arithmatex">\(r_t\)</span> 末位的一项</li>
-</ul>
-<p><strong>[目标与数据]</strong></p>
-<p>目标：actor 生成的 response 平均 reward 尽量高。这个平均分记作 <span class="arithmatex">\(J(\theta)\)</span>：</p>
 <div class="arithmatex">\[
-\max_\theta \; J(\theta), \qquad J(\theta) = \mathbb{E}_{y \sim \pi_\theta}[R(y)]
+\mathcal L_{\text{CE}}
+=-\sum_{t\in\text{loss positions}}\log\pi_\theta(\mathrm{GT}_t\mid s_t)
+\]</div>
+<p><strong>[PPO 的 目标]</strong></p>
+<p>RLHF-PPO 没有 GT。<span class="arithmatex">\(a_t\)</span> 来自 actor rollout。它先把"好"定义为：actor 生成的 response 的平均 RM 分高。裸目标是：</p>
+<div class="arithmatex">\[
+\max_\theta\;J_0(\theta),\qquad
+J_0(\theta)
+=\mathbb E_{x,\,y\sim\pi_\theta}
+\big[r_{\text{RM}}(x,y)\big]
+\]</div>
+<p>只最大化 <span class="arithmatex">\(J_0\)</span>，actor 可能偏离训练起点太远。加入相对冻结 ref 模型的 KL项约束，得到完整目标：</p>
+<div class="arithmatex">\[
+\max_\theta\;J_{\text{KL}}(\theta),\qquad
+J_{\text{KL}}(\theta)
+=J_0(\theta)
+-\beta\,\mathbb E_x
+D_{\mathrm{KL}}\!\left(
+\pi_\theta(\cdot\mid x)
+\|
+\pi_{\text{ref}}(\cdot\mid x)
+\right)
+\]</div>
+<p><span class="arithmatex">\(J_0\rightarrow J_{\text{KL}}\)</span> 是目标变化，还没有得到实际 loss。</p>
+<p>§3.1 先得到 seq 级梯度。§3.2 再写成 token 级形式 <span class="arithmatex">\(\mathbb E[\sum_t w_tg_t]\)</span>，由此分成两条支线：§3.2–3.4 改 <span class="arithmatex">\(w_t\)</span>，§3.5 改产生 <span class="arithmatex">\(g_t\)</span> 的 logprob 项，§3.6 最后组装。</p>
+<pre class="mermaid"><code>%%{init: {"themeVariables": {"fontSize": "18px"}, "flowchart": {"nodeSpacing": 24, "rankSpacing": 28}}}%%
+flowchart LR
+    S0("§3.1 seq 裸目标&lt;br/&gt;J₀ = E[r_RM]") --&gt; SKL("§3.1 加 ref KL 约束&lt;br/&gt;J_KL = J₀ − βKL")
+    SKL --&gt; S2("§3.2 token 形式&lt;br/&gt;∇J_KL = E[Σ_t w_t g_t]")
+
+    subgraph WT["w_t 支线：token credit"]
+        direction LR
+        W2("§3.2 R_KL 摊成 r_t&lt;br/&gt;w_t = G_t") --&gt; W3("§3.3 减 baseline&lt;br/&gt;A_t = G_t − V(s_t)") --&gt; W4("§3.4 GAE&lt;br/&gt;w_t = A_t")
+    end
+
+    subgraph GT["g_t 支线：logprob 项"]
+        G5("§3.5&lt;br/&gt;log π_t → ratio ρ_t + clip")
+    end
+
+    S2 --&gt;|"w_t（初值 R_KL）"| WT
+    S2 --&gt;|"g_t = ∇log π_t"| GT
+    WT --&gt; S6("§3.6 组装&lt;br/&gt;A_t × clipped ρ_t")
+    GT --&gt; S6</code></pre>
+<h3 id="31-seq-j_0-j_textkl">3.1 seq 级目标：从 <span class="arithmatex">\(J_0\)</span> 到 <span class="arithmatex">\(J_{\text{KL}}\)</span> (!!)</h3>
+<blockquote>
+<p>先看 seq 目标和梯度结论。policy gradient 的数学推导放在末尾折叠。</p>
+</blockquote>
+<p>本节回答两个问题：希望 actor 优化什么；对应的 seq 梯度是什么。基础代理 loss 只负责把采样梯度交给 <code>backward()</code>；最终 PPO actor loss 在 §3.6。</p>
+<p><strong>[裸目标 <span class="arithmatex">\(J_0\)</span>]</strong></p>
+<p>先暂时不考虑 KL。需求是让 actor 生成的 response 平均 RM 分尽量高。这个裸目标记作 <span class="arithmatex">\(J_0(\theta)\)</span>：</p>
+<div class="arithmatex">\[
+\max_\theta \; J_0(\theta), \qquad
+J_0(\theta)
+=\mathbb E_{x,\,y\sim\pi_\theta}
+\big[r_{\text{RM}}(x,y)\big]
 \]</div>
 <ul>
 <li><span class="arithmatex">\(\theta\)</span>：actor（这个 LLM）的全部参数，训练要更新的就是它</li>
-<li><span class="arithmatex">\(y \sim \pi_\theta\)</span>：§2.2 的 <strong>rollout</strong>（actor 自己推理采样生成的 response）</li>
-<li><span class="arithmatex">\(R(y)\)</span>：<strong>RM</strong>（Reward Model）给整条的标量打分（§4.1 细讲，目前当黑盒）</li>
-<li><span class="arithmatex">\(J(\theta)\)</span>：目标本身——当前 actor 采出的 response 的平均打分。<span class="arithmatex">\(\theta\)</span> 一变，采样分布就变，平均分跟着变，所以是 <span class="arithmatex">\(\theta\)</span> 的函数</li>
+<li><span class="arithmatex">\(x\)</span>：数据集里的 prompt；<span class="arithmatex">\(y\sim\pi_\theta(\cdot\mid x)\)</span>：actor rollout 采样出的 response</li>
+<li><span class="arithmatex">\(r_{\text{RM}}(x,y)\)</span>：RM 给完整 prompt + response 打的分数 (标量)</li>
+<li><span class="arithmatex">\(J_0(\theta)\)</span>：当前 actor 生成的 response 的平均 RM 分；下标 <span class="arithmatex">\(0\)</span> 表示还没有加入 KL</li>
 </ul>
-<p><strong>[梯度怎么来：数学推导]</strong></p>
-<blockquote>
-<p>这步有点复杂，不想研究数学可以直接跳到 [rollout 梯度结论]</p>
-</blockquote>
+<p><strong>[完整目标 <span class="arithmatex">\(J_{\text{KL}}\)</span>]</strong></p>
+<p>只最大化 <span class="arithmatex">\(J_0\)</span>，actor 可能只迎合 RM，甚至利用 RM 的漏洞。完整 RLHF 因此加入 <strong>ref</strong>（reference model）：actor 开始 RLHF 时的冻结副本。</p>
+<p>新的目标是平均 RM 分减去 actor / ref 的分布偏离：</p>
+<div class="arithmatex">\[
+\max_\theta\;J_{\text{KL}}(\theta),\qquad
+J_{\text{KL}}(\theta)
+=J_0(\theta)
+-\beta\,\mathbb E_x
+D_{\mathrm{KL}}\!\left(
+\pi_\theta(\cdot\mid x)
+\|
+\pi_{\text{ref}}(\cdot\mid x)
+\right)
+\]</div>
+<p>把 KL 展开成 actor 分布下的期望，并定义一条 response 的 regularized score：</p>
+<div class="arithmatex">\[
+\begin{aligned}
+R_{\text{KL}}(x,y)
+&amp;=r_{\text{RM}}(x,y)
+-\beta\log\frac{\pi_\theta(y\mid x)}
+{\pi_{\text{ref}}(y\mid x)} \\
+J_{\text{KL}}(\theta)
+&amp;=\mathbb E_{x,\,y\sim\pi_\theta}
+\big[R_{\text{KL}}(x,y)\big]
+\end{aligned}
+\]</div>
+<ul>
+<li><span class="arithmatex">\(R_{\text{KL}}\)</span>：一条 rollout 的 regularized score；seq log-ratio 是 KL 的一个采样项</li>
+<li><span class="arithmatex">\(J_{\text{KL}}\)</span>：actor 分布下 <span class="arithmatex">\(R_{\text{KL}}\)</span> 的平均值</li>
+<li><span class="arithmatex">\(\beta\)</span>：偏离惩罚强度；<span class="arithmatex">\(\beta=0\)</span> 时 <span class="arithmatex">\(J_{\text{KL}}=J_0\)</span></li>
+</ul>
+<p><span class="arithmatex">\(J_0\rightarrow J_{\text{KL}}\)</span> 是目标变化。PPO 和 DPO 共用的是加入 KL 后的 <span class="arithmatex">\(J_{\text{KL}}\)</span>。</p>
+<p><strong>[<span class="arithmatex">\(J_0\)</span> 的梯度结论]</strong></p>
+<p><span class="arithmatex">\(J_0\)</span> 里的期望，概念上可以展开成对所有可能 response 的求和：</p>
+<div class="arithmatex">\[
+J_0(\theta)
+=\mathbb E_x\left[
+\sum_y
+\pi_\theta(y\mid x)\,
+r_{\text{RM}}(x,y)
+\right]
+\]</div>
+<p>但无法枚举所有可能。因此使用蒙特卡洛采样估计：rollout 一个 batch，用样本平均估计 <span class="arithmatex">\(J_0\)</span> 的梯度。<span class="arithmatex">\(\nabla J_0\)</span> 的结论是（详细推导见折叠 ①）：</p>
+<div class="arithmatex">\[
+\begin{aligned}
+\nabla_\theta J_0
+&amp;=\mathbb E_{x,\,y\sim\pi_\theta}
+\left[
+r_{\text{RM}}(x,y)\,
+\nabla_\theta\log\pi_\theta(y\mid x)
+\right] \\
+&amp;\approx
+\underbrace{\frac{1}{N}\sum_{i=1}^{N}}_{\text{rollout batch 平均}}
+\underbrace{r_{\text{RM}}(x_i,y_i)}_{\text{RM 分，作为常数}}
+\cdot
+\underbrace{\nabla_\theta\log\pi_\theta(y_i\mid x_i)}_{\text{actor 对整条 response 的标准反向}}
+\end{aligned}
+\]</div>
+<p>直接含义：RM 分高的 response，其 seq 概率被推高；RM 分低的 response，其 seq 概率被压低。上式是梯度恒等式；最后一行 <span class="arithmatex">\(\approx\)</span> 才是 rollout batch 的采样估计。</p>
+<p><strong>[<span class="arithmatex">\(J_{\text{KL}}\)</span> 的梯度结论]</strong></p>
+<p><span class="arithmatex">\(R_{\text{KL}}\)</span> 含有 <span class="arithmatex">\(\pi_\theta\)</span>，但梯度和 <span class="arithmatex">\(\nabla J_0\)</span> 完全同形（推导见折叠 ②）：</p>
+<div class="arithmatex">\[
+\begin{aligned}
+\nabla_\theta J_{\text{KL}}
+&amp;=\mathbb E_{x,\,y\sim\pi_\theta}
+\left[
+R_{\text{KL}}(x,y)\,
+\nabla_\theta\log\pi_\theta(y\mid x)
+\right] \\
+&amp;\approx
+\frac1N\sum_{i=1}^N
+R_{\text{KL}}(x_i,y_i)\,
+\nabla_\theta\log\pi_\theta(y_i\mid x_i)
+\end{aligned}
+\]</div>
+<p>所以相比 <span class="arithmatex">\(\nabla J_0\)</span> 只换一处：seq 权重从 <span class="arithmatex">\(r_{\text{RM}}\)</span>（RM 直接打分）换成 <span class="arithmatex">\(R_{\text{KL}}=r_{\text{RM}}-\beta\log\frac{\pi_\theta(y\mid x)}{\pi_{\text{ref}}(y\mid x)}\)</span>，比原来多扣一个 KL 采样项。梯度骨架不变。</p>
+<details>
+<summary><strong>展开推导 ①：J₀ 的梯度——为什么是 policy gradient</strong></summary>
 <p>这一步是经典 RL 的 <strong>policy gradient（REINFORCE）</strong>，LLM 场景只是把 policy 换成 actor。</p>
-<p>要算的是目标 <span class="arithmatex">\(J(\theta)\)</span> 对 actor 参数 <span class="arithmatex">\(\theta\)</span> 的梯度。</p>
+<p>要算的是目标 <span class="arithmatex">\(J_0(\theta)\)</span> 对 actor 参数 <span class="arithmatex">\(\theta\)</span> 的梯度。</p>
+<p>为简化记号，下面固定 prompt <span class="arithmatex">\(x\)</span>，把 <span class="arithmatex">\(r_{\text{RM}}(x,y)\)</span> 简写成 <span class="arithmatex">\(R(y)\)</span>。</p>
 <p>先回忆 SFT 的梯度怎么来：每个 token 位置，模型前向输出一个词表概率分布，GT 是这个分布的 one-hot 版本，两者代入 CE 公式得 loss，直接 <code>loss.backward()</code>。</p>
 <p><img src="../assets/11-rl-basics/fig-03.png" alt="fig-03" style="zoom:30%;" /></p>
-<p>RL 的 <span class="arithmatex">\(J(\theta)\)</span> 套不上这个流程。把期望展开成加权求和看它的结构：</p>
+<p>RL 的 <span class="arithmatex">\(J_0(\theta)\)</span> 套不上这个流程。把期望展开成加权求和看它的结构：</p>
 <div class="arithmatex">\[
-J(\theta) = \sum_{y} \pi_\theta(y)\, R(y)
+J_0(\theta) = \sum_{y} \pi_\theta(y)\, R(y)
 \]</div>
 <ul>
 <li><span class="arithmatex">\(\pi_\theta(y)\)</span>：每条 <span class="arithmatex">\(y\)</span> 被采到的概率，取决于 actor 参数 <span class="arithmatex">\(\theta\)</span> </li>
 <li><span class="arithmatex">\(R(y)\)</span>：对应 <span class="arithmatex">\(y\)</span> 的 reward 打分</li>
 <li><span class="arithmatex">\(R(y)\)</span> 里没有 <span class="arithmatex">\(\theta\)</span>——固定一条 <span class="arithmatex">\(y\)</span>，打分就是常数（RM 有自己的参数，但冻结，不算在 <span class="arithmatex">\(\theta\)</span> 里）</li>
 </ul>
-<p>求导本身不难，对权重逐项导：<span class="arithmatex">\(\nabla_\theta J = \sum_y \nabla_\theta \pi_\theta(y) \cdot R(y)\)</span>。难在算值：这个和要<strong>枚举所有可能的序列，算不动</strong>。两个解决 idea：</p>
+<p>求导本身不难，对权重逐项导：<span class="arithmatex">\(\nabla_\theta J_0 = \sum_y \nabla_\theta \pi_\theta(y) \cdot R(y)\)</span>。难在算值：这个和要<strong>枚举所有可能的序列，算不动</strong>。两个解决 idea：</p>
 <ul>
 <li><strong>idea 1 恒等式改写（log-derivative trick）</strong>：数学结论 <span class="arithmatex">\(\nabla_\theta \pi_\theta = \pi_\theta \, \nabla_\theta \log \pi_\theta\)</span>，把权重里的 <span class="arithmatex">\(\pi_\theta\)</span> 补回来，idea 2 就能用上。来历是对数求导法则移项（下方速查）；不想深究可以直接当结论用</li>
 <li><strong>idea 2 蒙特卡洛</strong>：用多次采样估<strong>期望</strong>，<span class="arithmatex">\(\mathbb{E}_{y \sim \pi_\theta}[g(y)] = \sum_y \pi_\theta(y)\, g(y)\)</span></li>
@@ -2001,7 +2133,7 @@ J(\theta) = \sum_{y} \pi_\theta(y)\, R(y)
 <p>先 idea 1 替换、认出期望定义，随后 idea 2 蒙特卡洛采样估计（rollout 一批 <span class="arithmatex">\(y_i\)</span>，对每条算期望括号里的量，求平均）：</p>
 <div class="arithmatex">\[
 \begin{aligned}
-\nabla_\theta J &amp;= \sum_y \nabla_\theta \pi_\theta(y) \cdot R(y)
+\nabla_\theta J_0 &amp;= \sum_y \nabla_\theta \pi_\theta(y) \cdot R(y)
 \;\overset{\text{idea 1 代入}}{=}\; \sum_y \pi_\theta(y) \, \nabla_\theta \log \pi_\theta(y) \cdot R(y)
 \;\overset{\text{期望定义}}{=}\; \mathbb{E}_{y \sim \pi_\theta}\big[\, \underbrace{R(y)}_{\text{标量系数}} \cdot \underbrace{\nabla_\theta \log \pi_\theta(y)}_{\text{SFT 那个标准反向}} \,\big] \\
 &amp;\overset{\text{idea 2 蒙特卡洛}}{\approx}\; \underbrace{\frac{1}{N} \sum_{i=1}^{N}}_{\text{一个 rollout batch 平均}} \underbrace{R(y_i)}_{\text{RM 打分，常数}} \cdot \underbrace{\nabla_\theta \log \pi_\theta(y_i)}_{\text{SFT 那个标准反向}}
@@ -2015,84 +2147,142 @@ J(\theta) = \sum_{y} \pi_\theta(y)\, R(y)
 <p>记号：<span class="arithmatex">\(p_\theta(y)\)</span> 读作"参数为 <span class="arithmatex">\(\theta\)</span> 的分布给样本 <span class="arithmatex">\(y\)</span> 的概率"，一个随 <span class="arithmatex">\(\theta\)</span> 可导的标量——本节里就是 <span class="arithmatex">\(\pi_\theta(y)\)</span>，actor 给整条 response 的概率。两步：</p>
 <ul>
 <li>对数求导法则 <span class="arithmatex">\((\ln f)' = f'/f\)</span>，<span class="arithmatex">\(f\)</span> 取 <span class="arithmatex">\(p_\theta(y)\)</span>、导数取对 <span class="arithmatex">\(\theta\)</span> 的梯度：<span class="arithmatex">\(\nabla_\theta \log p_\theta = \nabla_\theta p_\theta / p_\theta\)</span>。移项得 <span class="arithmatex">\(\nabla_\theta p_\theta = p_\theta \, \nabla_\theta \log p_\theta\)</span>——初等微积分结论，直接可用</li>
-<li>代入 <span class="arithmatex">\(\nabla_\theta J\)</span> 替换掉 <span class="arithmatex">\(\nabla_\theta p_\theta\)</span>，多出来的 <span class="arithmatex">\(p_\theta\)</span> 正好把求和收回期望形状：</li>
+<li>代入 <span class="arithmatex">\(\nabla_\theta J_0\)</span> 替换掉 <span class="arithmatex">\(\nabla_\theta p_\theta\)</span>，多出来的 <span class="arithmatex">\(p_\theta\)</span> 正好把求和收回期望形状：</li>
 </ul>
 <div class="arithmatex">\[
 \nabla_\theta \sum_y p_\theta(y)\, f(y) = \sum_y \nabla_\theta p_\theta \cdot f = \sum_y p_\theta \cdot \nabla_\theta \log p_\theta \cdot f = \mathbb{E}_{y \sim p_\theta}\big[\, f(y) \, \nabla_\theta \log p_\theta(y) \,\big]
 \]</div>
 <p>本节取 <span class="arithmatex">\(f = R\)</span>、<span class="arithmatex">\(p_\theta = \pi_\theta\)</span> 就是上面的梯度。关键：<span class="arithmatex">\(f\)</span>（这里是 <span class="arithmatex">\(R\)</span>）不含模型参数 <span class="arithmatex">\(\theta\)</span>，梯度全落在 <span class="arithmatex">\(\log p_\theta\)</span> 上。</p>
 </blockquote>
-<p><strong>[rollout 梯度结论]</strong></p>
-<p><strong>policy gradient 的 update = 把 prompt + rollout 当 SFT 数据训，每条序列的 loss 乘上自己的 reward</strong>（普通 SFT 相当于权重恒为 1）。一个 batch 里 reward 高的序列概率被推高，低的被压低。落成公式：</p>
+</details>
+<details>
+<summary><strong>展开推导 ②：J_KL 的梯度——为什么形式和 J₀ 几乎一样</strong></summary>
+<p>对参数相关的分布和函数，期望求导分成两项：</p>
 <div class="arithmatex">\[
-\nabla_\theta J \;\approx\; \underbrace{\frac{1}{N} \sum_{i=1}^{N}}_{\text{rollout batch 平均}} \underbrace{R(y_i)}_{\text{RM 打分，常数}} \cdot \underbrace{\nabla_\theta \log \pi_\theta(y_i)}_{\text{SFT 式前向反向}}
+\nabla_\theta
+\mathbb E_{y\sim\pi_\theta}[R_{\text{KL},\theta}(y)]
+=
+\mathbb E\left[
+R_{\text{KL},\theta}(y)\nabla_\theta\log\pi_\theta(y)
+\right]
++
+\mathbb E\left[
+\nabla_\theta R_{\text{KL},\theta}(y)
+\right]
 \]</div>
-<p>对应的具体计算：</p>
-<ul>
-<li><strong>rollout + 打分</strong>：actor 对每条 prompt 采出 <span class="arithmatex">\(y_i\)</span>；RM 给整条打一个分 <span class="arithmatex">\(R(y_i)\)</span>，此后当常数用</li>
-<li><strong>SFT 式 loss</strong>：prompt 拼上 <span class="arithmatex">\(y_i\)</span> 做 teacher-forcing 前向，把 <span class="arithmatex">\(y_i\)</span> 自己当 label 算逐 token CE（shift 一位、mask 掉 prompt，全同 SFT），求和得整条 seq 的 loss</li>
-<li><strong>乘分、平均</strong>：每条 loss 乘 <span class="arithmatex">\(R(y_i)\)</span>，batch 求平均——就是 <span class="arithmatex">\(\nabla_\theta J\)</span> 的蒙特卡洛估计</li>
-</ul>
-<p>和 SFT 逐行对齐：</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># SFT: token 序列 y 来自数据集</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">logp</span> <span class="o">=</span> <span class="n">actor</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># teacher-forcing 前向</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">loss</span> <span class="o">=</span> <span class="o">-</span><span class="n">logp</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>         <span class="c1"># 每个位置取 y_t 的 logprob, 即以 y 为 label 的 CE</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># policy gradient: y 来自 rollout, 再乘一个标量</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">y</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>                <span class="c1"># 采样, 不进计算图</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">R</span> <span class="o">=</span> <span class="n">reward_model</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>               <span class="c1"># 标量, 不含 actor 参数</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">logp</span> <span class="o">=</span> <span class="n">actor</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># 同一个前向</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">loss</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">R</span> <span class="o">*</span> <span class="n">logp</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>   <span class="c1"># 唯一差别: 乘 R</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>                      <span class="c1"># 同一个反向</span>
-</code></pre></div>
-<p><strong>[loss 换成逐 token 读法]</strong></p>
-<p>目前的 loss 是整条 seq 一个数，结构 = <span class="arithmatex">\(R \times \text{SFT 式 loss}\)</span>。</p>
-<p>两个因子里，分数 <span class="arithmatex">\(R\)</span> 是常数。SFT 式 loss 就是逐 token CE 求和——<strong>CE 天然逐 token 算、再求和</strong>。按 token 展开（简写 <span class="arithmatex">\(\log \pi_t = \log \pi_\theta(a_t \mid s_t)\)</span>）：</p>
+<p>RM 和 ref 冻结，所以：</p>
 <div class="arithmatex">\[
-\mathcal{L} = -R \cdot \big(\log \pi_1 + \log \pi_2 + \cdots\big)
-= -\big(R \log \pi_1 + R \log \pi_2 + \cdots\big)
-= -\sum_t w_t \cdot \log \pi_t, \qquad w_t = R
+\nabla_\theta R_{\text{KL},\theta}(y)
+=-\beta\nabla_\theta\log\pi_\theta(y)
 \]</div>
-<p>这就是 §3.0 承诺的形状（<span class="arithmatex">\(w_t\)</span> 当<strong>常数</strong>用，stop-grad，被求导的只有 <span class="arithmatex">\(\log \pi\)</span>）。</p>
-<p>问题：<span class="arithmatex">\(w_t\)</span> 恒 <span class="arithmatex">\(= R\)</span>，写对和写错的 token 同奖同罚，不合理。支线一（§3.2–3.4）把 <span class="arithmatex">\(w_t\)</span> 换成逐位置的量。logprob 项的问题是复用：rollout 贵，一批数据想多次更新。支线二（§3.5）把它换成 ratio 并 clip。分步见 §3.0 末尾的图。</p>
+<p>第二项为零：</p>
+<div class="arithmatex">\[
+\begin{aligned}
+\mathbb E_{y\sim\pi_\theta}
+\left[\nabla_\theta\log\pi_\theta(y)\right]
+&amp;=\sum_y\pi_\theta(y)\nabla_\theta\log\pi_\theta(y) \\
+&amp;=\sum_y\nabla_\theta\pi_\theta(y)
+=\nabla_\theta\sum_y\pi_\theta(y)
+=\nabla_\theta 1
+=0
+\end{aligned}
+\]</div>
+<p>因此只剩：</p>
+<div class="arithmatex">\[
+\nabla_\theta J_{\text{KL}}
+=
+\mathbb E\left[
+R_{\text{KL}}\nabla_\theta\log\pi_\theta
+\right]
+\]</div>
+</details>
+<p><strong>[基础 policy-gradient 代理 loss]</strong></p>
+<p>目标是最大化 <span class="arithmatex">\(J_{\text{KL}}\)</span>，而 optimizer 默认最小化 loss，所以取负：</p>
+<div class="arithmatex">\[
+\mathcal L_{\text{PG,KL}}
+=-\frac1N\sum_i
+\underbrace{\operatorname{stopgrad}(R_{\text{KL},i})}_{\text{本次 update 暂当常数}}
+\underbrace{\log\pi_\theta(y_i\mid x_i)}_{\text{actor 在这里接收梯度}}
+\]</div>
+<p>当前 batch 中，<span class="arithmatex">\(R_{\text{KL}}\)</span> 只作为权重，不沿它反传；actor 梯度只走 <span class="arithmatex">\(\log\pi_\theta\)</span>。</p>
+<blockquote>
+<p>依据：上面的 <span class="arithmatex">\(\nabla J_{\text{KL}}\)</span> 梯度推导：<span class="arithmatex">\(R_{\text{KL}}\)</span> 自身那条求导路径在采样平均后抵消为 0。注意，是<strong>期望梯度为 0</strong>，不是 <span class="arithmatex">\(R_{\text{KL}}\)</span> 变成了常数；下一轮 rollout 仍要重算。</p>
+</blockquote>
+<p>再用 §3.0 的 next-token / seq 概率分解，seq 级可展开为逐 token：</p>
+<div class="arithmatex">\[
+\log\pi_\theta(y_i\mid x_i)
+=\sum_t\log\pi_\theta(a_{i,t}\mid s_{i,t})
+\]</div>
+<p>所以：</p>
+<div class="arithmatex">\[
+\mathcal L_{\text{PG,KL}}
+=-\frac1N\sum_i\sum_t
+\operatorname{stopgrad}(R_{\text{KL},i})
+\log\pi_\theta(a_{i,t}\mid s_{i,t})
+\]</div>
+<p>到这里都是精确展开：同一条 response 的所有 token 仍共用 <span class="arithmatex">\(R_{\text{KL}}\)</span>。§3.2 才开始改变 token 权重。</p>
 <h3 id="32-token-1r_t-g_t">3.2 token 级权重（1）：<span class="arithmatex">\(r_t\)</span> 与 <span class="arithmatex">\(G_t\)</span></h3>
-<p>本节造两个逐 token 的量，引入一个新模型（ref），作 §3.3 权重的原材料。</p>
-<ul>
-<li><span class="arithmatex">\(r_t\)</span>：第 <span class="arithmatex">\(t\)</span> 个 token 的<strong>即时 reward</strong>，由逐 token 的 KL 惩罚和末位的 RM 分组成</li>
-<li><span class="arithmatex">\(G_t\)</span>：第 <span class="arithmatex">\(t\)</span> 个 token 的<strong>回报（return）</strong>：身后 <span class="arithmatex">\(r_k\)</span> 的 suffix sum，从这一步到整条结束的总 reward，含末位的 RM 分</li>
-<li><strong>ref</strong>（reference model）：actor 出发时那份模型权重的冻结副本，= KL 惩罚的基准</li>
-</ul>
-<p><strong>[造 token reward <span class="arithmatex">\(r_t\)</span>]</strong></p>
+<p>§3.1 虽然已把 seq logprob 展开到 token，但权重仍是 seq 级：同一条 response 的所有 token 共用一个 <span class="arithmatex">\(R_{\text{KL}}\)</span>。现在希望把这个分数摊成逐 token 的 credit（PPO的特点，后续 GRPO 简化了这部分）。</p>
+<p>具体摊法有设计空间（§3.3–3.4 还会再改两次），但不能随意定义。</p>
+<p>记 token级别 <span class="arithmatex">\(g_t=\nabla_\theta\log\pi_\theta(a_t\mid s_t)\)</span>。原梯度为：</p>
+<div class="arithmatex">\[
+\nabla_\theta J_{\text{KL}}
+=\mathbb E\left[R_{\text{KL}}\sum_t g_t\right]
+\]</div>
+<p>现在可以把同一个 seq 权重改成逐 token 权重 <span class="arithmatex">\(w_t\)</span>，但必须保持期望梯度相同：</p>
+<div class="arithmatex">\[
+\mathbb E\left[\sum_t w_tg_t\right]
+=
+\mathbb E\left[R_{\text{KL}}\sum_tg_t\right]
+= 
+\nabla_\theta J_{\text{KL}}
+\]</div>
+<p>要求的不是 <span class="arithmatex">\(\sum_t w_t=R_{\text{KL}}\)</span>，而是上面的梯度相等。最终进入 PPO loss 的是 §3.4 算出的 <span class="arithmatex">\(A_t\)</span>。</p>
+<p><strong>[定义：token reward <span class="arithmatex">\(r_t\)</span>]</strong></p>
 <p>RM 只在整条结束时给一个分，中间 token 没有即时 reward。于是我们定义：</p>
 <div class="arithmatex">\[
 r_t = \underbrace{-\beta \,\big(\log \pi_\theta(a_t \mid s_t) - \log \pi_{\text{ref}}(a_t \mid s_t)\big)}_{\text{每个 token：KL 惩罚}} \;+\; \underbrace{\mathbb{1}[t = T] \cdot r_{\text{RM}}}_{\text{末位：RM 整条打分}}
 \]</div>
-<p>关于 KL 惩罚：</p>
-<ul>
-<li><strong>为什么扣它</strong>：actor 可能找到打分高、实际很差的输出（<strong>reward hacking</strong>）；KL 把 actor 约束在出发点 ref 附近，偏得越远扣得越多</li>
-<li><strong>怎么算</strong>：冻结副本 ref 不参与 rollout。序列采出后，actor 和 ref 各对 prompt + response 做一次前向，logprob 逐位相减；比的是两个模型给同一个 token 的概率（类似蒸馏的 teacher-student）</li>
-<li><strong>不走梯度</strong>：它沿 <span class="arithmatex">\(r_t \to G_t \to A_t\)</span> 一路当常数</li>
-</ul>
+<p>KL 项逐 token 计算；RM 分只放在末位。两份 logprob 由 actor / ref 对 rollout 采出的同一条序列各做一次前向得到（时序见 §3.6）。KL 项和 RM 分沿 <span class="arithmatex">\(r_t\to G_t\to A_t\)</span> 都 <code>stopgrad</code>，actor 梯度仍由代理 loss 中的 logprob 提供。</p>
 <p><img src="../assets/11-rl-basics/fig-04.png" alt="fig-04" style="zoom:40%;" /></p>
-<p><strong>[回报 <span class="arithmatex">\(G_t\)</span>：定义]</strong></p>
-<ul>
-<li><strong>只算身后</strong>：token 只能影响从这一步起的 reward；身前的 <span class="arithmatex">\(r_k\)</span> 在它生成时已定，不算进它的功劳——所以基础 idea 是 suffix sum</li>
-<li><strong>RM 分怎么摊到 token</strong>：末位的 <span class="arithmatex">\(r_{\text{RM}}\)</span> 通过 suffix sum 传回每个位置；RM 分本身始终只在末位</li>
-<li><strong>折扣因子 <span class="arithmatex">\(\gamma\)</span></strong>：经典 RL 还给远期 reward 打折，通式 <span class="arithmatex">\(G_t = \sum_{k \ge t} \gamma^{k-t} r_k\)</span>；LLM 常取 <span class="arithmatex">\(\gamma = 1\)</span></li>
-<li><strong>递归形式</strong>：等价写法 <span class="arithmatex">\(G_t = r_t + \gamma G_{t+1}\)</span>，实现从末位倒着递推；§3.4 的改造从它出发</li>
-</ul>
-<p><img src="../assets/11-rl-basics/fig-05.png" alt="fig-05" style="zoom:40%;" /></p>
+<p><strong>[定义：return <span class="arithmatex">\(G_t\)</span>]</strong></p>
+<p>本节为了与未折扣的 <span class="arithmatex">\(J_{\text{KL}}\)</span> 严格对齐，先取 LLM RLHF 常用的 <span class="arithmatex">\(\gamma=1\)</span>：</p>
+<div class="arithmatex">\[
+G_t \stackrel{\text{def}}{=} \sum_{k=t}^{T} r_k,
+\qquad
+G_1=\sum_{k=1}^{T}r_k=R_{\text{KL}}
+\]</div>
+<p>末位 RM 分通过 suffix sum 传回每个位置；实现时用 <span class="arithmatex">\(G_t=r_t+G_{t+1}\)</span> 倒序计算。若取 <span class="arithmatex">\(\gamma&lt;1\)</span>，就换成了 discounted return，不再与这里的未折扣 <span class="arithmatex">\(J_{\text{KL}}\)</span> 严格等价。</p>
+<p><strong>[证明：为什么 <span class="arithmatex">\(R_{\text{KL}}\rightarrow G_t\)</span> 可以改？]</strong></p>
+<p>记 <span class="arithmatex">\(C_t=\sum_{k&lt;t}r_k\)</span>，则 <span class="arithmatex">\(R_{\text{KL}}=C_t+G_t\)</span>。<span class="arithmatex">\(C_t\)</span> 在采样 <span class="arithmatex">\(a_t\)</span> 前已经确定，只依赖 <span class="arithmatex">\(s_t\)</span>；又因为：</p>
+<div class="arithmatex">\[
+\mathbb E_{a_t\mid s_t}
+\left[\nabla_\theta\log\pi_\theta(a_t\mid s_t)\right]=0
+\]</div>
+<p>所以过去 reward 的期望梯度为 0：</p>
+<div class="arithmatex">\[
+\mathbb E[R_{\text{KL}}g_t]
+=\mathbb E[(C_t+G_t)g_t]
+=\mathbb E[G_tg_t]
+\]</div>
+<p>对所有 <span class="arithmatex">\(t\)</span> 求和，仍对齐 §3.1 的 <span class="arithmatex">\(\nabla_\theta J_{\text{KL}}\)</span>，于是：</p>
+<div class="arithmatex">\[
+\mathcal L_{\text{PG},G}
+=-\frac1N\sum_i\sum_t
+\operatorname{stopgrad}(G_{i,t})
+\log\pi_\theta(a_{i,t}\mid s_{i,t})
+\]</div>
+<p>因此不能随便改：要保留未来 reward、让 <span class="arithmatex">\(G_t\)</span> <code>stopgrad</code>，并在这里取 <span class="arithmatex">\(\gamma=1\)</span>。<span class="arithmatex">\(R_{\text{KL}}\)</span> 版与 <span class="arithmatex">\(G_t\)</span> 版不要求单个 batch 相等，只要求期望梯度相等。</p>
 <h3 id="33-token-2advantage-critic">3.3 token 级权重（2）：advantage 与 critic</h3>
 <p>最直接的想法是拿 <span class="arithmatex">\(G_t\)</span> 当权重，但有两个问题：</p>
 <ul>
 <li><strong>没区分度</strong>：末位 RM 分是 <span class="arithmatex">\(G_t\)</span> 的主项，每个位置都含它（KL 项很小）；各位置数值接近，写对写错同奖同罚</li>
 <li><strong>方差大</strong>：跨样本看，后半段的采样随机性把整条 <span class="arithmatex">\(G_t\)</span> 一起抬高或压低，梯度估计噪声大</li>
 </ul>
-<p><strong>修正</strong>：减一个逐位置的 baseline，权重换成 <strong>advantage（优势）</strong>：</p>
-<div class="arithmatex">\[
+<p><strong>修正</strong>：减一个逐位置的 baseline，权重换成 <strong>advantage（优势）</strong>：
+$$
 A_t = G_t - V(s_t)
-\]</div>
+$$</p>
 <p><span class="arithmatex">\(V(s_t)\)</span> = 从 <span class="arithmatex">\(s_t\)</span> 出发预期拿多少分，<span class="arithmatex">\(A_t\)</span> = 比预期好多少（正 = 推高该 token，负 = 压低）。对上前面的问题：</p>
 <ul>
 <li><strong>区分度</strong>：<span class="arithmatex">\(V\)</span> 逐位置不同，影响 <span class="arithmatex">\(A_t\)</span></li>
@@ -2125,19 +2315,19 @@ A_t = \delta_t + \gamma\lambda \, A_{t+1}
 <p>读法：本步的实际残差 <span class="arithmatex">\(\delta_t\)</span> 全额保留，身后的估计 <span class="arithmatex">\(A_{t+1}\)</span> 按 <span class="arithmatex">\(\lambda\)</span> 打折。打折按等比数列累乘：离得越远的 <span class="arithmatex">\(\delta\)</span> 被打折越多次，信得越少。<span class="arithmatex">\(\lambda = 0\)</span> 就是 <span class="arithmatex">\(\delta_t\)</span>；<span class="arithmatex">\(\lambda = 1\)</span> 恰好还原 <span class="arithmatex">\(G_t - V(s_t)\)</span>；中间是 bias-variance 取舍。LLM 常配 <span class="arithmatex">\(\gamma = 1\)</span>、<span class="arithmatex">\(\lambda \approx 0.95\)</span>。计算从末位倒着递推（<span class="arithmatex">\(A_{T+1} = 0\)</span>）。</p>
 <p><img src="../assets/11-rl-basics/fig-07.png" alt="fig-07" style="zoom:45%;" /></p>
 <p>到此支线一走完，权重定型：<span class="arithmatex">\(w_t\)</span> = GAE 递推出的 <span class="arithmatex">\(A_t\)</span>，当常数进 loss。§3.5 转入支线二，改另一个因子 logprob 项。</p>
-<h3 id="35-logprob">3.5 换 logprob 项：安全复用数据</h3>
+<h3 id="35-logprob">3.5 换 logprob 项：安全复用一批数据</h3>
 <p><strong>[复用 = 同一批数据多次更新]</strong></p>
 <p>rollout 要整条自回归生成，是 loop 里最贵的一段（§5）。一批数据只更新一次就扔，太浪费。</p>
 <p>PPO 的做法：rollout 一次，存成一批 <strong>experiences</strong>（序列、每 token 的旧 logprob、算好的 <span class="arithmatex">\(A_t\)</span>），用它连做 <strong>ppo-epochs</strong> 次前向反向。生成只发生一次；复用的是数据，不是重跑 prompt 重新采样。</p>
 <p><strong>[代价：数据过期]</strong></p>
 <p>第一次更新后 <span class="arithmatex">\(\pi_\theta\)</span> 就变了，这批数据却是旧策略 <span class="arithmatex">\(\pi_{\theta_{\text{old}}}\)</span> 采的——on-policy 被打破。§3.1 的梯度公式以"数据来自当前策略"为前提，直接再用有系统性偏差。</p>
 <p><strong>[修正：importance ratio]</strong></p>
-<p>修正的 idea 是 <strong>importance sampling</strong>：拿旧分布的样本估新分布的期望。办法是给每条样本乘一个改正系数 = 新旧分布给它的概率比（不展开推导）。直觉：新策略比旧策略更爱生成的 token，权重调大；反之调小。落到每个 token，<strong>loss 里的 <span class="arithmatex">\(\log \pi_t\)</span> 换成系数 <span class="arithmatex">\(\rho_t\)</span></strong>：</p>
+<p>修正的 idea 是 <strong>importance sampling</strong>：拿旧分布的样本估新分布的期望，办法是给每条样本乘一个改正系数 = 新旧分布给它的概率比（不展开推导）。直觉：新策略比旧策略更爱生成的 token，权重调大；反之调小。落到每个 token，<strong>loss 里的 <span class="arithmatex">\(\log \pi_t\)</span> 换成系数 <span class="arithmatex">\(\rho_t\)</span></strong>：</p>
 <div class="arithmatex">\[
 \rho_t = \frac{\pi_\theta(a_t \mid s_t)}{\pi_{\theta_{\text{old}}}(a_t \mid s_t)}, \qquad \mathcal{L} = -\,\mathbb{E}_t\big[\, \rho_t \, A_t \,\big]
 \]</div>
 <ul>
-<li><strong>分子分母</strong>：都是概率，不是 logits（logits 未归一化，跨前向不可比）。实现里存 logprob，<span class="arithmatex">\(\rho_t = \exp(\log\pi_\theta - \log\pi_{\theta_{\text{old}}})\)</span>；分母来自 experiences，常数；分子由当前 actor 实时前向算出</li>
+<li><strong>分子分母</strong>：都是概率（不是 logits：logits 未归一化，跨前向不可比）。实现里存 logprob，<span class="arithmatex">\(\rho_t = \exp(\log\pi_\theta - \log\pi_{\theta_{\text{old}}})\)</span>；分母来自 experiences，常数；分子由当前 actor 实时前向算出</li>
 </ul>
 <p><strong>[clip：限步长]</strong></p>
 <p>概率在 <span class="arithmatex">\((0, 1]\)</span> 内，但概率的<strong>比值</strong>没有上限：旧策略给某 token 0.001、新策略给 0.5，<span class="arithmatex">\(\rho_t = 500\)</span>。这种 token 会主导梯度，一步把参数推得很远——复用的前提"新旧策略接近"就被破坏了。PPO 截断：</p>
@@ -2145,10 +2335,10 @@ A_t = \delta_t + \gamma\lambda \, A_{t+1}
 \mathcal{L}^{\text{clip}} = -\,\mathbb{E}_t\Big[ \min\big( \rho_t A_t, \; \text{clip}(\rho_t,\, 1-\epsilon,\, 1+\epsilon) \, A_t \big) \Big]
 \]</div>
 <p><span class="arithmatex">\(\rho_t\)</span> 出了 <span class="arithmatex">\([1-\epsilon, 1+\epsilon]\)</span> 就被换成边界常数，常数没有梯度，该 token 不再推动更新。</p>
-<p>效果：每个 token 的概率每轮最多推到旧策略的 <span class="arithmatex">\(1 \pm \epsilon\)</span> 倍附近，新策略被限制在 <span class="arithmatex">\(\pi_{\theta_{\text{old}}}\)</span> 的邻域内。这就是名字里 Proximal（邻近）的含义。min 让截断只单向生效：只挡"朝优势方向继续推"，往回修正的梯度保留。</p>
+<p>效果：每个 token 的概率每轮最多推到旧策略的 <span class="arithmatex">\(1 \pm \epsilon\)</span> 倍附近，新策略被限制在 <span class="arithmatex">\(\pi_{\theta_{\text{old}}}\)</span> 的邻域内——这就是名字里 Proximal（邻近）的含义。min 让截断只单向生效：只挡"朝优势方向继续推"，往回修正的梯度保留。</p>
 <p><img src="../assets/11-rl-basics/fig-08.png" alt="fig-08" style="zoom:40%;" /></p>
 <p>复用 rollout 多次更新的整体设计：</p>
-<p><img src="../assets/11-rl-basics/fig-09.png" alt="fig-09" style="zoom:40%;" /></p>
+<p><img src="../assets/11-rl-basics/fig-09.png" alt="fig-09" style="zoom:45%;" /></p>
 <p>训推一致性（06 篇）的问题源头在这里：这个公式假设 <span class="arithmatex">\(\rho_t\)</span> 的分子分母来自同一套计算。实际系统里分母由推理引擎算、分子由训练引擎算，两边数值本身就有差异。</p>
 <h3 id="36-actor-loss">3.6 组装：完整的 actor loss</h3>
 <p>把 §3.1–3.5 拼起来，就是 PPO 实际用的 actor loss：</p>
@@ -2273,177 +2463,177 @@ A_t = \delta_t + \gamma\lambda \, A_{t+1}
 </ul>
 <p><strong>后两个是纯 PPO 手撕的核心</strong>；前两个是 RLHF 特有的前置，纯 PPO 没有。下面按这个分界拆成两块。</p>
 <p><strong>① logprob + ② per-token reward</strong>（RLHF 前置）：</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">sft_logprob</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">):</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="sd">    计算 response 段每 token 的 logprob（§3.0），即 SFT 逐 token CE 里那个 logprob</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="sd">    参数:</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="sd">    - model: actor 或 ref</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="sd">    - ids: prompt + response 拼好的完整序列，形状为 (B, T)</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="sd">    - p_len: prompt 长度，用来切掉 prompt 段</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="sd">    返回:</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="sd">    - response 每位的 log π(a_t | s_t)，形状为 (B, T_resp)</span>
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="c1"># 整体左移一位: 输入 ids[:-1], 位置 j 的输出去预测真实的下一个 token ids[j+1] (teacher-forcing)</span>
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="n">logp</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">ids</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>      <span class="c1"># (B, T-1, V)  位置 j 的分布 = 对 ids[j+1] 的预测</span>
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="n">tgt</span>  <span class="o">=</span> <span class="n">ids</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>                <span class="c1"># (B, T-1, 1)  label = 右移一位取真实 token, 同 SFT</span>
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="n">logp</span> <span class="o">=</span> <span class="n">logp</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">tgt</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>        <span class="c1"># (B, T-1)     每位取实际 token a_t 那一格的 logprob</span>
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="c1"># response 首 token 落在位置 p_len; 因左移一位, 它的预测分在索引 p_len-1, 往后全是 response 段</span>
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    <span class="k">return</span> <span class="n">logp</span><span class="p">[:,</span> <span class="n">p_len</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:]</span>                     <span class="c1"># (B, T_resp)  只留 response 段, prompt 段不进 loss</span>
-<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>
-<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_rewards</span><span class="p">(</span><span class="n">old_logp</span><span class="p">,</span> <span class="n">ref_logp</span><span class="p">,</span> <span class="n">r_rm</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
-<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="sd">    组装 per-token reward r_t（§3.2）：每 token 一份 KL 惩罚，最后一个有效 token 叠 RM 分</span>
-<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>
-<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="sd">    参数:</span>
-<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="sd">    - old_logp / ref_logp: actor / ref 对同一序列的 logprob，形状为 (B, T_resp)</span>
-<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="sd">    - r_rm: RM 给整条的标量分，形状为 (B,)</span>
-<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="sd">    - mask: 1=有效 response token，0=EOS 之后的 pad，形状为 (B, T_resp)</span>
-<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>
-<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="sd">    返回:</span>
-<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="sd">    - 每 token 的即时 reward，形状为 (B, T_resp)</span>
-<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>    <span class="n">r</span> <span class="o">=</span> <span class="o">-</span><span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="n">old_logp</span> <span class="o">-</span> <span class="n">ref_logp</span><span class="p">)</span> <span class="o">*</span> <span class="n">mask</span>       <span class="c1"># KL 惩罚, pad 位清零</span>
-<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>    <span class="n">last</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span>                   <span class="c1"># 每条最后一个有效 token 的下标</span>
-<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>    <span class="n">r</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">)),</span> <span class="n">last</span><span class="p">]</span> <span class="o">+=</span> <span class="n">r_rm</span>           <span class="c1"># RM 分加在最后有效位 (§3.2 的 1[t=T]·r_RM)</span>
-<a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a>    <span class="k">return</span> <span class="n">r</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">sft_logprob</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">):</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="sd">    计算 response 段每 token 的 logprob（§3.0），即 SFT 逐 token CE 里那个 logprob</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="sd">    参数:</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="sd">    - model: actor 或 ref</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="sd">    - ids: prompt + response 拼好的完整序列，形状为 (B, T)</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="sd">    - p_len: prompt 长度，用来切掉 prompt 段</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="sd">    返回:</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="sd">    - response 每位的 log π(a_t | s_t)，形状为 (B, T_resp)</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="sd">    """</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="c1"># 整体左移一位: 输入 ids[:-1], 位置 j 的输出去预测真实的下一个 token ids[j+1] (teacher-forcing)</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="n">logp</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">ids</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>      <span class="c1"># (B, T-1, V)  位置 j 的分布 = 对 ids[j+1] 的预测</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="n">tgt</span>  <span class="o">=</span> <span class="n">ids</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>                <span class="c1"># (B, T-1, 1)  label = 右移一位取真实 token, 同 SFT</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="n">logp</span> <span class="o">=</span> <span class="n">logp</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">tgt</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>        <span class="c1"># (B, T-1)     每位取实际 token a_t 那一格的 logprob</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="c1"># response 首 token 落在位置 p_len; 因左移一位, 它的预测分在索引 p_len-1, 往后全是 response 段</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="k">return</span> <span class="n">logp</span><span class="p">[:,</span> <span class="n">p_len</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:]</span>                     <span class="c1"># (B, T_resp)  只留 response 段, prompt 段不进 loss</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_rewards</span><span class="p">(</span><span class="n">old_logp</span><span class="p">,</span> <span class="n">ref_logp</span><span class="p">,</span> <span class="n">r_rm</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="sd">    组装 per-token reward r_t（§3.2）：每 token 一份 KL 惩罚，最后一个有效 token 叠 RM 分</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="sd">    参数:</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="sd">    - old_logp / ref_logp: actor / ref 对同一序列的 logprob，形状为 (B, T_resp)</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="sd">    - r_rm: RM 给整条的标量分，形状为 (B,)</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="sd">    - mask: 1=有效 response token，0=EOS 之后的 pad，形状为 (B, T_resp)</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="sd">    返回:</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="sd">    - 每 token 的即时 reward，形状为 (B, T_resp)</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a><span class="sd">    """</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>    <span class="n">r</span> <span class="o">=</span> <span class="o">-</span><span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="n">old_logp</span> <span class="o">-</span> <span class="n">ref_logp</span><span class="p">)</span> <span class="o">*</span> <span class="n">mask</span>       <span class="c1"># KL 惩罚, pad 位清零</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>    <span class="n">last</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span>                   <span class="c1"># 每条最后一个有效 token 的下标</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>    <span class="n">r</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">)),</span> <span class="n">last</span><span class="p">]</span> <span class="o">+=</span> <span class="n">r_rm</span>           <span class="c1"># RM 分加在最后有效位 (§3.2 的 1[t=T]·r_RM)</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>    <span class="k">return</span> <span class="n">r</span>
 </code></pre></div>
 <p><strong>③ GAE 优势 + ④ clip loss</strong>——PPO 核心。</p>
 <p><code>compute_gae</code> 把参考 doc 的 <code>dones</code> 换成 LLM 的 EOS/pad 边界：</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_gae</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">lam</span><span class="o">=</span><span class="mf">0.95</span><span class="p">):</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="sd">    计算 Generalized Advantage Estimation (GAE)（§3.4），倒序递推</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="sd">    δ_t = r_t + γV_{t+1} − V_t，A_t = δ_t + γλ·A_{t+1}</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="sd">    参数:</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="sd">    - r: 每 token 即时 reward，形状为 (B, T_resp)</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="sd">    - v: critic 估的 V(s_t)，形状为 (B, T_resp)</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="sd">    - mask: 1=有效 token，0=pad，兼作 (1 − done)，形状为 (B, T_resp)</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="sd">    - gamma / lam: 折扣因子 / GAE 衰减因子</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="sd">    返回:</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="sd">    - adv: 优势 A_t，给 actor 当权重，形状为 (B, T_resp)</span>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="sd">    - ret: A_t + V_t，给 critic 当回归 label（pad 位均 0），形状为 (B, T_resp)</span>
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="n">adv</span><span class="p">,</span> <span class="n">A</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">r</span><span class="p">),</span> <span class="mi">0</span>
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])):</span>          <span class="c1"># 从末位往前推</span>
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>        <span class="k">if</span> <span class="n">t</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="n">r</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>            <span class="n">nonterm</span> <span class="o">=</span> <span class="n">mask</span><span class="p">[:,</span> <span class="n">t</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>               <span class="c1"># 下一位是否仍是有效 token</span>
-<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>            <span class="n">v_next</span>  <span class="o">=</span> <span class="n">v</span><span class="p">[:,</span> <span class="n">t</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">nonterm</span>
-<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>            <span class="n">nonterm</span><span class="p">,</span> <span class="n">v_next</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>                 <span class="c1"># 序列最右端, 无下一状态</span>
-<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>        <span class="n">delta</span> <span class="o">=</span> <span class="n">r</span><span class="p">[:,</span> <span class="n">t</span><span class="p">]</span> <span class="o">+</span> <span class="n">gamma</span> <span class="o">*</span> <span class="n">v_next</span> <span class="o">-</span> <span class="n">v</span><span class="p">[:,</span> <span class="n">t</span><span class="p">]</span>         <span class="c1"># 单步 TD 残差 δ_t</span>
-<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>        <span class="n">A</span> <span class="o">=</span> <span class="n">delta</span> <span class="o">+</span> <span class="n">gamma</span> <span class="o">*</span> <span class="n">lam</span> <span class="o">*</span> <span class="n">nonterm</span> <span class="o">*</span> <span class="n">A</span>               <span class="c1"># 跨到 pad 时 nonterm=0, 重置</span>
-<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>        <span class="n">adv</span><span class="p">[:,</span> <span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span>
-<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>    <span class="k">return</span> <span class="n">adv</span> <span class="o">*</span> <span class="n">mask</span><span class="p">,</span> <span class="p">(</span><span class="n">adv</span> <span class="o">+</span> <span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">mask</span>            <span class="c1"># pad 位清零</span>
-<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>
-<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="k">def</span><span class="w"> </span><span class="nf">ppo_loss</span><span class="p">(</span><span class="n">new_logp</span><span class="p">,</span> <span class="n">old_logp</span><span class="p">,</span> <span class="n">adv</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">0.2</span><span class="p">):</span>
-<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a><span class="sd">    计算 clip 版 actor loss（§3.6）：−E[ min(ρ_t·A_t, clip(ρ_t, 1±ε)·A_t) ]，只在有效位取均值</span>
-<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>
-<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a><span class="sd">    参数:</span>
-<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a><span class="sd">    - new_logp: 当前 actor 实时前向，唯一带梯度，形状为 (B, T_resp)</span>
-<a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a><span class="sd">    - old_logp: rollout 时存下的旧 logprob（常数），形状为 (B, T_resp)</span>
-<a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a><span class="sd">    - adv: GAE 优势 A_t（常数），形状为 (B, T_resp)</span>
-<a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a><span class="sd">    - mask: 1=有效，0=pad，形状为 (B, T_resp)</span>
-<a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>
-<a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a><span class="sd">    返回:</span>
-<a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a><span class="sd">    - 标量 loss</span>
-<a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a>    <span class="n">ratio</span> <span class="o">=</span> <span class="p">(</span><span class="n">new_logp</span> <span class="o">-</span> <span class="n">old_logp</span><span class="p">)</span><span class="o">.</span><span class="n">exp</span><span class="p">()</span>            <span class="c1"># ρ_t = π_θ/π_old, logprob 差取 exp (§3.5)</span>
-<a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a>    <span class="n">surr1</span> <span class="o">=</span> <span class="n">ratio</span> <span class="o">*</span> <span class="n">adv</span>                            <span class="c1"># 不截断</span>
-<a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a>    <span class="n">surr2</span> <span class="o">=</span> <span class="n">ratio</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">eps</span><span class="p">,</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">eps</span><span class="p">)</span> <span class="o">*</span> <span class="n">adv</span>    <span class="c1"># 截断到 [1-ε, 1+ε]</span>
-<a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a>    <span class="n">loss</span>  <span class="o">=</span> <span class="o">-</span><span class="n">torch</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">surr1</span><span class="p">,</span> <span class="n">surr2</span><span class="p">)</span>               <span class="c1"># 取更小者 (§3.6): 出界那侧梯度 = 0</span>
-<a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a>    <span class="k">return</span> <span class="p">(</span><span class="n">loss</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>        <span class="c1"># masked mean, pad 位不算</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_gae</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">lam</span><span class="o">=</span><span class="mf">0.95</span><span class="p">):</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="sd">    计算 Generalized Advantage Estimation (GAE)（§3.4），倒序递推</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="sd">    δ_t = r_t + γV_{t+1} − V_t，A_t = δ_t + γλ·A_{t+1}</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="sd">    参数:</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="sd">    - r: 每 token 即时 reward，形状为 (B, T_resp)</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="sd">    - v: critic 估的 V(s_t)，形状为 (B, T_resp)</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="sd">    - mask: 1=有效 token，0=pad，兼作 (1 − done)，形状为 (B, T_resp)</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="sd">    - gamma / lam: 折扣因子 / GAE 衰减因子</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="sd">    返回:</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="sd">    - adv: 优势 A_t，给 actor 当权重，形状为 (B, T_resp)</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="sd">    - ret: A_t + V_t，给 critic 当回归 label（pad 位均 0），形状为 (B, T_resp)</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="sd">    """</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="n">adv</span><span class="p">,</span> <span class="n">A</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">r</span><span class="p">),</span> <span class="mi">0</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])):</span>          <span class="c1"># 从末位往前推</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>        <span class="k">if</span> <span class="n">t</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="n">r</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>            <span class="n">nonterm</span> <span class="o">=</span> <span class="n">mask</span><span class="p">[:,</span> <span class="n">t</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>               <span class="c1"># 下一位是否仍是有效 token</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>            <span class="n">v_next</span>  <span class="o">=</span> <span class="n">v</span><span class="p">[:,</span> <span class="n">t</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">nonterm</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>            <span class="n">nonterm</span><span class="p">,</span> <span class="n">v_next</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>                 <span class="c1"># 序列最右端, 无下一状态</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>        <span class="n">delta</span> <span class="o">=</span> <span class="n">r</span><span class="p">[:,</span> <span class="n">t</span><span class="p">]</span> <span class="o">+</span> <span class="n">gamma</span> <span class="o">*</span> <span class="n">v_next</span> <span class="o">-</span> <span class="n">v</span><span class="p">[:,</span> <span class="n">t</span><span class="p">]</span>         <span class="c1"># 单步 TD 残差 δ_t</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>        <span class="n">A</span> <span class="o">=</span> <span class="n">delta</span> <span class="o">+</span> <span class="n">gamma</span> <span class="o">*</span> <span class="n">lam</span> <span class="o">*</span> <span class="n">nonterm</span> <span class="o">*</span> <span class="n">A</span>               <span class="c1"># 跨到 pad 时 nonterm=0, 重置</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>        <span class="n">adv</span><span class="p">[:,</span> <span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>    <span class="k">return</span> <span class="n">adv</span> <span class="o">*</span> <span class="n">mask</span><span class="p">,</span> <span class="p">(</span><span class="n">adv</span> <span class="o">+</span> <span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">mask</span>            <span class="c1"># pad 位清零</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="k">def</span><span class="w"> </span><span class="nf">ppo_loss</span><span class="p">(</span><span class="n">new_logp</span><span class="p">,</span> <span class="n">old_logp</span><span class="p">,</span> <span class="n">adv</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">0.2</span><span class="p">):</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="sd">    计算 clip 版 actor loss（§3.6）：−E[ min(ρ_t·A_t, clip(ρ_t, 1±ε)·A_t) ]，只在有效位取均值</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="sd">    参数:</span>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="sd">    - new_logp: 当前 actor 实时前向，唯一带梯度，形状为 (B, T_resp)</span>
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="sd">    - old_logp: rollout 时存下的旧 logprob（常数），形状为 (B, T_resp)</span>
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="sd">    - adv: GAE 优势 A_t（常数），形状为 (B, T_resp)</span>
+<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a><span class="sd">    - mask: 1=有效，0=pad，形状为 (B, T_resp)</span>
+<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>
+<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a><span class="sd">    返回:</span>
+<a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a><span class="sd">    - 标量 loss</span>
+<a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a><span class="sd">    """</span>
+<a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a>    <span class="n">ratio</span> <span class="o">=</span> <span class="p">(</span><span class="n">new_logp</span> <span class="o">-</span> <span class="n">old_logp</span><span class="p">)</span><span class="o">.</span><span class="n">exp</span><span class="p">()</span>            <span class="c1"># ρ_t = π_θ/π_old, logprob 差取 exp (§3.5)</span>
+<a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a>    <span class="n">surr1</span> <span class="o">=</span> <span class="n">ratio</span> <span class="o">*</span> <span class="n">adv</span>                            <span class="c1"># 不截断</span>
+<a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a>    <span class="n">surr2</span> <span class="o">=</span> <span class="n">ratio</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">eps</span><span class="p">,</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">eps</span><span class="p">)</span> <span class="o">*</span> <span class="n">adv</span>    <span class="c1"># 截断到 [1-ε, 1+ε]</span>
+<a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a>    <span class="n">loss</span>  <span class="o">=</span> <span class="o">-</span><span class="n">torch</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">surr1</span><span class="p">,</span> <span class="n">surr2</span><span class="p">)</span>               <span class="c1"># 取更小者 (§3.6): 出界那侧梯度 = 0</span>
+<a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a>    <span class="k">return</span> <span class="p">(</span><span class="n">loss</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>        <span class="c1"># masked mean, pad 位不算</span>
 </code></pre></div>
 <p>四段里前三段（<code>sft_logprob</code> / <code>compute_rewards</code> / <code>compute_gae</code>）在 loop 里输入都是 no-grad 张量、输出当常数；只有 <code>ppo_loss</code> 的 <code>new_logp</code> 带梯度。</p>
 <p><strong>[补充结构：四个模型与 rollout]</strong></p>
 <p>这部分面试一般不要求手写，熟悉结构、能调用即可。结构只有两种：带 lm_head 的 Actor，和带标量 head 的 ScalarLM（critic 与 RM 同构，§3.3 / §4.1）：</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">V</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">64</span>                                   <span class="c1"># 词表 / hidden, toy 规模</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">EOS</span> <span class="o">=</span> <span class="mi">0</span>                                           <span class="c1"># 约定 token 0 为 EOS, 标 response 结束</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">MiniLM</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;共用 backbone: embedding + 2 层 causal transformer, 输出每位置 hidden&quot;&quot;&quot;</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">emb</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="n">D</span><span class="p">)</span>
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>        <span class="n">layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">TransformerEncoderLayer</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="n">nhead</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">dim_feedforward</span><span class="o">=</span><span class="mi">4</span> <span class="o">*</span> <span class="n">D</span><span class="p">,</span>
-<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>                                           <span class="n">dropout</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">batch_first</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># 关 dropout: 前向确定</span>
-<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">TransformerEncoder</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">num_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ids</span><span class="p">):</span>                      <span class="c1"># [B,T] -&gt; [B,T,D]</span>
-<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>        <span class="n">mask</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Transformer</span><span class="o">.</span><span class="n">generate_square_subsequent_mask</span><span class="p">(</span><span class="n">ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">emb</span><span class="p">(</span><span class="n">ids</span><span class="p">),</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="n">is_causal</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>
-<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="k">class</span><span class="w"> </span><span class="nc">Actor</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;LLM 本体: backbone + lm_head&quot;&quot;&quot;</span>
-<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_head</span> <span class="o">=</span> <span class="n">MiniLM</span><span class="p">(),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="n">V</span><span class="p">)</span>
-<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ids</span><span class="p">):</span>                      <span class="c1"># -&gt; [B,T,V] logits</span>
-<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_head</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="p">(</span><span class="n">ids</span><span class="p">))</span>
-<a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>    <span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
-<a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">n_new</span><span class="p">):</span>              <span class="c1"># toy 版 rollout, 无 KV cache</span>
-<a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_new</span><span class="p">):</span>                   <span class="c1"># 真实系统这段走推理引擎 (§5.2)</span>
-<a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a>            <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">ids</span><span class="p">)[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>     <span class="c1"># 真实会在所有序列都出 EOS 时提前停</span>
-<a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a>            <span class="n">ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">ids</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">multinomial</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">1</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>        <span class="k">return</span> <span class="n">ids</span>                               <span class="c1"># 仍生成定长 n_new, EOS 之后靠 mask 屏蔽</span>
-<a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>
-<a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a><span class="k">class</span><span class="w"> </span><span class="nc">ScalarLM</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;critic 与 RM 同构: backbone + 标量 head&quot;&quot;&quot;</span>
-<a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-<a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="n">MiniLM</span><span class="p">(),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ids</span><span class="p">):</span>                      <span class="c1"># -&gt; [B,T] 每位置一个标量</span>
-<a id="__codelineno-3-38" name="__codelineno-3-38" href="#__codelineno-3-38"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="p">(</span><span class="n">ids</span><span class="p">))</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-3-39" name="__codelineno-3-39" href="#__codelineno-3-39"></a>
-<a id="__codelineno-3-40" name="__codelineno-3-40" href="#__codelineno-3-40"></a><span class="n">actor</span>  <span class="o">=</span> <span class="n">Actor</span><span class="p">()</span>                                 <span class="c1"># ✅ 训练</span>
-<a id="__codelineno-3-41" name="__codelineno-3-41" href="#__codelineno-3-41"></a><span class="n">critic</span> <span class="o">=</span> <span class="n">ScalarLM</span><span class="p">()</span>                              <span class="c1"># ✅ 训练 (实际常从 RM 初始化)</span>
-<a id="__codelineno-3-42" name="__codelineno-3-42" href="#__codelineno-3-42"></a><span class="n">rm</span>     <span class="o">=</span> <span class="n">ScalarLM</span><span class="p">()</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>                       <span class="c1"># ❄️ 冻结; 随机权重代替 §4.1 训好的 RM</span>
-<a id="__codelineno-3-43" name="__codelineno-3-43" href="#__codelineno-3-43"></a><span class="n">ref</span>    <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">actor</span><span class="p">)</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>             <span class="c1"># ❄️ 冻结; actor 出发点的副本</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">V</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">64</span>                                   <span class="c1"># 词表 / hidden, toy 规模</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">EOS</span> <span class="o">=</span> <span class="mi">0</span>                                           <span class="c1"># 约定 token 0 为 EOS, 标 response 结束</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">MiniLM</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="sd">"""共用 backbone: embedding + 2 层 causal transformer, 输出每位置 hidden"""</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">emb</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="n">D</span><span class="p">)</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>        <span class="n">layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">TransformerEncoderLayer</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="n">nhead</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">dim_feedforward</span><span class="o">=</span><span class="mi">4</span> <span class="o">*</span> <span class="n">D</span><span class="p">,</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>                                           <span class="n">dropout</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">batch_first</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># 关 dropout: 前向确定</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">TransformerEncoder</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">num_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ids</span><span class="p">):</span>                      <span class="c1"># [B,T] -&gt; [B,T,D]</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>        <span class="n">mask</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Transformer</span><span class="o">.</span><span class="n">generate_square_subsequent_mask</span><span class="p">(</span><span class="n">ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">emb</span><span class="p">(</span><span class="n">ids</span><span class="p">),</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="n">is_causal</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="k">class</span><span class="w"> </span><span class="nc">Actor</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">    </span><span class="sd">"""LLM 本体: backbone + lm_head"""</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_head</span> <span class="o">=</span> <span class="n">MiniLM</span><span class="p">(),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="n">V</span><span class="p">)</span>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ids</span><span class="p">):</span>                      <span class="c1"># -&gt; [B,T,V] logits</span>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lm_head</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="p">(</span><span class="n">ids</span><span class="p">))</span>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>    <span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">n_new</span><span class="p">):</span>              <span class="c1"># toy 版 rollout, 无 KV cache</span>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_new</span><span class="p">):</span>                   <span class="c1"># 真实系统这段走推理引擎 (§5.2)</span>
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>            <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">ids</span><span class="p">)[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>     <span class="c1"># 真实会在所有序列都出 EOS 时提前停</span>
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>            <span class="n">ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">ids</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">multinomial</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">1</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>        <span class="k">return</span> <span class="n">ids</span>                               <span class="c1"># 仍生成定长 n_new, EOS 之后靠 mask 屏蔽</span>
+<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>
+<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a><span class="k">class</span><span class="w"> </span><span class="nc">ScalarLM</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a><span class="w">    </span><span class="sd">"""critic 与 RM 同构: backbone + 标量 head"""</span>
+<a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+<a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="n">MiniLM</span><span class="p">(),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ids</span><span class="p">):</span>                      <span class="c1"># -&gt; [B,T] 每位置一个标量</span>
+<a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lm</span><span class="p">(</span><span class="n">ids</span><span class="p">))</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a>
+<a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a><span class="n">actor</span>  <span class="o">=</span> <span class="n">Actor</span><span class="p">()</span>                                 <span class="c1"># ✅ 训练</span>
+<a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a><span class="n">critic</span> <span class="o">=</span> <span class="n">ScalarLM</span><span class="p">()</span>                              <span class="c1"># ✅ 训练 (实际常从 RM 初始化)</span>
+<a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a><span class="n">rm</span>     <span class="o">=</span> <span class="n">ScalarLM</span><span class="p">()</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>                       <span class="c1"># ❄️ 冻结; 随机权重代替 §4.1 训好的 RM</span>
+<a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a><span class="n">ref</span>    <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">actor</span><span class="p">)</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>             <span class="c1"># ❄️ 冻结; actor 出发点的副本</span>
 </code></pre></div>
 <p><strong>[一个 training step]</strong></p>
 <p>四段注释是 §3.6 计算链的浓缩（组装 <span class="arithmatex">\(r_t\)</span> + GAE 并成第 3 段）；只有第 4 段带梯度：</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">opt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">([</span><span class="o">*</span><span class="n">actor</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="o">*</span><span class="n">critic</span><span class="o">.</span><span class="n">parameters</span><span class="p">()],</span> <span class="n">lr</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">)</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">ppo_step</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">n_new</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">ppo_epochs</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">p_len</span><span class="p">,</span> <span class="n">B</span> <span class="o">=</span> <span class="n">prompt</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">prompt</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="c1"># 1) rollout: 推理负载</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">ids</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">n_new</span><span class="p">)</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="c1"># prompt 段已由 sft_logprob 用 p_len 切掉; 这里的 mask 只切 response 内部的 pad</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="c1"># response 变长: 各条在不同位置生成 EOS, EOS 之后的位置是 pad, 要 mask 掉</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">eos</span>  <span class="o">=</span> <span class="p">(</span><span class="n">ids</span><span class="p">[:,</span> <span class="n">p_len</span><span class="p">:]</span> <span class="o">==</span> <span class="n">EOS</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>            <span class="c1"># (B, n_new)  EOS 处为 1</span>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="c1"># cumsum 数&quot;到本位为止的 EOS 数&quot;, 减本位得&quot;本位之前&quot;的 EOS 数; ==0 即仍在首个 EOS(含)之前</span>
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">eos</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">eos</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>        <span class="c1"># (B, n_new)  到首个 EOS(含)为 1, 之后 pad 为 0</span>
-<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="n">last</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span>                     <span class="c1"># (B,)  每条最后一个有效 token 在 response 段内的下标</span>
-<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>    <span class="c1"># 2) no-grad 前向 x4, 产物即 experiences, 更新期间全程当常数</span>
-<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
-<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>        <span class="n">old_logp</span> <span class="o">=</span> <span class="n">sft_logprob</span><span class="p">(</span><span class="n">actor</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">)</span>  <span class="c1"># (B, T_resp) ρ_t 的分母 (§3.5)</span>
-<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>        <span class="n">ref_logp</span> <span class="o">=</span> <span class="n">sft_logprob</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">)</span>    <span class="c1"># (B, T_resp) KL 基准 (§3.2)</span>
-<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>        <span class="c1"># V(s_t) = 生成 response 第 t 个 token 前的状态价值 = critic 在位置 t-1 的输出;</span>
-<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>        <span class="c1"># 同 logp 一样左移一位对齐, 故 response 段取 [p_len-1:-1]</span>
-<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>        <span class="n">v</span>        <span class="o">=</span> <span class="n">critic</span><span class="p">(</span><span class="n">ids</span><span class="p">)[:,</span> <span class="n">p_len</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>     <span class="c1"># (B, T_resp) 每个 response 位置的 V(s_t)</span>
-<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>        <span class="n">r_rm</span>     <span class="o">=</span> <span class="n">rm</span><span class="p">(</span><span class="n">ids</span><span class="p">)[</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">B</span><span class="p">),</span> <span class="n">p_len</span> <span class="o">+</span> <span class="n">last</span><span class="p">]</span>  <span class="c1"># (B,) p_len+last=末位绝对下标, 取该处标量作整条分 (§4.1)</span>
-<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>    <span class="c1"># 3) reward 组装 + GAE</span>
-<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>    <span class="n">rewards</span>  <span class="o">=</span> <span class="n">compute_rewards</span><span class="p">(</span><span class="n">old_logp</span><span class="p">,</span> <span class="n">ref_logp</span><span class="p">,</span> <span class="n">r_rm</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
-<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>    <span class="n">adv</span><span class="p">,</span> <span class="n">ret</span> <span class="o">=</span> <span class="n">compute_gae</span><span class="p">(</span><span class="n">rewards</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
-<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>    <span class="c1"># 4) update: 同一批 experiences 复用 ppo-epochs 次, 训练负载</span>
-<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a>    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ppo_epochs</span><span class="p">):</span>
-<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>        <span class="n">new_logp</span> <span class="o">=</span> <span class="n">sft_logprob</span><span class="p">(</span><span class="n">actor</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">)</span>  <span class="c1"># 唯一带梯度的 logprob</span>
-<a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a>        <span class="n">actor_loss</span> <span class="o">=</span> <span class="n">ppo_loss</span><span class="p">(</span><span class="n">new_logp</span><span class="p">,</span> <span class="n">old_logp</span><span class="p">,</span> <span class="n">adv</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>           <span class="c1"># §3.5 / 3.6</span>
-<a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a>        <span class="n">v_pred</span>     <span class="o">=</span> <span class="n">critic</span><span class="p">(</span><span class="n">ids</span><span class="p">)[:,</span> <span class="n">p_len</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-<a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a>        <span class="n">value_loss</span> <span class="o">=</span> <span class="p">((</span><span class="n">v_pred</span> <span class="o">-</span> <span class="n">ret</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>   <span class="c1"># masked MSE (§3.3)</span>
-<a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a>        <span class="n">opt</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">();</span> <span class="p">(</span><span class="n">actor_loss</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">value_loss</span><span class="p">)</span><span class="o">.</span><span class="n">backward</span><span class="p">();</span> <span class="n">opt</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
-<a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a>    <span class="k">return</span> <span class="n">actor_loss</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="n">value_loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
-<a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a>
-<a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>                                <span class="c1"># 跑 3 个 step</span>
-<a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">ppo_step</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">))))</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">opt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">([</span><span class="o">*</span><span class="n">actor</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="o">*</span><span class="n">critic</span><span class="o">.</span><span class="n">parameters</span><span class="p">()],</span> <span class="n">lr</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">)</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">ppo_step</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">n_new</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">ppo_epochs</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">p_len</span><span class="p">,</span> <span class="n">B</span> <span class="o">=</span> <span class="n">prompt</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">prompt</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="c1"># 1) rollout: 推理负载</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">ids</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">n_new</span><span class="p">)</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="c1"># prompt 段已由 sft_logprob 用 p_len 切掉; 这里的 mask 只切 response 内部的 pad</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="c1"># response 变长: 各条在不同位置生成 EOS, EOS 之后的位置是 pad, 要 mask 掉</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="n">eos</span>  <span class="o">=</span> <span class="p">(</span><span class="n">ids</span><span class="p">[:,</span> <span class="n">p_len</span><span class="p">:]</span> <span class="o">==</span> <span class="n">EOS</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>            <span class="c1"># (B, n_new)  EOS 处为 1</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="c1"># cumsum 数"到本位为止的 EOS 数", 减本位得"本位之前"的 EOS 数; ==0 即仍在首个 EOS(含)之前</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">eos</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">eos</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>        <span class="c1"># (B, n_new)  到首个 EOS(含)为 1, 之后 pad 为 0</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="n">last</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span>                     <span class="c1"># (B,)  每条最后一个有效 token 在 response 段内的下标</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    <span class="c1"># 2) no-grad 前向 x4, 产物即 experiences, 更新期间全程当常数</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>        <span class="n">old_logp</span> <span class="o">=</span> <span class="n">sft_logprob</span><span class="p">(</span><span class="n">actor</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">)</span>  <span class="c1"># (B, T_resp) ρ_t 的分母 (§3.5)</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>        <span class="n">ref_logp</span> <span class="o">=</span> <span class="n">sft_logprob</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">)</span>    <span class="c1"># (B, T_resp) KL 基准 (§3.2)</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>        <span class="c1"># V(s_t) = 生成 response 第 t 个 token 前的状态价值 = critic 在位置 t-1 的输出;</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>        <span class="c1"># 同 logp 一样左移一位对齐, 故 response 段取 [p_len-1:-1]</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>        <span class="n">v</span>        <span class="o">=</span> <span class="n">critic</span><span class="p">(</span><span class="n">ids</span><span class="p">)[:,</span> <span class="n">p_len</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>     <span class="c1"># (B, T_resp) 每个 response 位置的 V(s_t)</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>        <span class="n">r_rm</span>     <span class="o">=</span> <span class="n">rm</span><span class="p">(</span><span class="n">ids</span><span class="p">)[</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">B</span><span class="p">),</span> <span class="n">p_len</span> <span class="o">+</span> <span class="n">last</span><span class="p">]</span>  <span class="c1"># (B,) p_len+last=末位绝对下标, 取该处标量作整条分 (§4.1)</span>
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>    <span class="c1"># 3) reward 组装 + GAE</span>
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>    <span class="n">rewards</span>  <span class="o">=</span> <span class="n">compute_rewards</span><span class="p">(</span><span class="n">old_logp</span><span class="p">,</span> <span class="n">ref_logp</span><span class="p">,</span> <span class="n">r_rm</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>    <span class="n">adv</span><span class="p">,</span> <span class="n">ret</span> <span class="o">=</span> <span class="n">compute_gae</span><span class="p">(</span><span class="n">rewards</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a>    <span class="c1"># 4) update: 同一批 experiences 复用 ppo-epochs 次, 训练负载</span>
+<a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ppo_epochs</span><span class="p">):</span>
+<a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>        <span class="n">new_logp</span> <span class="o">=</span> <span class="n">sft_logprob</span><span class="p">(</span><span class="n">actor</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">)</span>  <span class="c1"># 唯一带梯度的 logprob</span>
+<a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>        <span class="n">actor_loss</span> <span class="o">=</span> <span class="n">ppo_loss</span><span class="p">(</span><span class="n">new_logp</span><span class="p">,</span> <span class="n">old_logp</span><span class="p">,</span> <span class="n">adv</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>           <span class="c1"># §3.5 / 3.6</span>
+<a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a>        <span class="n">v_pred</span>     <span class="o">=</span> <span class="n">critic</span><span class="p">(</span><span class="n">ids</span><span class="p">)[:,</span> <span class="n">p_len</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a>        <span class="n">value_loss</span> <span class="o">=</span> <span class="p">((</span><span class="n">v_pred</span> <span class="o">-</span> <span class="n">ret</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>   <span class="c1"># masked MSE (§3.3)</span>
+<a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>        <span class="n">opt</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">();</span> <span class="p">(</span><span class="n">actor_loss</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">value_loss</span><span class="p">)</span><span class="o">.</span><span class="n">backward</span><span class="p">();</span> <span class="n">opt</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>    <span class="k">return</span> <span class="n">actor_loss</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="n">value_loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a>
+<a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a><span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>                                <span class="c1"># 跑 3 个 step</span>
+<a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">ppo_step</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">))))</span>
 </code></pre></div>
 <p>RM 随机，reward 无意义，所以这段只验接线、不验收敛——loss 上下跳正常。正确性怎么测见 §6。</p>
 <p>toy 为了跑通省掉了这些工程项，真实实现都要补上：</p>

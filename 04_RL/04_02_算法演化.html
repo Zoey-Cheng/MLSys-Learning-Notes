@@ -1,0 +1,3365 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="MLSys 自学笔记，知乎同步更新">
+      
+      
+      
+        <link rel="canonical" href="https://zoey-cheng.github.io/MLSys-Learning-Notes/04_RL/04_02_%E7%AE%97%E6%B3%95%E6%BC%94%E5%8C%96.html">
+      
+      
+        <link rel="prev" href="04_01_RL%E8%AE%AD%E7%BB%83%E5%9F%BA%E7%A1%80.html">
+      
+      
+        <link rel="next" href="../05_%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96/05_01_%E6%8E%A8%E7%90%86%E5%9F%BA%E7%A1%80.html">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>02-算法演化: DPO、GRPO与OPD - MLSys 菜狗自学笔记</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../katex/katex.min.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#02-dpo-grpo-opd" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../index.html" title="MLSys 菜狗自学笔记" class="md-header__button md-logo" aria-label="MLSys 菜狗自学笔记" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            MLSys 菜狗自学笔记
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              02-算法演化: DPO、GRPO与OPD
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换到暗色模式"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到暗色模式" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换到亮色模式"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到亮色模式" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Zoey-Cheng/MLSys-Learning-Notes
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../index.html" title="MLSys 菜狗自学笔记" class="md-nav__button md-logo" aria-label="MLSys 菜狗自学笔记" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    MLSys 菜狗自学笔记
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Zoey-Cheng/MLSys-Learning-Notes
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    模型基础
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    模型基础
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_01_Transformer.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-Transformer 架构详解:以 LLaMA 为例
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_02_MoE.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-MoE 架构详解: 从基础版到 DeepSeek / Qwen3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_03_VLM.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    03-VLM: 从 ViT/CLIP 到 Qwen2-VL / DeepSeek-OCR
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_04_Diffusion%E5%9F%BA%E7%A1%80.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    04-Diffusion (上): 从 VAE 到 DDPM / DDIM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_05_Diffusion%E8%BF%9B%E9%98%B6.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    05-Diffusion (下): 从 Latent Diffusion 到 DiT / FLUX
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    训练策略
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    训练策略
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02_%E8%AE%AD%E7%BB%83%E7%AD%96%E7%95%A5/02_01_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%E5%9F%BA%E7%A1%80.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-分布式背景:通信/单卡计算流
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    训练方法
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    训练方法
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_01_Pretrain.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-预训练 Pretrain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_02_SFT.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-监督微调 SFT
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RL
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RL
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="04_01_RL%E8%AE%AD%E7%BB%83%E5%9F%BA%E7%A1%80.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-RL训练基础: loop与RLHF-PPO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-算法演化: DPO、GRPO与OPD
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="04_02_%E7%AE%97%E6%B3%95%E6%BC%94%E5%8C%96.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-算法演化: DPO、GRPO与OPD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前言
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 底层逻辑：两个减负方向
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 底层逻辑：两个减负方向">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 方向一：动负载
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 方向二：换模型
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 经典算法 = 组合
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-dpo-rollout-rmcritic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. DPO: 删 rollout（连 RM、critic 一起）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. DPO: 删 rollout（连 RM、critic 一起）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-idea-loss" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 设计 idea 与 loss 结论
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-j_0-j_textkl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 共同起点：从 \(J_0\) 到 \(J_{\text{KL}}\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-dpo-loss" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 DPO 分支：从最优策略到偏好 loss
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-dpo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 手写 DPO
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 代价与变体
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-grpo-rlvr-critic-rm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. GRPO (+RLVR): 替换critic (与RM)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. GRPO (+RLVR): 替换critic (与RM)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-ppo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 从 PPO 四模型出发：两处替换
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-rlvr-rm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 RLVR (可选)：RM → 可验证规则
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-grpocritic-gae-advantage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 GRPO：critic + GAE → 组内 advantage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-grpo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 手写 GRPO
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-r1rlvr-grpo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 R1：RLVR + GRPO
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-dapogrpo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 DAPO：GRPO 的长回答训练改进
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-opd-mopdon-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. OPD / MOPD：on-policy 蒸馏
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. OPD / MOPD：on-policy 蒸馏">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-vs-opd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 普通蒸馏 vs OPD
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 逐 token 反馈
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-token-loss" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Token 级 Loss 两种更新
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-mopd-prompt-teacher" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 MOPD：按 prompt 选 teacher
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-opd-mopd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 手写 OPD / MOPD
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 代码实现
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    推理优化
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    推理优化
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05_%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96/05_01_%E6%8E%A8%E7%90%86%E5%9F%BA%E7%A1%80.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-推理基础: PD/KV Cache
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    算子
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    算子
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../06_%E7%AE%97%E5%AD%90/05_01_CUDA%E5%85%A5%E9%97%A8.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-算子手写(1) - CUDA 入门 op
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ♪ 手写题 Quick Ref
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ♪ 手写题 Quick Ref
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07_%E9%9D%A2%E8%AF%95%E6%89%8B%E5%86%99%E9%A2%98/07_01_%E6%A8%A1%E5%9E%8B.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-模型
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07_%E9%9D%A2%E8%AF%95%E6%89%8B%E5%86%99%E9%A2%98/07_02_%E6%8E%A8%E7%90%86.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-推理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07_%E9%9D%A2%E8%AF%95%E6%89%8B%E5%86%99%E9%A2%98/07_03_%E7%AE%97%E5%AD%90CUDA.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    03-算子
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前言
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 底层逻辑：两个减负方向
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 底层逻辑：两个减负方向">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 方向一：动负载
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 方向二：换模型
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 经典算法 = 组合
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-dpo-rollout-rmcritic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. DPO: 删 rollout（连 RM、critic 一起）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. DPO: 删 rollout（连 RM、critic 一起）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-idea-loss" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 设计 idea 与 loss 结论
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-j_0-j_textkl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 共同起点：从 \(J_0\) 到 \(J_{\text{KL}}\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-dpo-loss" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 DPO 分支：从最优策略到偏好 loss
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-dpo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 手写 DPO
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 代价与变体
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-grpo-rlvr-critic-rm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. GRPO (+RLVR): 替换critic (与RM)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. GRPO (+RLVR): 替换critic (与RM)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-ppo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 从 PPO 四模型出发：两处替换
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-rlvr-rm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 RLVR (可选)：RM → 可验证规则
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-grpocritic-gae-advantage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 GRPO：critic + GAE → 组内 advantage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-grpo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 手写 GRPO
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-r1rlvr-grpo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 R1：RLVR + GRPO
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-dapogrpo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 DAPO：GRPO 的长回答训练改进
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-opd-mopdon-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. OPD / MOPD：on-policy 蒸馏
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. OPD / MOPD：on-policy 蒸馏">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-vs-opd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 普通蒸馏 vs OPD
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 逐 token 反馈
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-token-loss" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Token 级 Loss 两种更新
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-mopd-prompt-teacher" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 MOPD：按 prompt 选 teacher
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-opd-mopd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 手写 OPD / MOPD
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 代码实现
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="02-dpo-grpo-opd">02-算法演化: DPO / GRPO / OPD</h1>
+<blockquote>
+<p><strong>TL; DR</strong>：从 上一篇的 PPO 开始，从在场模型和和策略修改方向分别讲解：</p>
+<ul>
+<li>DPO：删除 rollout，退化为对齐任务</li>
+<li>GRPO：组内统计替代 critic；可选 RLVR 替代 RM。衍生方法 DAPO 进一步去掉 ref。</li>
+<li>OPD / MOPD：on policy 蒸馏，teacher 替代 3 个模型</li>
+</ul>
+</blockquote>
+<ul>
+<li><strong>[Quick Ref for 手写 code]</strong>：手写 DPO（§2.4）+ GRPO（§3.4，DAPO 增量见 §3.6）+ OPD（§4.5）｜ <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/12_dpo_grpo_opd.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/1dzNP4RzIoox-Ef29yuW48fRInDXdq5pU/view?usp=drive_link">Colab</a></li>
+<li><strong>[常考面试点]</strong>：GRPO + OPD</li>
+</ul>
+<p>本篇是 RL 系列第二篇。01 立了 RLHF-PPO 的 baseline 和资源画像；本篇讲算法侧的衍生算法 + 减负演化。</p>
+<h2 id="_1">前言</h2>
+<p><a href="04_01_RL%E8%AE%AD%E7%BB%83%E5%9F%BA%E7%A1%80.html">01 篇</a> 从 RL loop 出发，完整展开了 RLHF-PPO。</p>
+<ul>
+<li>rollout (推理)、reward (等打分)、advantage (训练前向) 和 update (训练前后向) 组成一个 training step。</li>
+<li>actor、critic、RM 和 ref 组成在场模型 - 四模型系统。</li>
+</ul>
+<p>本篇沿用 PPO 这个 baseline，<strong>继续讲 RL系列的其他算法</strong>：DPO、RLVR + GRPO、OPD / MOPD。重点是这些方法为什么出现、相对 PPO 改了什么，以及各自适合什么训练场景。</p>
+<h2 id="1">1. 底层逻辑：两个减负方向</h2>
+<p>从 infra 视角看，01 的 RLHF-PPO step 里只有两样东西：</p>
+<ul>
+<li>
+<p><strong>负载</strong>：</p>
+<ul>
+<li>推理：rollout = 嵌在训练 step 里的一段完整推理</li>
+<li>训练：其他在场模型进行前向 -&gt; 对比计算loss -&gt; 前后向更新参数 (策略policy)</li>
+</ul>
+<p>训推两套引擎共享一份 actor 权重，所以需要同步权重</p>
+</li>
+</ul>
+<ul>
+<li><strong>在场模型</strong>：PPO 在场四个——actor / critic 训练态（前后向），RM / ref 冻结只前向</li>
+</ul>
+<p><img src="../assets/12-rl-algorithms/fig-11.png" alt="PPO 的四段流程与四模型" width="700" /></p>
+<p>减负因此只有两个方向：<strong>动负载（§1.1），或换模型（§1.2）</strong>；每个算法 = 两个方向上的一次组合（§1.3）。</p>
+<h3 id="11">1.1 方向一：动负载</h3>
+<p>核心问题：rollout 留不留、留下时数据能多旧。两对术语：</p>
+<ul>
+<li><strong>online 在线 / offline 离线</strong>：训练期间<strong>采不采新数据</strong>——在线 = 含 rollout；离线 = 数据训练前固定</li>
+<li><strong>on / off-policy</strong>：训练数据<strong>出自哪版策略</strong>——on-policy = 当前这版 actor；off-policy = 旧版或别的模型</li>
+<li>关系：<ul>
+<li>离线必然 off-policy；在线默认 on-policy</li>
+<li>但 <strong>"数据多旧"是连续旋钮</strong>——ppo-epochs 复用（轻微旧）→ 异步化（大幅，plan 05 篇）→ 离线（拧到底）</li>
+</ul>
+</li>
+</ul>
+<p>选哪端由训练意图决定：</p>
+<table>
+<thead>
+<tr>
+<th>训练意图</th>
+<th>具体指什么</th>
+<th>选择</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>对齐 alignment</td>
+<td>按人类偏好回答：风格 / 语气，不求新能力</td>
+<td>离线够用（形态近 SFT，差别见下）</td>
+</tr>
+<tr>
+<td>reasoning</td>
+<td>学更难的推理（math / code），解法须自己采出才可强化</td>
+<td>必须在线（01 §1.2）</td>
+</tr>
+<tr>
+<td>能力搬运 / 合并</td>
+<td>强模型能力迁给小模型 / 多专家合一</td>
+<td>在线（机制见 §1.2）</td>
+</tr>
+</tbody>
+</table>
+<p>代价对照：在线 = 训推双引擎；离线 = 无 rollout 推理 + 分布偏移（§2.5）。</p>
+<p>离线 ≠ 退化为 SFT：偏好 pair 带负反馈、能压低坏回答（SFT 只有正例）；loss 也仍由 RL 目标推出（§2）。</p>
+<h3 id="12">1.2 方向二：换模型</h3>
+<p>先回顾初始 RLHF PPO 的四模型分工：<strong>actor</strong> = 被训的 LLM，rollout 和 update 都是它；<strong>critic</strong> = 逐位置估 <span class="arithmatex">\(V\)</span>，供 advantage；<strong>RM</strong> = reward model 对整条打分；<strong>ref</strong> = KL 基准。逐个看能不能动：</p>
+<ul>
+<li>actor：被训对象，动不了</li>
+<li>ref：可选约束——对齐要，reasoning 常删（DAPO 等）</li>
+<li><strong>RM / critic</strong>：仅有的两个学出来的评估器，替换的主要对象：</li>
+</ul>
+<blockquote>
+<p>OPD = On-Policy Distillation</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>槽位</th>
+<th>替代</th>
+<th>"好"的定义</th>
+<th>代价</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RM（原：人类喜好）</td>
+<td>规则（<strong>RLVR</strong>）</td>
+<td>验证为对</td>
+<td>限可验证任务</td>
+</tr>
+<tr>
+<td>critic</td>
+<td>组内统计（<strong>GRPO</strong> 等）</td>
+<td>不变，只换 baseline</td>
+<td>同奖同罚</td>
+</tr>
+<tr>
+<td>RM + critic + ref</td>
+<td>和另一个模型的差异 (teacher)（<strong>OPD / MOPD</strong>）</td>
+<td>与 teacher 相近</td>
+<td>student 要覆盖 teacher 的高概率区域</td>
+</tr>
+</tbody>
+</table>
+<h3 id="13">1.3 经典算法 = 组合</h3>
+<table>
+<thead>
+<tr>
+<th>算法</th>
+<th>方向一：负载</th>
+<th>方向二：模型替换 / 删除</th>
+<th>出发 idea</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PPO-RLHF（01）</td>
+<td>在线</td>
+<td>actor、RM、critic、ref 全保留</td>
+<td>全配置 baseline</td>
+</tr>
+<tr>
+<td><strong>DPO</strong>（§2）</td>
+<td>离线</td>
+<td>RM 删除，直接用偏好 pair 训练<br>critic 删除</td>
+<td>不用跑 RL：最优策略可以直接写成公式，拿偏好数据直接训 actor（§2）</td>
+</tr>
+<tr>
+<td><strong>GRPO + 模型奖励</strong>（§3）</td>
+<td>在线</td>
+<td>RM 保留，可外部调用<br>critic → 组内统计</td>
+<td>模型打分，组内统计替代价值估计</td>
+</tr>
+<tr>
+<td><strong>GRPO + RLVR</strong>（纯规则，§3）</td>
+<td>在线</td>
+<td>RM → 替换为可验证规则<br>critic → 组内统计</td>
+<td>规则判分，组内统计算 advantage</td>
+</tr>
+<tr>
+<td>↳ <strong>DAPO</strong>（§3.6）</td>
+<td>在线</td>
+<td>沿用 GRPO，额外<br>ref删除 → 去掉 KL 约束</td>
+<td>允许偏离初始模型，改进长回答训练</td>
+</tr>
+<tr>
+<td><strong>OPD / MOPD</strong>（§4）</td>
+<td>在线</td>
+<td>RM → teacher 反馈<br>critic 删除<br>ref → teacher 对齐目标</td>
+<td>能力是现成的：在 student rollout prefix 上逼近 teacher（§4）</td>
+</tr>
+</tbody>
+</table>
+<p>GRPO 本身只替换 critic；RM 是否保留，由奖励来源决定。DAPO 进一步取消 ref KL，规则奖励配方只需 actor。</p>
+<ul>
+<li>按历史来源速记：<ul>
+<li><strong>preference / reward optimization</strong>：DPO（2023）、RLVR + GRPO（2025）</li>
+<li><strong>knowledge distillation</strong>：GKD / MiniLLM（2023）、post-training OPD（2025）、MOPD（2026）</li>
+</ul>
+</li>
+</ul>
+<p><img src="../assets/12-rl-algorithms/fig-02.png" alt="DPO、GRPO、OPD 从 PPO 改了什么" width="800" /></p>
+<h2 id="2-dpo-rollout-rmcritic">2. DPO: 删 rollout（连 RM、critic 一起）</h2>
+<p>DPO 的训练结论很简单，但数学推导较长。只想掌握设计和具体计算时，读完 §2.1 可以直接跳到 §2.4；§2.2–2.3 负责推导 loss 为什么成立。</p>
+<h3 id="21-idea-loss">2.1 设计 idea 与 loss 结论</h3>
+<p>回顾 RLHF-PPO 的四模型设计：RM 先用偏好 pair 学会打分，PPO 再拿这个分训练 actor。</p>
+<p><strong>DPO</strong>（Direct Preference Optimization，直接偏好优化，2023）的出发点是跳过 RM。直接用原本训练打分的偏好数据训练 actor。</p>
+<p><img src="../assets/12-rl-algorithms/fig-03.png" alt="RLHF-PPO 与 DPO 的偏好训练流程" width="760" /></p>
+<p>先看训练形态： <span class="arithmatex">\((x,y)\)</span> 可被理解为 (prompt, response)</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>SFT</th>
+<th>RLHF-PPO（01）</th>
+<th>DPO</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>数据来源</td>
+<td>固定的 <span class="arithmatex">\((x,y)\)</span> 演示</td>
+<td>actor 对 <span class="arithmatex">\(x\)</span> 现采 <span class="arithmatex">\(y\)</span></td>
+<td>固定的 <span class="arithmatex">\((x,y_{\text{chosen}},y_{\text{rejected}})\)</span> 偏好 pair</td>
+</tr>
+<tr>
+<td>§1.1 定位</td>
+<td>监督学习</td>
+<td>在线、on-policy</td>
+<td>离线、off-policy</td>
+</tr>
+<tr>
+<td>模型输入</td>
+<td>prompt + response</td>
+<td>prompt (自己 rollout response)</td>
+<td>prompt + chosen / rejected</td>
+</tr>
+<tr>
+<td>response 段取数</td>
+<td>每个实际 token 的 logprob</td>
+<td>logprob，另取 <span class="arithmatex">\(V\)</span> 和 RM 打分</td>
+<td>actor / ref 的 logprob，再按整条求和</td>
+</tr>
+<tr>
+<td>监督信号</td>
+<td>token 级 GT，只有正例</td>
+<td>整条标量 reward，无 GT</td>
+<td>pair 级 GT：chosen 获胜（<span class="arithmatex">\(z=1\)</span>）；无 token 级 GT</td>
+</tr>
+<tr>
+<td>loss</td>
+<td>逐 token CE</td>
+<td><span class="arithmatex">\(A_t\)</span> 加权的 ratio + clip</td>
+<td><span class="arithmatex">\(-\log\sigma(\hat r_{\text{chosen}}-\hat r_{\text{rejected}})\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>DPO 的前向形态接近 SFT。两者都把数据集里的 prompt + response 做 teacher-forcing，只计算 response 段。</p>
+<p>区别在 loss：SFT 把 response token 当 GT 做 CE；DPO 只有“chosen 获胜”这个 pair 级对比作为 GT。</p>
+<p>和 PPO 相比，主要差别是数据谁来采：</p>
+<ul>
+<li><strong>PPO</strong>：训练期间由当前 actor rollout，再由 RM 打分</li>
+<li><strong>DPO</strong>：训练前备好偏好 pair，训练期间不再 rollout</li>
+</ul>
+<p>因此 DPO 省掉了 cost 最高的 rollout，也一并省掉 RM 和 critic。代价是没有探索，<strong>本文把它放在 alignment 对齐档</strong>。</p>
+<p>但值得注意的是，DPO 虽然和 SFT 很像，但仍是从 RLHF 的目标推出，不是 SFT CE 的变体。</p>
+<p><strong>[计算结论]</strong></p>
+<p>对偏好 pair <span class="arithmatex">\((x,y_{\text{chosen}},y_{\text{rejected}})\)</span>，actor 和 ref 分别前向两条 response。每个位置都会输出 token 概率分布；只取 response 实际 token 的 logprob，再沿整条求和，得到四个 seq logprob：</p>
+<ul>
+<li><span class="arithmatex">\(\log\pi_\theta(y_{\text{chosen}}\mid x)\)</span>：<strong>当前 actor</strong> 对 chosen 的整条 logprob；越大表示越容易生成它</li>
+<li><span class="arithmatex">\(\log\pi_\theta(y_{\text{rejected}}\mid x)\)</span>：<strong>当前 actor</strong> 对 rejected 的整条 logprob；越大表示越容易生成它</li>
+<li><span class="arithmatex">\(\log\pi_{\text{ref}}(y_{\text{chosen}}\mid x)\)</span>：<strong>冻结 ref</strong> 对 chosen 的整条 logprob，作为训练前基准</li>
+<li><span class="arithmatex">\(\log\pi_{\text{ref}}(y_{\text{rejected}}\mid x)\)</span>：<strong>冻结 ref</strong> 对 rejected 的整条 logprob，作为训练前基准</li>
+</ul>
+<p>这里的 <span class="arithmatex">\(\log\)</span> 是对概率取自然对数，不是 logit。同一条 response 的 actor / ref logprob 差，表示 actor 相对 ref 改变了多少偏好；再用 chosen 的变化减去 rejected 的变化，得到抽象分差：</p>
+<div class="arithmatex">\[
+\begin{aligned}
+d
+&amp;=\hat r_{\text{chosen}}-\hat r_{\text{rejected}} \\
+&amp;=\beta\left[
+\left(\log\pi_\theta(y_{\text{chosen}}\mid x)-\log\pi_{\text{ref}}(y_{\text{chosen}}\mid x)\right)
+-
+\left(\log\pi_\theta(y_{\text{rejected}}\mid x)-\log\pi_{\text{ref}}(y_{\text{rejected}}\mid x)\right)
+\right]
+\end{aligned}
+\]</div>
+<p>我们认为分差 <span class="arithmatex">\(d\)</span> 越大，chosen 越容易获胜。Bradley–Terry（BT）偏好模型用 sigmoid 把这个分差转换成预测概率：</p>
+<div class="arithmatex">\[
+P_\theta(\text{chosen 获胜})
+=\sigma(d)=\frac{1}{1+e^{-d}}
+\]</div>
+<p>偏好数据给出的 pair 级 GT 是 chosen 获胜。写成二分类 one-hot，目标为 <span class="arithmatex">\([1,0]\)</span>：chosen 类的目标概率为 <span class="arithmatex">\(1\)</span>，即 <span class="arithmatex">\(z=1\)</span>。代入 CE 后，<span class="arithmatex">\((1-z)\)</span> 项消失：</p>
+<div class="arithmatex">\[
+\mathcal L_{\text{DPO}}
+\;=\;-\left[z\log P_\theta+(1-z)\log(1-P_\theta)\right]
+\xrightarrow{\,z=1\,}
+\boxed{
+\mathcal L_{\text{DPO}}=-\log\sigma(d)
+}
+\]</div>
+<p>loss 的直接意义是：模型越确信 chosen 获胜，loss 越小。外层 <span class="arithmatex">\(\log\)</span> 也是真正的自然对数。最小化 loss 会推大 <span class="arithmatex">\(d\)</span>：</p>
+<div class="arithmatex">\[
+\frac{\partial\mathcal L_{\text{DPO}}}{\partial d}
+=\sigma(d)-1&lt;0
+\]</div>
+<p>反向传播也沿用普通模型的计算图：Loss 本来就是 response token logprob 计算出来的，因此梯度会分到 chosen / rejected 的每个 token，再经 token logits 回传到共享的 actor 参数。ref 冻结，不接收梯度。训练时对 batch 内各 pair 的 loss 求平均。</p>
+<p><strong>所以 DPO 的数据、前向和 loss 都很简单</strong>：固定偏好 pair、四个 seq logprob、一个二分类 CE。</p>
+<p><img src="../assets/12-rl-algorithms/fig-12.png" alt="一对偏好数据如何算出 DPO loss" width="860" /></p>
+<p>详细 Loss 推导可见§2.2–2.3，也可以直接跳到 §2.4。</p>
+<h3 id="22-j_0-j_textkl">2.2 共同起点：从 <span class="arithmatex">\(J_0\)</span> 到 <span class="arithmatex">\(J_{\text{KL}}\)</span></h3>
+<p>01 §3.1 已讲过 <span class="arithmatex">\(J_0\rightarrow J_{\text{KL}}\)</span> 及两者的梯度。本节只回忆 DPO 与 PPO 共用的 seq 级目标。</p>
+<p>下图沿用 01 §3.0 末尾的 PPO 流程，只突出共同前缀和 DPO 的分叉点。</p>
+<p><strong>[共同的 seq 级目标]</strong></p>
+<p>PPO 的裸目标 <span class="arithmatex">\(J_0\)</span> 要求 actor 生成的 response 平均 RM 分尽量高：</p>
+<div class="arithmatex">\[
+\max_\theta J_0(\theta),\qquad
+J_0(\theta)
+=\mathbb E_{x,\,y\sim\pi_\theta}
+\big[r_{\text{RM}}(x,y)\big]
+\]</div>
+<p>只最大化 RM 分，actor 可能偏离训练起点。加入相对冻结 ref 的 KL 软惩罚，得到完整目标：</p>
+<div class="arithmatex">\[
+\max_\theta J_{\text{KL}}(\theta),\qquad
+J_{\text{KL}}(\theta)
+=J_0(\theta)
+-\beta\,\mathbb E_x
+D_{\mathrm{KL}}\!\left(
+\pi_\theta(\cdot\mid x)
+\|
+\pi_{\text{ref}}(\cdot\mid x)
+\right)
+\]</div>
+<p><span class="arithmatex">\(J_0\rightarrow J_{\text{KL}}\)</span> 改的是 seq 级优化目标。PPO 后续估计它的梯度；DPO 从同一个 <span class="arithmatex">\(J_{\text{KL}}\)</span> 进入 §2.3，改为求最优策略形式。</p>
+<p><strong>[相比 PPO：只剩 actor + ref]</strong></p>
+<p>DPO 不进入图中灰色的 PPO 后续。01 的四模型系统因此缩成两个模型：</p>
+<ul>
+<li><strong>actor：保留并训练</strong>。对 chosen / rejected 计算 seq logprob</li>
+<li><strong>ref：保留并冻结</strong>。提供 actor 相对训练起点改变了多少的基准</li>
+<li><strong>critic：删除</strong>。DPO 不进入 <span class="arithmatex">\(A_t\)</span> 支路，不需要 <span class="arithmatex">\(V(s_t)\)</span> 或 GAE</li>
+<li><strong>RM：删除</strong>。偏好 pair 直接给出 chosen / rejected 标签；§2.3 再把 actor / ref 的相对 logprob 写成隐式 reward 分差</li>
+</ul>
+<p><strong>由于 DPO 不再通过 <span class="arithmatex">\(\nabla_\theta J_{\text{KL}}\)</span> 求解，因此也不用 rollout 了</strong>——PPO 中的 rollout 是为了通过蒙特卡洛采样估计这个梯度；而 DPO 直接由 <span class="arithmatex">\(J_{\text{KL}}\)</span> 的最大化条件推导最优策略形式。</p>
+<h3 id="23-dpo-loss">2.3 DPO 分支：从最优策略到偏好 loss</h3>
+<p>下文把一条 response 的抽象 reward 统一记为 <span class="arithmatex">\(r(x,y)\)</span>。DPO 的改写链只有四步：</p>
+<blockquote>
+<p>最优策略公式 <span class="arithmatex">\(\rightarrow\)</span> 反解 reward <span class="arithmatex">\(\rightarrow\)</span> pair 相减消掉 <span class="arithmatex">\(Z(x)\)</span> <span class="arithmatex">\(\rightarrow\)</span> 代入偏好 loss</p>
+</blockquote>
+<p><strong>[第 1 步：得到最优策略公式]</strong></p>
+<p>结论先行，把 §2.2 的 <span class="arithmatex">\(J_{\text{KL}}\)</span> 对策略分布求最大值，可以推出：</p>
+<div class="arithmatex">\[
+\underbrace{\pi^*(y\mid x)}_{\text{最优概率}}
+=
+\underbrace{\pi_{\text{ref}}(y\mid x)}_{\text{ref 基础概率}}
+\times
+\underbrace{e^{r(x,y)/\beta}}_{\text{按 reward 调整}}
+\times
+\underbrace{\frac{1}{Z(x)}}_{\text{只与 }x\text{ 相关}}
+\]</div>
+<blockquote>
+<p>这个公式来自“最优分布已经无法通过继续腾挪概率提高 <span class="arithmatex">\(J_{\text{KL}}\)</span>”的 idea；完整求导放在下面的折叠区。</p>
+</blockquote>
+<p>上标 <span class="arithmatex">\(*\)</span> 表示“取到最优值”，所以 <span class="arithmatex">\(\pi^*\)</span> 是最优策略。</p>
+<p>逐项读：</p>
+<ul>
+<li><span class="arithmatex">\(\pi^*(y\mid x)\)</span>：最优策略给出 response <span class="arithmatex">\(y\)</span> 的概率</li>
+<li><span class="arithmatex">\(\pi_{\text{ref}}(y\mid x)\)</span>：冻结的 ref 给这条 response 的基础概率</li>
+<li><span class="arithmatex">\(e^{r(x,y)/\beta}\)</span>：reward 带来的调整倍数；reward 越高，倍数越大，<span class="arithmatex">\(\beta\)</span> 越大，调整越弱。</li>
+<li><span class="arithmatex">\(1/Z(x)\)</span>：同一 prompt x下所有 response 共享的抽象函数；固定 ref、reward 函数和 <span class="arithmatex">\(\beta\)</span> 后，它只和 <span class="arithmatex">\(x\)</span> 相关，具体值和含义不需要在这里理解（因为第二步它会被消掉）</li>
+</ul>
+<p>结论是：最优策略以 ref 为基础，再按 reward (x, y) 重新调整每条 response 的概率。reward 越高，这条 response 相对 ref 得到的概率提升越大。</p>
+<details>
+<summary><strong>展开推导：为什么能得到这个公式？</strong></summary>
+<p>先固定 prompt <span class="arithmatex">\(x\)</span>，把所有可能的完整 response <span class="arithmatex">\(y\)</span> 想成一张表。对表里的第 <span class="arithmatex">\(i\)</span> 条 response：</p>
+<ul>
+<li><span class="arithmatex">\(y_i\)</span>：这条完整 response</li>
+<li><span class="arithmatex">\(p_i=\pi(y_i\mid x)\)</span>：策略分给 <span class="arithmatex">\(y_i\)</span> 的概率，也是这里要调整、求解的量</li>
+<li><span class="arithmatex">\(q_i=\pi_{\text{ref}}(y_i\mid x)\)</span>：冻结的初始模型 ref 分给同一条 <span class="arithmatex">\(y_i\)</span> 的概率，固定不变</li>
+<li><span class="arithmatex">\(r_i=r(x,y_i)\)</span>：这条 <span class="arithmatex">\(y_i\)</span> 的 reward，固定不变</li>
+</ul>
+<p>因此，只有 <span class="arithmatex">\(p_i\)</span> 是待优化的量；<span class="arithmatex">\(q_i\)</span> 和 <span class="arithmatex">\(r_i\)</span> 都是已知条件。<span class="arithmatex">\(p_i\)</span> 是策略给一条可能 response 分配的概率。</p>
+<blockquote>
+<p>上标 <span class="arithmatex">\(*\)</span> 表示“已经取到最优值”。所以 <span class="arithmatex">\(p_i^*\)</span> 就是优化结束后，最优策略分给 <span class="arithmatex">\(y_i\)</span> 的概率。</p>
+</blockquote>
+<p>先把 §2.2 最后的共同目标完整写回来：</p>
+<div class="arithmatex">\[
+\max_\pi J_{\text{KL}}(\pi)
+=\max_\pi\;
+\mathbb{E}_{x}\left[
+\mathbb{E}_{y\sim\pi}\big[r(x,y)\big]
+-\beta D_{\mathrm{KL}}\!\left(
+\pi(\cdot\mid x)\|
+\pi_{\text{ref}}(\cdot\mid x)
+\right)
+\right]
+\]</div>
+<p>它的直接含义仍是：让策略生成的 response 平均 reward 更高，同时限制策略偏离 ref。</p>
+<p>现在固定 <span class="arithmatex">\(x\)</span>，把 reward 期望和 KL 都改写成对整张 response 概率表的求和：</p>
+<div class="arithmatex">\[
+J_x(p)
+=\sum_i p_i r_i
+-\beta\sum_i p_i\log\frac{p_i}{q_i},
+\qquad
+\sum_i p_i=1
+\]</div>
+<p>原目标写成 <span class="arithmatex">\(\max_\theta\)</span>，因为参数 <span class="arithmatex">\(\theta\)</span> 决定整张概率表。这里暂时直接求最优的 <span class="arithmatex">\(p_i\)</span>，目的是找出最优分布应满足的关系。</p>
+<p><strong>为什么要求导？</strong> 先从“最优”本身出发。任取两条 response，从 <span class="arithmatex">\(y_j\)</span> 挪一小份概率 <span class="arithmatex">\(\epsilon\)</span> 给 <span class="arithmatex">\(y_i\)</span>：</p>
+<div class="arithmatex">\[
+p_i'=p_i+\epsilon,
+\qquad
+p_j'=p_j-\epsilon
+\]</div>
+<p>一加一减后，概率总和仍是 1。如果这次腾挪还能提高 <span class="arithmatex">\(J_x\)</span>，当前分布就不是最优。最优分布就是：任意两条 response 之间都已经“挪无可挪”。</p>
+<p>为了判断这次腾挪会让 <span class="arithmatex">\(J_x\)</span> 怎样变化，先记</p>
+<div class="arithmatex">\[
+g_i
+=\frac{\partial J_x}{\partial p_i}
+=r_i-\beta\left(\log\frac{p_i}{q_i}+1\right)
+\]</div>
+<p><span class="arithmatex">\(g_i\)</span> 表示多给 <span class="arithmatex">\(y_i\)</span> 一点概率时，整个目标 <span class="arithmatex">\(J_x\)</span> 的变化率。所以从 <span class="arithmatex">\(y_j\)</span> 挪一小份概率 <span class="arithmatex">\(\epsilon\)</span> 给 <span class="arithmatex">\(y_i\)</span>，这次腾挪带来的净收益是</p>
+<div class="arithmatex">\[
+\Delta J_x
+\approx\epsilon(g_i-g_j)
+\]</div>
+<p>最优策略的 <span class="arithmatex">\(p^*\)</span> 已经挪无可挪（极大值），所以对任意 <span class="arithmatex">\(i,j\)</span>，这次合法腾挪的导数都为 0：</p>
+<div class="arithmatex">\[
+\underbrace{g_i(p^*)-g_j(p^*)}_{\text{腾挪方向的导数}}
+=0
+\]</div>
+<p>差值为 0，就表示两个导数相同。由于任意一对 <span class="arithmatex">\(i,j\)</span> 都成立，所以：</p>
+<div class="arithmatex">\[
+g_i(p^*)=g_j(p^*),\ \forall i,j
+\quad\Longrightarrow\quad
+g_1(p^*)=g_2(p^*)=\cdots=C(x)
+\]</div>
+<p>固定 prompt <span class="arithmatex">\(x\)</span> 后，这个共同值不再随具体 response 改变，因此把它记为 <span class="arithmatex">\(C(x)\)</span>。</p>
+<p>把 <span class="arithmatex">\(g_i\)</span> 的具体公式代回最优点：</p>
+<div class="arithmatex">\[
+g_i(p^*)
+=r_i-\beta\left(\log\frac{p_i^*}{q_i}+1\right)
+=C(x)
+\]</div>
+<p>下面把从 <span class="arithmatex">\(C(x)\)</span> 到 <span class="arithmatex">\(Z(x)\)</span> 的改写合在一起：</p>
+<div class="arithmatex">\[
+\begin{aligned}
+r_i-\beta\left(\log\frac{p_i^*}{q_i}+1\right)=C(x)
+&amp;\iff
+\log\frac{p_i^*}{q_i}
+=\frac{r_i}{\beta}-\frac{C(x)}{\beta}-1 \\
+&amp;\iff
+p_i^*
+=q_i e^{r_i/\beta}e^{-C(x)/\beta-1}
+\end{aligned}
+\]</div>
+<p>最后用 <span class="arithmatex">\(\sum_i p_i^*=1\)</span> 求和代入：</p>
+<div class="arithmatex">\[
+\begin{aligned}
+1
+&amp;=e^{-C(x)/\beta-1}\sum_i q_i e^{r_i/\beta} \\
+Z(x)
+&amp;\equiv \sum_i q_i e^{r_i/\beta}
+=e^{C(x)/\beta+1} \\
+e^{-C(x)/\beta-1}
+&amp;=\frac{1}{Z(x)}
+\end{aligned}
+\]</div>
+<p>所以，<span class="arithmatex">\(Z(x)\)</span> 可以看成 <span class="arithmatex">\(C(x)\)</span> 与超参 <span class="arithmatex">\(\beta\)</span> 的等价改写；固定其他条件后，它同样只随 prompt <span class="arithmatex">\(x\)</span> 改变。代回 <span class="arithmatex">\(p_i^*\)</span>，再换回原来的记号：</p>
+<div class="arithmatex">\[
+\pi^*(y\mid x)
+=\frac{1}{Z(x)}
+\pi_{\text{ref}}(y\mid x)e^{r(x,y)/\beta}
+\]</div>
+</details>
+<p>这一步不要求 DPO 真正枚举所有 response 或计算 <span class="arithmatex">\(Z(x)\)</span>。它只提供第 2 步需要的 reward、最优策略与 ref 之间的关系。</p>
+<p><strong>[第 2 步：消去 <span class="arithmatex">\(Z(x)\)</span>，得到可计算分数差]</strong></p>
+<p>第 1 步得到：</p>
+<div class="arithmatex">\[
+\pi^*(y\mid x)
+=\frac{1}{Z(x)}
+\pi_{\text{ref}}(y\mid x)e^{r(x,y)/\beta}
+\]</div>
+<p><span class="arithmatex">\(Z(x)\)</span> 只和 prompt 有关。偏好 pair <span class="arithmatex">\((x,y_{\text{chosen}},y_{\text{rejected}})\)</span> 中，两条 response 共用 <span class="arithmatex">\(x\)</span>，也就共用同一个 <span class="arithmatex">\(Z(x)\)</span>。</p>
+<p>对公式取 log、移项：</p>
+<div class="arithmatex">\[
+r(x,y)=\beta\log\frac{\pi^*(y\mid x)}
+{\pi_{\text{ref}}(y\mid x)}+\beta\log Z(x)
+\]</div>
+<p>记 <span class="arithmatex">\(r_{\text{chosen}}=r(x,y_{\text{chosen}})\)</span>、<span class="arithmatex">\(r_{\text{rejected}}=r(x,y_{\text{rejected}})\)</span>。两式相减，共同的 <span class="arithmatex">\(\beta\log Z(x)\)</span> 消失，得到：</p>
+<div class="arithmatex">\[
+\boxed{
+r_{\text{chosen}}-r_{\text{rejected}}
+=\beta\left[
+\log\frac{\pi^*(y_{\text{chosen}}\mid x)}
+{\pi_{\text{ref}}(y_{\text{chosen}}\mid x)}
+-\log\frac{\pi^*(y_{\text{rejected}}\mid x)}
+{\pi_{\text{ref}}(y_{\text{rejected}}\mid x)}
+\right]
+}
+\]</div>
+<p>因此，DPO 不需要绝对 reward 或 <span class="arithmatex">\(Z(x)\)</span>，只需要 pair 的相对分数。</p>
+<p>训练时用 actor <span class="arithmatex">\(\pi_\theta\)</span> 表示待求的 <span class="arithmatex">\(\pi^*\)</span>，并定义单条 response 的<strong>隐式 reward</strong>：</p>
+<div class="arithmatex">\[
+\hat r_\theta(x,y)=\beta\log
+\frac{\pi_\theta(y\mid x)}{\pi_{\text{ref}}(y\mid x)}
+\]</div>
+<p>真正用于训练的是两条隐式 reward 的分数差：</p>
+<div class="arithmatex">\[
+\hat r_{\text{chosen}}-\hat r_{\text{rejected}}
+=\beta\left[
+\underbrace{\log\pi_\theta(y_{\text{chosen}}\mid x)-\log\pi_\theta(y_{\text{rejected}}\mid x)}
+_{\text{actor 对 pair 的相对偏好}}
+-
+\underbrace{\left(
+\log\pi_{\text{ref}}(y_{\text{chosen}}\mid x)-\log\pi_{\text{ref}}(y_{\text{rejected}}\mid x)
+\right)}_{\text{ref 对同一 pair 的相对偏好}}
+\right]
+\]</div>
+<p>训练只关心 <span class="arithmatex">\(\hat r_{\text{chosen}}-\hat r_{\text{rejected}}\)</span>，不单独拟合某条 <span class="arithmatex">\(\hat r\)</span>。</p>
+<p><strong>[第 3 步：把分数差变成 loss]</strong></p>
+<p>记分数差 <span class="arithmatex">\(d=\hat r_{\text{chosen}}-\hat r_{\text{rejected}}\)</span>。<span class="arithmatex">\(d&gt;0\)</span> 表示 chosen 分数更高；<span class="arithmatex">\(d\)</span> 越大，模型对 chosen 的相对偏好越强。</p>
+<p>不能直接把 <span class="arithmatex">\(d\)</span> 当分类 loss。最小化 <span class="arithmatex">\(-d\)</span> 时，<span class="arithmatex">\(\partial(-d)/\partial d=-1\)</span>，会持续拉大分差。它也不对应获胜概率。</p>
+<p>01 §4.1 训练 RM 时已经处理过同一种输入：两条 response 各有一个分数，标签是 chosen 获胜。做法是用 <strong>Bradley–Terry（BT）偏好模型</strong> 把分数差映射成获胜概率：</p>
+<div class="arithmatex">\[
+P_\theta(\text{chosen 获胜})
+=\sigma(d)
+=\frac{1}{1+e^{-d}}
+\]</div>
+<p>RM 用显式分差 <span class="arithmatex">\(r_w-r_l\)</span>；DPO 只把它换成隐式分差 <span class="arithmatex">\(d\)</span>。当前 pair 的标签恒为 chosen 获胜，代入二分类 CE：</p>
+<div class="arithmatex">\[
+\mathcal L_{\text{DPO}}
+=-\log P_\theta(\text{chosen 获胜})
+=-\log\sigma(d)
+\]</div>
+<p>再代入 <span class="arithmatex">\(d=\hat r_{\text{chosen}}-\hat r_{\text{rejected}}\)</span>，得到单个 pair 的 DPO loss：</p>
+<div class="arithmatex">\[
+\mathcal{L}_{\text{DPO}}
+=-\log P_\theta(\text{chosen 获胜}\mid x,y_{\text{chosen}},y_{\text{rejected}})
+=-\log\sigma\!\left(
+\underbrace{\beta\log\frac{\pi_\theta(y_{\text{chosen}}\mid x)}
+{\pi_{\text{ref}}(y_{\text{chosen}}\mid x)}}_{\hat r_{\text{chosen}}}
+-
+\underbrace{\beta\log\frac{\pi_\theta(y_{\text{rejected}}\mid x)}
+{\pi_{\text{ref}}(y_{\text{rejected}}\mid x)}}_{\hat r_{\text{rejected}}}
+\right)
+\]</div>
+<p>外层 <span class="arithmatex">\(-\log\)</span> 是 pair 级二分类 CE，不是另一层 token logprob。训练时对 batch 内各 pair 的 loss 求平均。</p>
+<h3 id="24-dpo">2.4 手写 DPO</h3>
+<p>先把 §2.3 的推导压成实际计算顺序：</p>
+<div class="arithmatex">\[
+\begin{aligned}
+\hat r_\theta(x,y)
+&amp;=\beta\left[\log\pi_\theta(y\mid x)-\log\pi_{\text{ref}}(y\mid x)\right] \\
+d
+&amp;=\hat r_{\text{chosen}}-\hat r_{\text{rejected}} \\
+\mathcal L_{\text{DPO}}
+&amp;=-\log\sigma(d)
+\end{aligned}
+\]</div>
+<ul>
+<li><span class="arithmatex">\(\log\pi_\theta(y\mid x)\)</span>：actor 对 <span class="arithmatex">\(y\)</span> 的 seq logprob</li>
+<li><span class="arithmatex">\(\log\pi_{\text{ref}}(y\mid x)\)</span>：ref 对 <span class="arithmatex">\(y\)</span> 的 seq logprob</li>
+<li><span class="arithmatex">\(\hat r_\theta(x,y)\)</span>：<span class="arithmatex">\(y\)</span> 的隐式 reward</li>
+<li><span class="arithmatex">\(\sigma(d)\)</span>：<strong>Bradley–Terry（BT）偏好模型</strong>根据分差 <span class="arithmatex">\(d\)</span> 算出的 chosen 获胜概率</li>
+<li><span class="arithmatex">\(\beta\)</span>：超参</li>
+</ul>
+<p>和 01 §4.3 的关系：在场模型只剩 actor（训练）和 ref（冻结），都是 01 篇的 <code>Actor</code> 类；训练直接 <code>sft_logprob</code> 原样复用。</p>
+<p>高频手撕是 <code>dpo_loss</code>；<code>dpo_step</code> 熟悉结构即可。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">dpo_loss</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">logp_chosen</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">logp_rejected</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">ref_logp_chosen</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">ref_logp_rejected</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">beta</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">):</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="sd">    DPO loss（§2.3）：RM 的 BT loss + 隐式 reward r̂ = β·log(π/ref)</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="sd">    参数:</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="sd">    - logp_chosen / logp_rejected: actor 给两条 response 的整条 logprob，形状为 (B,)</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="sd">    - ref_logp_chosen / ref_logp_rejected: ref 的同款，形状为 (B,)</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="sd">    - beta: 隐式 reward 的温度，即 01 §3.2 KL 惩罚系数的那个 β</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="sd">    返回:</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="sd">    - 标量 loss；margin = r̂_chosen − r̂_rejected 的均值（训练观测指标）</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="sd">    """</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="n">r_chosen</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="n">logp_chosen</span> <span class="o">-</span> <span class="n">ref_logp_chosen</span><span class="p">)</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="n">r_rejected</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="n">logp_rejected</span> <span class="o">-</span> <span class="n">ref_logp_rejected</span><span class="p">)</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="n">margin</span> <span class="o">=</span> <span class="n">r_chosen</span> <span class="o">-</span> <span class="n">r_rejected</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="n">loss</span> <span class="o">=</span> <span class="o">-</span><span class="n">F</span><span class="o">.</span><span class="n">logsigmoid</span><span class="p">(</span><span class="n">margin</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>             <span class="c1"># -log σ(r̂_chosen - r̂_rejected)</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="k">return</span> <span class="n">loss</span><span class="p">,</span> <span class="n">margin</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">seq_logprob</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="sd">"""整条 response 的 logprob：01 的 sft_logprob 对有效位求和"""</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="k">return</span> <span class="p">(</span><span class="n">sft_logprob</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">)</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>       <span class="c1"># (B,)</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">dpo_step</span><span class="p">(</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">ids_chosen</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">mask_chosen</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">ids_rejected</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">mask_rejected</span><span class="p">,</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="n">p_len</span><span class="p">,</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="p">):</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="sd">    一个 DPO step：4 次 teacher-forcing 前向 + 1 次反向；无生成、无采样</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="sd">    参数:</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="sd">    - ids_chosen / ids_rejected: prompt 拼两条 response 的完整序列，形状为 (B, T)</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="sd">    - mask_chosen / mask_rejected: response 段有效位 mask，形状为 (B, T_resp)</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="sd">    - p_len: prompt 长度</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="sd">    """</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="n">logp_chosen</span> <span class="o">=</span> <span class="n">seq_logprob</span><span class="p">(</span><span class="n">actor</span><span class="p">,</span> <span class="n">ids_chosen</span><span class="p">,</span> <span class="n">p_len</span><span class="p">,</span> <span class="n">mask_chosen</span><span class="p">)</span>  <span class="c1"># 带梯度</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="n">logp_rejected</span> <span class="o">=</span> <span class="n">seq_logprob</span><span class="p">(</span><span class="n">actor</span><span class="p">,</span> <span class="n">ids_rejected</span><span class="p">,</span> <span class="n">p_len</span><span class="p">,</span> <span class="n">mask_rejected</span><span class="p">)</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>                                         <span class="c1"># ref 冻结, 只前向</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>        <span class="n">ref_chosen</span> <span class="o">=</span> <span class="n">seq_logprob</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">ids_chosen</span><span class="p">,</span> <span class="n">p_len</span><span class="p">,</span> <span class="n">mask_chosen</span><span class="p">)</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>        <span class="n">ref_rejected</span> <span class="o">=</span> <span class="n">seq_logprob</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">ids_rejected</span><span class="p">,</span> <span class="n">p_len</span><span class="p">,</span> <span class="n">mask_rejected</span><span class="p">)</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>    <span class="n">loss</span><span class="p">,</span> <span class="n">margin</span> <span class="o">=</span> <span class="n">dpo_loss</span><span class="p">(</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>        <span class="n">logp_chosen</span><span class="p">,</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>        <span class="n">logp_rejected</span><span class="p">,</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>        <span class="n">ref_chosen</span><span class="p">,</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>        <span class="n">ref_rejected</span><span class="p">,</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>    <span class="p">)</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>    <span class="n">opt</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">();</span> <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">();</span> <span class="n">opt</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>    <span class="k">return</span> <span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="n">margin</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>                             <span class="c1"># margin 应随训练上涨</span>
+</code></pre></div>
+<p>对比 01 的 <code>ppo_step</code>：</p>
+<ul>
+<li>没有 rollout 段，没有四模型 no-grad 前向；experiences 的概念消失，数据就是数据集本身</li>
+<li>显存 = 一个训练态模型 + 一个冻结模型（7B 下 ~126 GB，对比 01 §5.1 的 ~250 GB），且无推理引擎、无权重同步</li>
+<li><span class="arithmatex">\(\beta\)</span> 一个超参串两个角色：推导里的 KL 系数 = loss 里的隐式 reward 温度</li>
+</ul>
+<h3 id="25">2.5 代价与变体</h3>
+<p><strong>[两个核心边界]</strong></p>
+<p>DPO 的两个核心边界，分别来自固定偏好数据和只比较分差：</p>
+<ul>
+<li><strong>分布偏移</strong>：偏好 pair 训练前固定；actor 持续更新，却不会重新采样。数据集未覆盖的实际生成区域没有训练信号</li>
+<li><strong>绝对概率不受约束</strong>：BT loss 只要求 chosen / rejected 的 margin 增大。两者 logprob 可以同时下降，只要 rejected 降得更快</li>
+</ul>
+<p><strong>定位</strong>：适合风格 / 安全等 alignment；需要探索新解的 reasoning 仍用 on-policy RL。</p>
+<p><strong>[变体：分别改哪一处]</strong></p>
+<table>
+<thead>
+<tr>
+<th>变体</th>
+<th>改哪一处</th>
+<th>主要目的</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IPO</td>
+<td>BT loss → 固定 margin 的平方回归</td>
+<td>不再无限拉大 margin</td>
+</tr>
+<tr>
+<td>KTO</td>
+<td>pair → 单条回答的好 / 坏标签</td>
+<td>降低标注门槛</td>
+</tr>
+<tr>
+<td>SimPO</td>
+<td>删 ref，改用长度归一的 actor logprob + 固定 margin</td>
+<td>少一个冻结模型</td>
+</tr>
+<tr>
+<td>ORPO</td>
+<td>偏好 loss 并入 SFT</td>
+<td>删 ref 与独立对齐阶段</td>
+</tr>
+<tr>
+<td>Online / Iterative DPO</td>
+<td>用当前 actor 重新采样、重新标注</td>
+<td>缓解分布偏移；重新引入生成</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-grpo-rlvr-critic-rm">3. GRPO (+RLVR): 替换critic (与RM)</h2>
+<p>§2 的 DPO 从方向一减少负载：删掉 rollout，直接用固定偏好数据训练。</p>
+<p>但训练期间也不再 rollout，失去了在线探索。要探索并强化新的解法，就仍需保留 rollout。</p>
+<p>这一节转向方向二（§1.2）：<strong>保留 rollout，减少在场模型</strong>。</p>
+<ul>
+<li><strong>GRPO：critic → 组内统计</strong>。用同一 prompt 下多条回答的 reward 计算 advantage，放弃<strong>计算 token 级优势 的critic</strong>。</li>
+<li><strong>可选 RLVR：RM → 可验证规则</strong>。任务能由规则判分时，再省掉 RM。</li>
+</ul>
+<p>衍生方法 DAPO 进一步去掉 ref KL，并改进长回答训练（§3.6）。</p>
+<blockquote>
+<p>GRPO 仍可使用 RM；采用 RLVR 时，再用规则替换 RM。由于 <strong>DeepSeek-R1</strong> 的推理训练采用了这一组合，因此下文一起介绍。</p>
+</blockquote>
+<p>只想拿结论与手写，读完 §3.1 可以直接跳 §3.4；§3.2–3.3 分别解释 reward 与 advantage 的替换。</p>
+<h3 id="31-ppo">3.1 从 PPO 四模型出发：两处替换</h3>
+<p>对照 01 §4.2 的四模型表：</p>
+<table>
+<thead>
+<tr>
+<th>PPO 部件</th>
+<th>原职责</th>
+<th>处理</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>actor</strong></td>
+<td>rollout、更新策略</td>
+<td>改为每个 prompt 采 <span class="arithmatex">\(G\)</span> 条</td>
+<td>✅ 训练</td>
+</tr>
+<tr>
+<td><strong>RM</strong></td>
+<td>给 response 打分</td>
+<td>可选 RLVR：RM → 可验证规则</td>
+<td>默认保留；配 RLVR 时删除</td>
+</tr>
+<tr>
+<td><strong>critic</strong></td>
+<td>估值，供 GAE 算 advantage</td>
+<td>GRPO：critic → 组内统计</td>
+<td>❌ 删除</td>
+</tr>
+<tr>
+<td><strong>ref</strong></td>
+<td>提供 KL 基准</td>
+<td>原版 GRPO 保留；DAPO 删除（§3.6）</td>
+<td>❄️ 冻结（原版）</td>
+</tr>
+</tbody>
+</table>
+<p>step 仍分四段：GRPO 改 advantage，RLVR 可选改 reward 来源：</p>
+<ul>
+<li><strong>rollout（推理 - 保留）</strong>：actor 对同一 prompt <span class="arithmatex">\(x\)</span> 采 <span class="arithmatex">\(G\)</span> 条 <span class="arithmatex">\(y_i\)</span>，由单条改为组采样</li>
+<li><strong>reward（打分 - 可选替换）</strong>：RM 逐条给分 <span class="arithmatex">\(R_i=R(x,y_i)\)</span>；采用 RLVR 时换成 verifier（§3.2）</li>
+<li><strong>advantage（训练前向 - 替换）</strong>：组内标准化 reward 得到 seq 级 <span class="arithmatex">\(A_i\)</span>，替代 critic + GAE 的 token 级 <span class="arithmatex">\(A_t\)</span>（§3.3）</li>
+<li><strong>update（训练前后向，保留）</strong>：<span class="arithmatex">\(A_i\)</span> 接进 ratio + clip 更新 actor；KL 项换了位置（§3.4）</li>
+</ul>
+<p>GRPO 保留 actor、RM、ref；配纯规则 RLVR 后只剩 actor、ref。不同于 DPO，rollout 仍在，每个 prompt 采 <span class="arithmatex">\(G\)</span> 条。</p>
+<p><strong>[最终 loss]</strong></p>
+<p>目标仍同 PPO/DPO：<span class="arithmatex">\(J_{\text{KL}}=J_0-\beta\,\text{KL}\)</span>（01 §3.1），GRPO 将两部分分开处理：</p>
+<ul>
+<li><strong><span class="arithmatex">\(J_0\)</span> 半边（权重线）</strong>：reward <span class="arithmatex">\(R_i\)</span>（§3.2）→ 组内标准化得 seq 级 <span class="arithmatex">\(A_i\)</span>（§3.3）→ 接 ratio + clip（§3.4）</li>
+<li><strong>KL 半边</strong>：不进权重，单独加入 loss（§3.4）</li>
+</ul>
+<h3 id="32-rlvr-rm">3.2 RLVR (可选)：RM → 可验证规则</h3>
+<p>RM 用模型判断回答好坏；math / code 中可验证的任务，可以直接由程序判分。</p>
+<p><strong>RLVR</strong>（Reinforcement Learning with Verifiable Rewards，可验证奖励强化学习）用判定程序 <strong>verifier</strong> 替代 RM。例如：</p>
+<table>
+<thead>
+<tr>
+<th>任务</th>
+<th>verifier</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>数学</td>
+<td>抽取最终答案，与标准答案比对</td>
+</tr>
+<tr>
+<td>代码</td>
+<td>运行测试，检查是否通过</td>
+</tr>
+</tbody>
+</table>
+<p>以数学任务为例，每条回答的 reward 为：</p>
+<div class="arithmatex">\[
+R_i=R_{\text{accuracy}}(x,y_i)+\alpha R_{\text{format}}(y_i)
+\]</div>
+<ul>
+<li><strong>accuracy</strong>：答案正确得 1，否则得 0。</li>
+<li><strong>format</strong>：检查输出格式；可选，不用时 <span class="arithmatex">\(\alpha=0\)</span>。</li>
+</ul>
+<p>这里的 verifier 无需训练，省去独立 RM。<span class="arithmatex">\(R_i\)</span> 仍同 01 的 <span class="arithmatex">\(r_{\text{RM}}\)</span>：整条回答一个分，不含 KL。</p>
+<p><strong>RLVR 决定奖励来源，GRPO 决定如何更新。</strong> RLVR 可配 PPO 或 GRPO；GRPO 也可继续用 RM。规则难以判分时，仍可使用模型奖励，如 R1 的全场景阶段（§3.5）。</p>
+<h3 id="33-grpocritic-gae-advantage">3.3 GRPO：critic + GAE → 组内 advantage</h3>
+<blockquote>
+<p>不想回顾详细公式的话，可以直接跳到 3.4</p>
+</blockquote>
+<p>reward model 给出的 <span class="arithmatex">\(R_i\)</span> 是 seq 级的分。PPO 拿到这样一个分之后，还有一整套“摊到 token级”的设计——GRPO（Group Relative Policy Optimization）改的就是这一段。</p>
+<p>GRPO 将 advantage 从 token 级改为 seq 级，省去估计 <strong>token 级预期 <span class="arithmatex">\(V(s_t)\)</span></strong> 的 critic 模型；同时用组内统计构造 <strong>seq 级“预期差值”</strong> <span class="arithmatex">\(A_i\)</span>。</p>
+<p><strong>[回顾：整条分数怎样用于 token 更新]</strong></p>
+<p>沿用 01 的目标：<strong>最大化 <span class="arithmatex">\(J_{\text{KL}}\)</span></strong>。提高平均得分，同时用 KL 限制 actor 偏离原始 ref。</p>
+<div class="arithmatex">\[
+R_{\text{KL}}(x,y)
+=\underbrace{r_{\text{RM}}(x,y)}_{J_0\text{ 的打分}}
+\underbrace{-\beta\log\frac{\pi_\theta(y\mid x)}{\pi_{\text{ref}}(y\mid x)}}_{\text{KL 采样项}},
+\qquad
+J_{\text{KL}}
+=\mathbb E_{x,\,y\sim\pi_\theta}\big[R_{\text{KL}}\big]
+\]</div>
+<p>复用 01 §3.1 的理论梯度结论，将 seq logprob 展开为 token logprob 之和：</p>
+<div class="arithmatex">\[
+\nabla_\theta J_{\text{KL}}
+=\mathbb E\left[
+R_{\text{KL}}\,
+\underbrace{\nabla_\theta\log\pi_\theta(y\mid x)}_{\text{seq 级 logprob 的梯度}}
+\right]
+=\mathbb E\left[
+R_{\text{KL}}\,
+\underbrace{\sum_t\nabla_\theta\log\pi_\theta(y_t\mid x,y_{&lt;t})}_{\text{token 级 logprob 梯度之和}}
+\right]
+\]</div>
+<p><strong>展开的是 logprob，权重仍是整条回答的 <span class="arithmatex">\(R_{\text{KL}}\)</span></strong>。</p>
+<ul>
+<li>PPO 将“所有 token 共用权重”改为“每个 token 按自己的 advantage 加权”：critic 估计各位置的预期得分 <span class="arithmatex">\(V(s_t)\)</span>，GAE 据此计算 <span class="arithmatex">\(A_t\)</span>（01 §3.2–3.4）。</li>
+</ul>
+<ul>
+<li>GRPO 则保留同一回答共用权重的形式，改用 <strong>组内统计构造 advantage</strong>。</li>
+</ul>
+<p><strong>[GRPO：用组内统计构造 seq 级 advantage]</strong></p>
+<p>同一 prompt 采 <span class="arithmatex">\(G\)</span> 条回答，各得任务分数 <span class="arithmatex">\(R_i\)</span>。以组均分 <span class="arithmatex">\(\bar R\)</span> 作基准，再除以组内标准差 <span class="arithmatex">\(\sigma_R\)</span>：</p>
+<div class="arithmatex">\[
+A_i=\frac{R_i-\bar R}{\sigma_R+\varepsilon},
+\qquad
+\bar R=\frac1G\sum_{j=1}^{G}R_j,
+\quad
+\sigma_R=\sqrt{\frac1G\sum_{j=1}^{G}(R_j-\bar R)^2}
+\]</div>
+<ul>
+<li><strong>减组均分</strong>：<span class="arithmatex">\(A_i&gt;0\)</span> 表示高于同组平均，<span class="arithmatex">\(A_i&lt;0\)</span> 表示低于平均。</li>
+<li><strong>除标准差</strong>：按组内分数的离散程度调整尺度；<span class="arithmatex">\(\varepsilon\)</span> 防除零。</li>
+<li><strong>共用权重</strong>：同一回答的全部 token 使用一个 <span class="arithmatex">\(A_i\)</span>，无需 critic 逐位置估值。</li>
+</ul>
+<p><img src="../assets/12-rl-algorithms/fig-06.png" alt="PPO 逐位置估优势，GRPO 组内比较回答" width="800" /></p>
+<p><strong>[接回 loss]</strong></p>
+<p><strong>同一回答的所有 token 共用上文算出的 seq 级 <span class="arithmatex">\(A_i\)</span></strong>。更新由两部分组成：ratio + clip 加权的 advantage，以及单独的 KL 惩罚。</p>
+<p>暂略 clip 与长度归一，loss 骨架为（完整形式见 §3.4）：</p>
+<div class="arithmatex">\[
+\mathcal L_{\text{GRPO}}
+\;\approx\;
+-\,\mathbb E_{i,t}\Big[\underbrace{\rho_{i,t}\,A_i}_{J_0\text{ 半边：复用修正 × seq 权重}}\Big]
++\beta\,\mathbb E_{i,t}\Big[\underbrace{\mathbb D^{\text{KL}}_{i,t}}_{\text{单独补的 KL}}\Big]
+\]</div>
+<p><strong>[第一项：ratio + clip]</strong></p>
+<blockquote>
+<p><strong>回顾 01 §3.5：ratio + clip</strong></p>
+<p>同一批 rollout 更新多次，当前 actor 已不同于采样时的旧策略。下面沿用其计算方式：ratio 用新旧概率比作修正，clip 限制更新幅度。</p>
+<p><strong>ratio</strong>：</p>
+<div class="arithmatex">\[
+\rho_{i,t}
+=\frac{\pi_\theta(y_{i,t}\mid x_i,y_{i,&lt;t})}
+{\pi_{\mathrm{old}}(y_{i,t}\mid x_i,y_{i,&lt;t})}
+=\exp(\text{new\_logp}_{i,t}-\text{old\_logp}_{i,t})
+\]</div>
+<p>分子是当前 actor 的概率，分母是采样时保存的旧概率；两者针对同一位置、同一个 token。</p>
+<p><strong>clip 限制继续强化的幅度</strong>。PPO 的 <span class="arithmatex">\(A_{i,t}\)</span> 由 critic + GAE 计算，每个 token 的更新项为：</p>
+<div class="arithmatex">\[
+\min\left(
+\rho_{i,t}A_{i,t},\;
+\operatorname{clip}(\rho_{i,t},1-\epsilon,1+\epsilon)A_{i,t}
+\right)
+\]</div>
+<ul>
+<li><strong><span class="arithmatex">\(A_{i,t}&gt;0\)</span></strong>：ratio 超过上界后，不再鼓励提高概率。</li>
+<li><strong><span class="arithmatex">\(A_{i,t}&lt;0\)</span></strong>：ratio 低于下界后，不再鼓励降低概率。</li>
+</ul>
+<p>它限制的是更新激励，不是概率的硬边界。</p>
+</blockquote>
+<p>GRPO 将其中的 <span class="arithmatex">\(A_{i,t}\)</span> 换成整条回答共用的 <span class="arithmatex">\(A_i\)</span>。</p>
+<p><strong>[第二项：KL 惩罚]</strong></p>
+<p>PPO 的 KL 随 token reward 进入 advantage；GRPO 的 <span class="arithmatex">\(A_i\)</span> 不含 KL，因此在 loss 中单独加上逐 token 的 KL 惩罚 <span class="arithmatex">\(\mathbb D^{\text{KL}}_{i,t}\)</span>。</p>
+<p>01 的 PPO 用 k1，即 actor 与 ref 对实际采到的 token 的 logprob 差：</p>
+<div class="arithmatex">\[
+\text{k1}_{i,t}=\log\pi_{\theta,i,t}-\log\pi_{\text{ref},i,t}
+\]</div>
+<p>GRPO 改用 k3。记 <span class="arithmatex">\(r_{i,t}=\pi_{\text{ref},i,t}/\pi_{\theta,i,t}\)</span>，在 k1 上加修正项 <span class="arithmatex">\(r_{i,t}-1\)</span>：</p>
+<div class="arithmatex">\[
+\mathbb D^{\text{KL}}_{i,t}
+=\underbrace{-\log r_{i,t}}_{\text{k1}}
++\underbrace{(r_{i,t}-1)}_{\text{修正项}}
+=r_{i,t}-1-\log r_{i,t}
+\ge 0
+\]</div>
+<p>这一修正同时带来三个性质（不太懂，但照做吧）：</p>
+<ul>
+<li><strong>期望不变</strong>：按当前 actor 分布采样时，修正项的期望为零，仍估计同一个 KL。</li>
+<li><strong>逐样本非负</strong>：<span class="arithmatex">\(r-1-\log r\ge0\)</span>。</li>
+<li><strong>接近 ref 时通常降低方差</strong>：修正项抵消 k1 的一阶波动。</li>
+</ul>
+<blockquote>
+<p><strong>命名</strong>：k1 / k3 来自 Schulman 的 <em>Approximating KL Divergence</em>。</p>
+</blockquote>
+<h3 id="34-grpo">3.4 手写 GRPO</h3>
+<p>§3.2–3.3 的结论合起来，就是实际算的这条 loss：</p>
+<div class="arithmatex">\[
+\mathcal{L}_{\text{GRPO}}
+=-\frac1G\sum_{i=1}^{G}\frac1{|y_i|}
+\sum_{t=1}^{|y_i|}
+\left[
+\min\left(
+\rho_{i,t}A_i,\,
+\operatorname{clip}(\rho_{i,t},1-\epsilon,1+\epsilon)A_i
+\right)
+-\beta\mathbb D^{\text{KL}}_{i,t}
+\right]
+\]</div>
+<p><img src="../assets/12-rl-algorithms/fig-05.png" alt="seq 级 advantage 与 token 级 ratio、KL 的组装" width="860" /></p>
+<p><strong>[逐项回忆]</strong></p>
+<p>最外面两层是 clip 和两级平均：</p>
+<ul>
+<li><strong>clip</strong>：<span class="arithmatex">\(A_i&gt;0\)</span> 且 <span class="arithmatex">\(\rho_{i,t}&gt;1+\epsilon\)</span>，或 <span class="arithmatex">\(A_i&lt;0\)</span> 且 <span class="arithmatex">\(\rho_{i,t}&lt;1-\epsilon\)</span> 时，surrogate 的梯度被截断；反方向仍保留</li>
+<li><strong>两级平均</strong>：先 <span class="arithmatex">\(\tfrac1{|y_i|}\)</span> 后 <span class="arithmatex">\(\tfrac1G\)</span>，response 等权、token 不等权（代价见 §3.6）</li>
+</ul>
+<p>剥掉这两层，剩下 §3.3 的骨架：</p>
+<div class="arithmatex">\[
+\mathcal L_{\text{GRPO}}
+\;\approx\;
+-\,\mathbb E_{i,t}\Big[\underbrace{\rho_{i,t}\,A_i}_{J_0\text{ 半边：复用修正 × seq 权重}}\Big]
++\beta\,\mathbb E_{i,t}\Big[\underbrace{\mathbb D^{\text{KL}}_{i,t}}_{\text{单独补的 KL}}\Big]
+\]</div>
+<p>三个量：</p>
+<div class="arithmatex">\[
+A_i=\frac{R_i-\bar R}{\sigma_R+\varepsilon},
+\qquad
+\rho_{i,t}
+=\frac{\pi_\theta(y_{i,t}\mid x,y_{i,&lt;t})}
+{\pi_{\text{old}}(y_{i,t}\mid x,y_{i,&lt;t})},
+\qquad
+\mathbb D^{\text{KL}}_{i,t}
+=e^{u_{i,t}}-u_{i,t}-1
+\]</div>
+<ul>
+<li><strong><span class="arithmatex">\(A_i\)</span></strong>（§3.3）：组内标准化出的 seq 级权重，广播到该条 seq 的全部 token</li>
+<li><strong><span class="arithmatex">\(\rho_{i,t}\)</span></strong>（§3.3）：token 级复用修正，实现取 <span class="arithmatex">\(\exp(\log\pi_\theta-\log\pi_{\text{old}})\)</span>；管每个 token 的新旧偏差</li>
+<li><strong><span class="arithmatex">\(\pi_{\text{old}}\)</span></strong>：采这批 rollout 时的 actor，复用期间当常数（01 §3.5 的 <span class="arithmatex">\(\pi_{\theta_{\text{old}}}\)</span>）</li>
+<li><strong><span class="arithmatex">\(\mathbb D^{\text{KL}}_{i,t}\)</span></strong>（§3.3）：k3 估计，<span class="arithmatex">\(u_{i,t}=\log\pi_{\text{ref}}-\log\pi_\theta\)</span>；逐 token 恒非负，可当惩罚项</li>
+<li><strong>超参</strong>：<span class="arithmatex">\(\epsilon\)</span> = clip 半径，<span class="arithmatex">\(\beta\)</span> = KL 强度，<span class="arithmatex">\(\varepsilon\)</span> = 防除零（与 <span class="arithmatex">\(\epsilon\)</span> 无关）</li>
+<li><strong>组合特点</strong>：seq 级权重 × token 级 ratio</li>
+</ul>
+<p><strong>[手写三个纯函数]</strong></p>
+<p>张量显式保留 group 维：<span class="arithmatex">\(B\)</span> = prompt batch，<span class="arithmatex">\(G\)</span> = 每 prompt 的 rollout 数。三个函数对上面三个量：<code>grpo_advantage</code> 出 <span class="arithmatex">\(A_i\)</span>，<code>grpo_kl</code> 出 <span class="arithmatex">\(\mathbb D^{\text{KL}}_{i,t}\)</span>，<code>grpo_loss</code> 组装。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">grpo_advantage</span><span class="p">(</span><span class="n">R</span><span class="p">,</span> <span class="n">std_eps</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">):</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="sd">    组内标准化得到 seq 级 advantage（§3.3）</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="sd">    参数:</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="sd">    - R: 每个 prompt 的 G 条 response reward，形状为 (B, G)</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="sd">    - std_eps: 防除零小常数，即 §3.4 的 ε（不是 clip 的 ϵ）</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="sd">    返回:</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="sd">    - A: 每条 response 一个 advantage，形状为 (B, G)</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="sd">    """</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">mean</span> <span class="o">=</span> <span class="n">R</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>                    <span class="c1"># (B, 1)  组均值, 即 baseline</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">std</span> <span class="o">=</span> <span class="n">R</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">unbiased</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>      <span class="c1"># (B, 1)  组内标准差</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="k">return</span> <span class="p">(</span><span class="n">R</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">std</span> <span class="o">+</span> <span class="n">std_eps</span><span class="p">)</span>                   <span class="c1"># 每个 prompt 内独立归一</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">grpo_kl</span><span class="p">(</span><span class="n">logp</span><span class="p">,</span> <span class="n">ref_logp</span><span class="p">):</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="sd">    k3 KL 估计（§3.3）：逐 token 恒 ≥ 0，可直接当 loss 惩罚项</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="sd">    参数:</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="sd">    - logp: 当前 actor 的 token logprob，形状为 (B, G, T_resp)</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="sd">    - ref_logp: ref 的同款，形状为 (B, G, T_resp)</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="sd">    返回:</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="sd">    - 逐 token 的 D^KL，形状为 (B, G, T_resp)</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="sd">    """</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="n">u</span> <span class="o">=</span> <span class="n">ref_logp</span> <span class="o">-</span> <span class="n">logp</span>        <span class="c1"># u = -k1; ref 在前, 使 exp(u) = π_ref/π_θ 这个比值</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    <span class="k">return</span> <span class="n">u</span><span class="o">.</span><span class="n">exp</span><span class="p">()</span> <span class="o">-</span> <span class="n">u</span> <span class="o">-</span> <span class="mi">1</span>     <span class="c1"># k3 = k1 + (e^u - 1), 修正项均值为 0 故期望不变</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">grpo_loss</span><span class="p">(</span><span class="n">new_logp</span><span class="p">,</span> <span class="n">old_logp</span><span class="p">,</span> <span class="n">ref_logp</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">0.04</span><span class="p">):</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="sd">    GRPO actor loss（§3.4）</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="sd">    参数:</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="sd">    - new_logp: 当前 actor 的 token logprob，唯一带梯度，形状为 (B, G, T_resp)</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="sd">    - old_logp: rollout 策略的 token logprob（常数），形状为 (B, G, T_resp)</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="sd">    - ref_logp: ref 的 token logprob（常数），形状为 (B, G, T_resp)</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="sd">    - A: grpo_advantage 的输出，形状为 (B, G)</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="sd">    - mask: 1=有效 token，0=pad，形状为 (B, G, T_resp)</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="sd">    - eps: clip 半径 ϵ；beta: KL 项系数 β</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="sd">    返回:</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="sd">    - 标量 actor loss</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="sd">    """</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>    <span class="n">ratio</span> <span class="o">=</span> <span class="p">(</span><span class="n">new_logp</span> <span class="o">-</span> <span class="n">old_logp</span><span class="p">)</span><span class="o">.</span><span class="n">exp</span><span class="p">()</span>             <span class="c1"># ρ_{i,t}, logprob 差取 exp</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>    <span class="n">A</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>                             <span class="c1"># (B,G) -&gt; (B,G,1), 广播到整条</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>    <span class="n">surr1</span> <span class="o">=</span> <span class="n">ratio</span> <span class="o">*</span> <span class="n">A</span>                               <span class="c1"># 不截断</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>    <span class="n">surr2</span> <span class="o">=</span> <span class="n">ratio</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">eps</span><span class="p">,</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">eps</span><span class="p">)</span> <span class="o">*</span> <span class="n">A</span>       <span class="c1"># 截断到 [1-ε, 1+ε]</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>    <span class="n">surrogate</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">surr1</span><span class="p">,</span> <span class="n">surr2</span><span class="p">)</span>             <span class="c1"># 只截断 A&gt;0 时的上界、A&lt;0 时的下界</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>    <span class="n">kl</span> <span class="o">=</span> <span class="n">grpo_kl</span><span class="p">(</span><span class="n">new_logp</span><span class="p">,</span> <span class="n">ref_logp</span><span class="p">)</span>                <span class="c1"># k3, 逐 token ≥ 0</span>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>    <span class="n">token_loss</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">surrogate</span> <span class="o">-</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">kl</span><span class="p">)</span>           <span class="c1"># 取负: 最大化目标 -&gt; 最小化 loss</span>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>    <span class="n">lengths</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">clamp_min</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>             <span class="c1"># (B, G)  每条有效长度 |y_i|</span>
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>    <span class="n">per_seq</span> <span class="o">=</span> <span class="p">(</span><span class="n">token_loss</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">lengths</span> <span class="c1"># 先按 1/|y_i| 平均, pad 位不算</span>
+<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a>    <span class="k">return</span> <span class="n">per_seq</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>                           <span class="c1"># 再按 1/G 平均, B 维一并平均</span>
+</code></pre></div>
+<p><strong>[step 骨架]</strong></p>
+<p>和 01 <code>ppo_step</code> 相比，rollout 改为每个 prompt 采 <span class="arithmatex">\(G\)</span> 条，critic + GAE 换成 <code>grpo_advantage</code>。</p>
+<p><code>reward_fn</code> 可以是 RM、外部打分服务或规则 verifier。本例采用规则打分，因此只需 actor 和 ref；换用 RM 时，后面的 advantage 与 loss 计算不变。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">response_mask</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">):</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="sd">"""01 §4.3 ppo_step 里那两行 EOS mask 抽成函数：到首个 EOS(含) 为 1, 之后 pad 为 0"""</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">eos</span> <span class="o">=</span> <span class="p">(</span><span class="n">ids</span><span class="p">[:,</span> <span class="n">p_len</span><span class="p">:]</span> <span class="o">==</span> <span class="n">EOS</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="k">return</span> <span class="p">(</span><span class="n">eos</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">eos</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>                            <span class="c1"># (B, T_resp)</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">grpo_step</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">reward_fn</span><span class="p">,</span> <span class="n">G</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_new</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">update_epochs</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">0.04</span><span class="p">):</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="sd">    一个 GRPO step（§3.4）：每 prompt 采 G 条 → reward_fn 打分 → 组内标准化 → ratio + clip</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="sd">    参数:</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="sd">    - prompt: 一批 prompt，形状为 (B, p_len)</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="sd">    - reward_fn: 打分函数，输入 (ids, p_len, mask)，每条 response 返回一个标量</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="sd">    - G: 每个 prompt 采几条 response；update_epochs: 同一批 rollout 复用几次</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="sd">    返回:</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="sd">    - 标量 loss；本 step 的平均 reward（训练观测指标）</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="sd">    """</span>
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>    <span class="n">B</span><span class="p">,</span> <span class="n">p_len</span> <span class="o">=</span> <span class="n">prompt</span><span class="o">.</span><span class="n">shape</span>
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>    <span class="c1"># 1) rollout: 同一 prompt 复制 G 份, 每份独立采样 (推理负载)</span>
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>    <span class="n">flat</span> <span class="o">=</span> <span class="n">prompt</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="n">p_len</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span> <span class="o">*</span> <span class="n">G</span><span class="p">,</span> <span class="n">p_len</span><span class="p">)</span>
+<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a>        <span class="n">ids</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">flat</span><span class="p">,</span> <span class="n">n_new</span><span class="p">)</span>                                <span class="c1"># (B*G, p_len+n_new)</span>
+<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a>        <span class="n">mask</span> <span class="o">=</span> <span class="n">response_mask</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">)</span>                                 <span class="c1"># (B*G, n_new)</span>
+<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a>        <span class="n">R</span> <span class="o">=</span> <span class="n">reward_fn</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">G</span><span class="p">)</span>                    <span class="c1"># 2) 打分：RM / 外部服务 / 规则 verifier</span>
+<a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a>        <span class="n">A</span> <span class="o">=</span> <span class="n">grpo_advantage</span><span class="p">(</span><span class="n">R</span><span class="p">)</span>                                            <span class="c1"># 3) 组内统计顶替 critic+GAE</span>
+<a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a>        <span class="n">old_logp</span> <span class="o">=</span> <span class="n">sft_logprob</span><span class="p">(</span><span class="n">actor</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="n">n_new</span><span class="p">)</span>   <span class="c1"># ρ 的分母</span>
+<a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a>        <span class="n">ref_logp</span> <span class="o">=</span> <span class="n">sft_logprob</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="n">n_new</span><span class="p">)</span>     <span class="c1"># k3 的基准</span>
+<a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a>    <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="n">n_new</span><span class="p">)</span>
+<a id="__codelineno-5-29" name="__codelineno-5-29" href="#__codelineno-5-29"></a>    <span class="c1"># 4) update: 同一批 rollout 复用 update_epochs 次 (训练负载)</span>
+<a id="__codelineno-5-30" name="__codelineno-5-30" href="#__codelineno-5-30"></a>    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">update_epochs</span><span class="p">):</span>
+<a id="__codelineno-5-31" name="__codelineno-5-31" href="#__codelineno-5-31"></a>        <span class="n">new_logp</span> <span class="o">=</span> <span class="n">sft_logprob</span><span class="p">(</span><span class="n">actor</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="n">n_new</span><span class="p">)</span>   <span class="c1"># 唯一带梯度的前向</span>
+<a id="__codelineno-5-32" name="__codelineno-5-32" href="#__codelineno-5-32"></a>        <span class="n">loss</span> <span class="o">=</span> <span class="n">grpo_loss</span><span class="p">(</span><span class="n">new_logp</span><span class="p">,</span> <span class="n">old_logp</span><span class="p">,</span> <span class="n">ref_logp</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="n">beta</span><span class="p">)</span>
+<a id="__codelineno-5-33" name="__codelineno-5-33" href="#__codelineno-5-33"></a>        <span class="n">opt</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">();</span> <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">();</span> <span class="n">opt</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<a id="__codelineno-5-34" name="__codelineno-5-34" href="#__codelineno-5-34"></a>    <span class="k">return</span> <span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="n">R</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>                                  <span class="c1"># R 均值应随训练上涨</span>
+</code></pre></div>
+<h3 id="35-r1rlvr-grpo">3.5 R1：RLVR + GRPO</h3>
+<p>GRPO 出自 DeepSeekMath（2024）；DeepSeek-R1（2025）在推理训练中采用 GRPO + RLVR。论文给了两个模型：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>做法</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1-Zero</strong></td>
+<td>base 模型不做 SFT，直接 RLVR + GRPO</td>
+<td>输出自发变长、出现反思；可读性和语言一致性差</td>
+</tr>
+<tr>
+<td><strong>R1</strong></td>
+<td>先用少量长 CoT（chain-of-thought）做 cold-start SFT，再 RLVR + GRPO</td>
+<td>可读性修好，后续再补两个阶段</td>
+</tr>
+</tbody>
+</table>
+<p>R1-Zero 是这条线最重要的结论：不做 SFT、纯 RL 也能长出 reasoning。R1 在它之上补齐可读性和通用能力，完整流程四段：</p>
+<div class="arithmatex">\[
+\text{cold-start SFT}
+\rightarrow
+\text{reasoning RL}
+\rightarrow
+\text{rejection sampling + SFT}
+\rightarrow
+\text{all-scenario RL}
+\]</div>
+<blockquote>
+<ul>
+<li>拒绝采样 (rejection sampling + SFT) = 同一 prompt 采多条，用 verifier / RM 筛出好的当 SFT 数据。</li>
+<li>全场景 RL (all-scenario RL) = reasoning 之外补对齐场景；通用数据没有可验证答案，这一阶段仍用 RM（RLVR用不了）。</li>
+</ul>
+</blockquote>
+<h3 id="36-dapogrpo">3.6 DAPO：GRPO 的长回答训练改进</h3>
+<p><strong>DAPO</strong>（2025）沿用 GRPO 的组内 advantage，取消 ref KL，并改进长回答训练。以下与采用正确性奖励的 GRPO 对比。<a href="https://arxiv.org/abs/2503.14476">原论文</a></p>
+<blockquote>
+<p><strong>回顾 §3.3–3.4：GRPO loss</strong></p>
+<p>loss 由 policy 项与 ref KL 惩罚组成，暂略 clip 与长度归一：</p>
+<div class="arithmatex">\[
+\mathcal L_{\mathrm{GRPO}}
+\approx -\mathbb E_{i,t}[\rho_{i,t}A_i]
++\beta\,\mathbb E_{i,t}[\mathbb D^{\mathrm{KL}}_{i,t}]
+\]</div>
+</blockquote>
+<p><strong>取消 ref KL</strong>：为允许长 CoT 训练明显偏离初始 ref，DAPO 删除第二项（<span class="arithmatex">\(\beta=0\)</span>），不再计算 <code>ref_logp</code>，因此省去 ref 模型。<a href="https://arxiv.org/html/2503.14476v1#S2.SS3">原论文 §2.3</a></p>
+<p><strong>长回答训练的四项改进</strong></p>
+<table>
+<thead>
+<tr>
+<th>环节</th>
+<th>GRPO</th>
+<th>DAPO</th>
+<th>目的</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>rollout</strong></td>
+<td>一个batch中，全对／全错组 <span class="arithmatex">\(A_i=0\)</span>，不补采</td>
+<td>过滤该类 + 补满有效组（Dynamic Sampling）</td>
+<td>稳定有效组数</td>
+</tr>
+<tr>
+<td><strong>reward</strong></td>
+<td>只看对错，无长度反馈</td>
+<td>软长度惩罚：上限前缓冲区内越长扣分越多（Overlong Reward Shaping）</td>
+<td>减少超长截断</td>
+</tr>
+<tr>
+<td><strong>clip</strong>：<span class="arithmatex">\(\rho\)</span> = 新概率 / 旧概率</td>
+<td><span class="arithmatex">\(A_i&gt;0\)</span> 时，<span class="arithmatex">\(\rho&gt;1.2\)</span> 后该项不再鼓励提高概率</td>
+<td>上界 <span class="arithmatex">\(1.2\to1.28\)</span>，下界不变（Clip-Higher）</td>
+<td>给低概率 token 更多提升空间，保留探索</td>
+</tr>
+<tr>
+<td><strong>loss 平均</strong></td>
+<td>response 等权</td>
+<td>有效 token 等权，长回答总权重更高（Token-level loss）</td>
+<td>不摊薄长回答的学习信号；强化／抑制仍由 <span class="arithmatex">\(A_i\)</span> 决定</td>
+</tr>
+</tbody>
+</table>
+<p><img src="../assets/12-rl-algorithms/fig-13.png" alt="DAPO 放宽 clip 上界，并改为 token 等权" width="860" /></p>
+<p>下面实现 loss 的三处变化：删除 KL、非对称 clip、token 等权。筛组补采与 reward 处理在调用前完成。实现沿用 <a href="https://verl.readthedocs.io/en/latest/algo/dapo.html">verl 配方</a>：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">dapo_loss</span><span class="p">(</span><span class="n">new_logp</span><span class="p">,</span> <span class="n">old_logp</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">eps_low</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">eps_high</span><span class="o">=</span><span class="mf">0.28</span><span class="p">):</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="sd">"""logprob / mask: (B, G, T_resp); A: (B, G)，仅 new_logp 带梯度。"""</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">ratio</span> <span class="o">=</span> <span class="p">(</span><span class="n">new_logp</span> <span class="o">-</span> <span class="n">old_logp</span><span class="p">)</span><span class="o">.</span><span class="n">exp</span><span class="p">()</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">A</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>                         <span class="c1"># 仍是一条 response 共用一个 A_i</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">surr1</span> <span class="o">=</span> <span class="n">ratio</span> <span class="o">*</span> <span class="n">A</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">surr2</span> <span class="o">=</span> <span class="n">ratio</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">eps_low</span><span class="p">,</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">eps_high</span><span class="p">)</span> <span class="o">*</span> <span class="n">A</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">surrogate</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">surr1</span><span class="p">,</span> <span class="n">surr2</span><span class="p">)</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="k">return</span> <span class="o">-</span><span class="p">(</span><span class="n">surrogate</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">clamp_min</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="4-opd-mopdon-policy">4. OPD / MOPD：on-policy 蒸馏</h2>
+<p>回顾一下蒸馏：能力已经在一个强模型里，要装进另一个模型。</p>
+<h3 id="41-vs-opd">4.1 普通蒸馏 vs OPD</h3>
+<p>两者都让 student 学 teacher。区别是 response 由谁生成。</p>
+<p><strong>[普通蒸馏：off-policy SFT]</strong></p>
+<p>其实就是在普通 SFT 的基础上替换了数据来源：response 的数据来源于 teacher</p>
+<ul>
+<li><strong>数据</strong>：teacher 提前 rollout，生成固定 response</li>
+<li><strong>训练</strong>：student 把 response 当作 GT，按普通 SFT 做 逐位的 teacher-forcing + CE</li>
+</ul>
+<p>之所以叫 off-policy：response 来自 teacher，不是当前 student。</p>
+<p><strong>[OPD：on-policy RL]</strong></p>
+<p>OPD 把 response 的来源换成当前 student：</p>
+<ul>
+<li><strong>数据</strong>：当前 student rollout，生成 response</li>
+<li><strong>监督</strong>：teacher 在这些 prefix 上返回逐 token 信号</li>
+<li><strong>训练</strong>：student 根据 teacher 信号更新，下一批再由新 student rollout</li>
+</ul>
+<p>之所以叫 on-policy：response 来自当前 student。</p>
+<p><img src="../assets/12-rl-algorithms/fig-07.png" alt="teacher 生成示范，还是评价 student 的生成" width="760" /></p>
+<p><strong>[接回 RL loop]</strong></p>
+<p>看一眼思路设计，会发现 OPD 自然地和 RL 对上了：</p>
+<div class="arithmatex">\[
+\begin{aligned}
+\text{RL:}\quad
+&amp;\text{actor rollout}
+&amp;&amp;\rightarrow \text{RM feedback}
+&amp;&amp;\rightarrow \text{actor update}
+&amp;&amp;\rightarrow \text{new actor rollout}
+\\
+\text{OPD:}\quad
+&amp;\text{student rollout}
+&amp;&amp;\rightarrow \text{teacher feedback}
+&amp;&amp;\rightarrow \text{student update}
+&amp;&amp;\rightarrow \text{new student rollout}
+\end{aligned}
+\]</div>
+<p>所以，<code>actor = student</code>；feedback 由 teacher 接管。</p>
+<p>再对照 01 的 PPO 四模型：</p>
+<table>
+<thead>
+<tr>
+<th>PPO 模型</th>
+<th>作用</th>
+<th>OPD 对应</th>
+<th style="text-align: center;">保留？</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>actor</strong></td>
+<td>rollout + update</td>
+<td>student</td>
+<td style="text-align: center;">✔︎</td>
+<td>仍需生成和训练</td>
+</tr>
+<tr>
+<td><strong>RM</strong></td>
+<td>给 seq 级反馈</td>
+<td>teacher feedback</td>
+<td style="text-align: center;">✗</td>
+<td>teacher 给反馈</td>
+</tr>
+<tr>
+<td><strong>critic</strong></td>
+<td>辅助定义 token级反馈</td>
+<td>token gap <span class="arithmatex">\(\Delta_t\)</span></td>
+<td style="text-align: center;">✗</td>
+<td>teacher 反馈已到 token级</td>
+</tr>
+<tr>
+<td><strong>ref</strong></td>
+<td>KL 锚点</td>
+<td>teacher target</td>
+<td style="text-align: center;">✗</td>
+<td>直接对齐 teacher</td>
+</tr>
+</tbody>
+</table>
+<p>接下来只看两件事：teacher 给什么信号，以及这个信号怎样更新 student。</p>
+<h3 id="42-token">4.2 逐 token 反馈</h3>
+<p><strong>[RL 的反馈]</strong></p>
+<p>在 PPO-RLHF 里，RM 只给整条 response 一个 <strong>seq-level 分数</strong>。这个分数怎样摊到每个 token，由算法自定义的 return / critic / GAE 等后续步骤决定。</p>
+<p>OPD 不同。teacher 直接给出 <strong>token-level 反馈</strong>。</p>
+<p><strong>[teacher 怎么给]</strong></p>
+<p>这一步和普通蒸馏很像，只是角色反过来了：</p>
+<ul>
+<li><strong>普通蒸馏</strong>：teacher rollout <span class="arithmatex">\(\rightarrow\)</span> student 做 teacher-forcing + CE</li>
+<li><strong>OPD</strong>：student rollout <span class="arithmatex">\(\rightarrow\)</span> teacher 做 teacher-forcing，返回反馈</li>
+</ul>
+<p>student rollout 出完整 response 后，teacher 一次性读入 prompt + response。causal mask 让它并行计算每个 prefix 的 next-token 分布：</p>
+<div class="arithmatex">\[
+\underbrace{(x,y_{1:T})}_{\text{完整 student rollout}}
+\xrightarrow[\text{causal mask}]{\text{teacher 一次前向}}
+\underbrace{
+\left\{\log\pi_T(\cdot\mid x,y_{&lt;t})\right\}_{t=1}^{T}
+}_{T\text{ 个位置，每个位置有 }V\text{ 个 logprob}}
+\]</div>
+<p><span class="arithmatex">\(\cdot\)</span> 表示整个词表。这些 prefix 不需要分别跑 <span class="arithmatex">\(T\)</span> 次 forward；teacher 也不重新生成 response，只做一次 SFT-style 前向。</p>
+<p><img src="../assets/12-rl-algorithms/fig-14.png" alt="student rollout 变为 teacher 的已知输入" width="860" /></p>
+<blockquote>
+<p>矩阵按待预测 token 对齐；“其它”仅为合并展示，loss 仍逐 token 计算。</p>
+</blockquote>
+<p><strong>[反馈信号范围]</strong></p>
+<p>设词表大小为 <span class="arithmatex">\(V\)</span>。每个 token 位置上，student 和 teacher 都有 <span class="arithmatex">\(V\)</span> 个 logprob。具体 recipe 决定读取范围：</p>
+<table>
+<thead>
+<tr>
+<th>范围</th>
+<th>词表位置怎么选</th>
+<th style="text-align: right;">数量</th>
+<th>常见 KL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>top-<span class="arithmatex">\(k\)</span></strong></td>
+<td>teacher 概率最高的 <span class="arithmatex">\(k\)</span> 格</td>
+<td style="text-align: right;"><span class="arithmatex">\(k\)</span></td>
+<td>forward KL（截断）</td>
+</tr>
+<tr>
+<td><strong>full-vocab</strong></td>
+<td>整个词表</td>
+<td style="text-align: right;"><span class="arithmatex">\(V\)</span></td>
+<td>forward KL，也可 reverse KL</td>
+</tr>
+<tr>
+<td><strong>sampled token</strong></td>
+<td>student rollout 采到的 <span class="arithmatex">\(y_t\sim p_S\)</span></td>
+<td style="text-align: right;"><span class="arithmatex">\(1\)</span></td>
+<td>reverse KL（Monte Carlo）</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>top-<span class="arithmatex">\(k\)</span> / full-vocab：在同一个 prefix 的词表维度上，top-<span class="arithmatex">\(k\)</span> / full-vocab 的 <span class="arithmatex">\(k\)</span> / <span class="arithmatex">\(V\)</span> 项是确定的，可以直接求和。</li>
+<li>sampled token：每次只有一个随机项，因此要在 batch / rollout 中对多个样本取平均。</li>
+</ul>
+<p>这也是常见搭配的来源：forward KL 按 <span class="arithmatex">\(p_T\)</span> 加权；reverse KL 按 <span class="arithmatex">\(p_S\)</span> 加权。</p>
+<h3 id="43-token-loss">4.3 Token 级 Loss 两种更新</h3>
+<p>沿用一条完整 response：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>prompt <span class="arithmatex">\(x\)</span></strong></td>
+<td>“<span class="arithmatex">\(2+3\)</span> 等于多少？”</td>
+</tr>
+<tr>
+<td><strong>student response <span class="arithmatex">\(y_{1:T}\)</span></strong></td>
+<td>“答案” <span class="arithmatex">\(\rightarrow\)</span> “是” <span class="arithmatex">\(\rightarrow\)</span> <strong>“4”</strong> <span class="arithmatex">\(\rightarrow\)</span> “。”</td>
+</tr>
+</tbody>
+</table>
+<p>下面只放大第 <span class="arithmatex">\(t=3\)</span> 个位置。此时 prefix <span class="arithmatex">\(s_3=(x,y_1,y_2)\)</span>，也就是 prompt + “答案是”。</p>
+<p>teacher 和 student 在这里各有一张 next-token 概率表：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: right;">4</th>
+<th style="text-align: right;">5</th>
+<th style="text-align: right;">6</th>
+<th style="text-align: right;">。</th>
+<th style="text-align: right;">其它</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>student <span class="arithmatex">\(p_S\)</span></strong></td>
+<td style="text-align: right;"><strong>0.30（采到）</strong></td>
+<td style="text-align: right;">0.40</td>
+<td style="text-align: right;">0.15</td>
+<td style="text-align: right;">0.10</td>
+<td style="text-align: right;">0.05</td>
+</tr>
+<tr>
+<td><strong>teacher <span class="arithmatex">\(p_T\)</span></strong></td>
+<td style="text-align: right;">0.20</td>
+<td style="text-align: right;"><strong>0.50</strong></td>
+<td style="text-align: right;">0.15</td>
+<td style="text-align: right;">0.10</td>
+<td style="text-align: right;">0.05</td>
+</tr>
+</tbody>
+</table>
+<p>下面分别看词表多格（top-<span class="arithmatex">\(k\)</span> / full-vocab）和一格（sampled token）怎样计算 Loss + 更新 student。</p>
+<p><strong>[多格 top-<span class="arithmatex">\(k\)</span> / full-vocab ：直接计算]</strong></p>
+<p>对于词表：top-<span class="arithmatex">\(k\)</span> 枚举teacher 概率的前 <span class="arithmatex">\(k\)</span> 格，full-vocab 枚举全部 <span class="arithmatex">\(V\)</span> 格。</p>
+<p>此处使用常见的 forward KL。<span class="arithmatex">\(v\)</span> 是一个词表 token；<span class="arithmatex">\(\mathcal K\)</span> 是保留的格子。</p>
+<div class="arithmatex">\[
+\mathcal L_{\mathcal K}
+=
+\sum_{v\in\mathcal K}
+p_T(v)\left[\log p_T(v)-\log p_S(v)\right]
+\]</div>
+<p>teacher 已冻结。所以真正把梯度传入 student 的部分只有：</p>
+<div class="arithmatex">\[
+-\sum_{v\in\mathcal K}p_T(v)\log p_S(v)
+\]</div>
+<p><span class="arithmatex">\(\log p_S(v)\)</span> 由于是所有词表位 softmax 加权的结果，因此梯度可随之传到所有词表位。</p>
+<p><strong>[一格 sampled token：均值估计]</strong></p>
+<blockquote>
+<p>反正计算方法的 demo 在那，就这么记着计算流程吧</p>
+</blockquote>
+<p>sampled token 由 <span class="arithmatex">\(p_S\)</span> 采样（只取词表中的 1 格），使用 reverse KL 中的 <span class="arithmatex">\(p_S(v)\)</span> 权重：</p>
+<ul>
+<li><span class="arithmatex">\(y\sim p_S\)</span> 表示 <span class="arithmatex">\(y\)</span> 由 student policy 采样；</li>
+<li><span class="arithmatex">\(\mathbb E\)</span> 表示对采样取平均，一次 rollout 只得到右侧的一项</li>
+</ul>
+<div class="arithmatex">\[
+\underbrace{
+\sum_{v=1}^{V}p_S(v)
+\left[\log p_S(v)-\log p_T(v)\right]
+}_{\text{枚举全部词表，但实际只有一格被取}}
+=
+\underbrace{
+\mathbb E_{y\sim p_S}
+\left[\log p_S(y)-\log p_T(y)\right]
+}_{\text{随机采一格，再取平均}}.
+\]</div>
+<p>但注意不能直接 backward：<span class="arithmatex">\(y\)</span> 是离散样本，<span class="arithmatex">\(p_S(v)\)</span> 不能显式写出，只能隐藏在采样频率中。梯度只剩 <span class="arithmatex">\(\nabla\log p_S(y)\)</span>，其期望为 <span class="arithmatex">\(0\)</span>。</p>
+<p>因此要把 teacher / student 的差值当作更新系数：</p>
+<p>对这次采到的“4”：</p>
+<div class="arithmatex">\[
+\begin{aligned}
+\Delta_3
+&amp;=\log p_T(\text{“4”})-\log p_S(\text{“4”})\\
+&amp;=\log 0.20-\log 0.30&lt;0,\\
+\mathcal L_3
+&amp;=-\operatorname{sg}(\Delta_3)\log p_S(\text{“4”}).
+\end{aligned}
+\]</div>
+<p><span class="arithmatex">\(\Delta_3&lt;0\)</span>，所以压低“4”；若为正，就推高。<span class="arithmatex">\(\operatorname{sg}\)</span> 表示 detach：差值只决定升降，梯度只经过最后的 student logprob。</p>
+<p><img src="../assets/12-rl-algorithms/fig-08.png" alt="词表多格求和与 sampled-token 更新" width="860" /></p>
+<h3 id="44-mopd-prompt-teacher">4.4 MOPD：按 prompt 选 teacher</h3>
+<p><strong>[teacher 从一个到多个]</strong></p>
+<p>OPD 默认只有一个 frozen teacher。<strong>MOPD</strong>（Multi-Teacher On-Policy Distillation，<a href="https://arxiv.org/abs/2606.30406">Xiaomi MiMo, 2026</a>）则准备多个 domain teacher，但仍只训练一个 student。比如：</p>
+<ul>
+<li><span class="arithmatex">\(T_{\text{math}}\)</span> 负责 math prompt</li>
+<li><span class="arithmatex">\(T_{\text{IF}}\)</span> 负责 instruction-following prompt</li>
+<li><span class="arithmatex">\(T_{\text{SWE}}\)</span> 负责 SWE prompt</li>
+</ul>
+<p>每个 teacher 只强化自己的场景，<strong>也可以采用不同的 RL 训练方式</strong>。</p>
+<p><strong>[按 prompt 路由]</strong></p>
+<p>训练数据中的 prompt <span class="arithmatex">\(x\)</span> 自带场景标签 <span class="arithmatex">\(d(x)\)</span>。这个标签直接决定本条 rollout 使用哪个 teacher：</p>
+<div class="arithmatex">\[
+(x,d(x))
+\quad\longrightarrow\quad
+T_{d(x)}
+\]</div>
+<p>每条 prompt 只调用一个 teacher，其余 teacher 不参与。</p>
+<p><strong>[蒸馏不变]</strong></p>
+<p>teacher 选好后，后续就是普通 OPD：</p>
+<div class="arithmatex">\[
+\text{student rollout}
+\rightarrow
+T_{d(x)}\text{ teacher-forcing}
+\rightarrow
+\text{token feedback}
+\rightarrow
+\text{student update}
+\]</div>
+<p>选中的 teacher 仍按 §4.2 返回词表信号：</p>
+<ul>
+<li><strong>sampled token</strong>：读取 student 实际采到的 <span class="arithmatex">\(1\)</span> 格</li>
+<li><strong>top-<span class="arithmatex">\(k\)</span></strong>：读取 teacher 概率最高的 <span class="arithmatex">\(k\)</span> 格</li>
+</ul>
+<p>选完 teacher 后，各分支的 loss 和 update 都沿用 §4.3；MOPD 只替换 teacher index。不同 domain 的监督最终更新同一个 student。</p>
+<p><img src="../assets/12-rl-algorithms/fig-09.png" alt="每条 prompt 选一个 teacher，所有反馈训练同一个 student" width="800" /></p>
+<h3 id="45-opd-mopd">4.5 手写 OPD / MOPD</h3>
+<p>下面只实现 sampled-token 分支。top-<span class="arithmatex">\(k\)</span> / full-vocab 沿用同一 loop，改 teacher 返回范围与 loss。</p>
+<p>这里继续复用 01 的 <code>sft_logprob</code>。它让模型对 <code>prompt + response</code> 做一次 teacher-forcing，再取出 response 实际 token 的 logprob。输出形状为 <code>(B, T_resp)</code>。</p>
+<p><strong>[完整 step]</strong></p>
+<p>下面每批 rollout 只更新一次，所以不需要 old / new ratio 或 PPO clip。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">routed_teacher_logp</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">,</span> <span class="n">domain_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="sd">    选 teacher 并做一次 teacher-forcing（§4.4）；domain_ids=None 即单 teacher 的 OPD</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="sd">    参数:</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="sd">    - ids: student rollout 出的 prompt + response，形状为 (B, T)</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="sd">    - domain_ids: 每条 prompt 的场景标签 d(x)，形状为 (B,)</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="sd">    返回:</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="sd">    - 选中 teacher 给 response 段的逐 token logprob，形状为 (B, T_resp)</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="sd">    """</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>    <span class="k">if</span> <span class="n">domain_ids</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>        <span class="k">return</span> <span class="n">sft_logprob</span><span class="p">(</span><span class="n">teacher</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">)</span>                  <span class="c1"># OPD: 只有一个 teacher</span>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>    <span class="n">out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">p_len</span><span class="p">,</span>        <span class="c1"># MOPD: 先开好 (B, T_resp)</span>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>                      <span class="n">device</span><span class="o">=</span><span class="n">ids</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">domain_ids</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">():</span>                       <span class="c1"># 每条 prompt 只进一个 teacher</span>
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>        <span class="n">rows</span> <span class="o">=</span> <span class="n">domain_ids</span> <span class="o">==</span> <span class="n">d</span>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>        <span class="n">out</span><span class="p">[</span><span class="n">rows</span><span class="p">]</span> <span class="o">=</span> <span class="n">sft_logprob</span><span class="p">(</span><span class="n">teachers</span><span class="p">[</span><span class="n">d</span><span class="p">],</span> <span class="n">ids</span><span class="p">[</span><span class="n">rows</span><span class="p">],</span> <span class="n">p_len</span><span class="p">)</span>
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>    <span class="k">return</span> <span class="n">out</span>
+<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>
+<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="k">def</span><span class="w"> </span><span class="nf">opd_step</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">domain_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_new</span><span class="o">=</span><span class="mi">16</span><span class="p">):</span>
+<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a><span class="sd">    一个 OPD / MOPD step（§4.5）：student rollout → teacher 逐 token 反馈 → 更新 student</span>
+<a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>
+<a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a><span class="sd">    参数:</span>
+<a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a><span class="sd">    - prompt: 一批 prompt，形状为 (B, p_len)</span>
+<a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a><span class="sd">    - domain_ids: MOPD 的场景标签；None 时走单 teacher 的 OPD</span>
+<a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a>
+<a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a><span class="sd">    返回:</span>
+<a id="__codelineno-7-31" name="__codelineno-7-31" href="#__codelineno-7-31"></a><span class="sd">    - 标量 loss；平均 |Δ_t|（训练观测指标，应随训练下降）</span>
+<a id="__codelineno-7-32" name="__codelineno-7-32" href="#__codelineno-7-32"></a><span class="sd">    """</span>
+<a id="__codelineno-7-33" name="__codelineno-7-33" href="#__codelineno-7-33"></a>    <span class="n">p_len</span> <span class="o">=</span> <span class="n">prompt</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<a id="__codelineno-7-34" name="__codelineno-7-34" href="#__codelineno-7-34"></a>    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+<a id="__codelineno-7-35" name="__codelineno-7-35" href="#__codelineno-7-35"></a>        <span class="n">ids</span> <span class="o">=</span> <span class="n">student</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">n_new</span><span class="p">)</span>                        <span class="c1"># 1) 当前 student rollout</span>
+<a id="__codelineno-7-36" name="__codelineno-7-36" href="#__codelineno-7-36"></a>        <span class="n">mask</span> <span class="o">=</span> <span class="n">response_mask</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">)</span>                             <span class="c1"># §3.4 那个 EOS mask</span>
+<a id="__codelineno-7-37" name="__codelineno-7-37" href="#__codelineno-7-37"></a>        <span class="n">teacher_logp</span> <span class="o">=</span> <span class="n">routed_teacher_logp</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">,</span> <span class="n">domain_ids</span><span class="p">)</span>   <span class="c1"># 2) 选 teacher; 3) 一次前向</span>
+<a id="__codelineno-7-38" name="__codelineno-7-38" href="#__codelineno-7-38"></a>    <span class="n">student_logp</span> <span class="o">=</span> <span class="n">sft_logprob</span><span class="p">(</span><span class="n">student</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">p_len</span><span class="p">)</span>                  <span class="c1"># 4) 唯一带梯度的前向</span>
+<a id="__codelineno-7-39" name="__codelineno-7-39" href="#__codelineno-7-39"></a>    <span class="n">loss</span><span class="p">,</span> <span class="n">delta</span> <span class="o">=</span> <span class="n">sampled_opd_loss</span><span class="p">(</span><span class="n">student_logp</span><span class="p">,</span> <span class="n">teacher_logp</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+<a id="__codelineno-7-40" name="__codelineno-7-40" href="#__codelineno-7-40"></a>    <span class="n">opt</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">();</span> <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">();</span> <span class="n">opt</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+<a id="__codelineno-7-41" name="__codelineno-7-41" href="#__codelineno-7-41"></a>    <span class="n">gap</span> <span class="o">=</span> <span class="p">(</span><span class="n">delta</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">clamp_min</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>       <span class="c1"># 观测指标: 平均 |Δ_t|</span>
+<a id="__codelineno-7-42" name="__codelineno-7-42" href="#__codelineno-7-42"></a>    <span class="k">return</span> <span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="n">gap</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>                                   <span class="c1"># gap 应随训练下降</span>
+</code></pre></div>
+<p>MOPD 只多出中间的 domain routing。所有 teacher 的反馈拼回同一个 <code>teacher_logp</code> 后，loss 与单 teacher OPD 相同。</p>
+<p><strong>[sampled loss]</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">sampled_opd_loss</span><span class="p">(</span><span class="n">student_logp</span><span class="p">,</span> <span class="n">teacher_logp</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="sd">    sampled-token OPD loss（§4.3）：gap 只定升降，梯度只走 student logprob</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="sd">    参数:</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="sd">    - student_logp: student 给 rollout 实际 token 的 logprob，唯一带梯度，形状为 (B, T_resp)</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="sd">    - teacher_logp: teacher 给同一批 token 的 logprob，形状为 (B, T_resp)</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="sd">    - mask: 1=有效 token，0=pad，形状为 (B, T_resp)</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="sd">    返回:</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="sd">    - 标量 loss；逐 token 的 Δ_t（观测用）</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="sd">    """</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>    <span class="n">delta</span> <span class="o">=</span> <span class="p">(</span><span class="n">teacher_logp</span> <span class="o">-</span> <span class="n">student_logp</span><span class="p">)</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span>   <span class="c1"># Δ_t &gt; 0 推高该 token, &lt; 0 压低</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>    <span class="n">token_loss</span> <span class="o">=</span> <span class="o">-</span><span class="n">delta</span> <span class="o">*</span> <span class="n">student_logp</span>               <span class="c1"># detach 后 Δ 是常数权重</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>    <span class="n">loss</span> <span class="o">=</span> <span class="p">(</span><span class="n">token_loss</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">clamp_min</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># 有效位上 token 级平均</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>    <span class="k">return</span> <span class="n">loss</span><span class="p">,</span> <span class="n">delta</span>
+</code></pre></div>
+<p><code>delta</code> 只决定每个 sampled token 应该推高还是压低。detach 后，梯度只经过最后的 <code>student_logp</code>。</p>
+<h2 id="5">5. 代码实现</h2>
+<p>toy 规模（词表 32、hidden 32、1 层），无需下载模型或数据：<a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/12_dpo_grpo_opd.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/1dzNP4RzIoox-Ef29yuW48fRInDXdq5pU/view?usp=drive_link">Colab</a>。</p>
+<p>核心 loss 对应本文 §2.4、§3.4、§3.6、§4.5：</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>计算顺序</th>
+<th>函数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DPO</td>
+<td>四份 seq logprob → 偏好分差 → loss</td>
+<td><code>dpo_loss</code></td>
+</tr>
+<tr>
+<td>GRPO</td>
+<td>reward → <span class="arithmatex">\(A_i\)</span>；actor / ref logprob → k3；与 ratio + clip 组装</td>
+<td><code>grpo_advantage</code>、<code>grpo_kl</code>、<code>grpo_loss</code></td>
+</tr>
+<tr>
+<td>DAPO</td>
+<td>沿用 GRPO；删 KL、改 clip 与平均方式</td>
+<td><code>dapo_loss</code></td>
+</tr>
+<tr>
+<td>OPD / MOPD</td>
+<td>teacher − student logprob → detach 作权重 → loss</td>
+<td><code>sampled_opd_loss</code></td>
+</tr>
+</tbody>
+</table>
+<p>MOPD 沿用 OPD loss，只增加 teacher 路由。OPD 仅实现 sampled-token 分支。</p>
+<p>CPU 上通过 loss / 梯度与冻结检查，toy 训练结果如下：</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>运行结果</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DPO</td>
+<td>margin：<span class="arithmatex">\(0.00\to3.81\)</span></td>
+<td>chosen 相对 rejected 的偏好增强</td>
+</tr>
+<tr>
+<td>GRPO</td>
+<td>平均 reward：<span class="arithmatex">\(0.52\to5.96\)</span>（上限 6）</td>
+<td>更常生成规则奖励的目标 token</td>
+</tr>
+<tr>
+<td>OPD</td>
+<td>平均 <span class="arithmatex">\(\lvert\Delta_t\rvert\)</span>：<span class="arithmatex">\(0.479\to0.063\)</span></td>
+<td>采样 token 上，student 与 teacher 的 logprob 更接近</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>GRPO 取 <span class="arithmatex">\(\beta=0\)</span>；DAPO、MOPD 仅验机制，未单独训练。toy 结果不代表算法效果排名。</p>
+</blockquote>
+<p><img src="../assets/12-rl-algorithms/fig-10.png" alt="DPO margin、GRPO reward 与 OPD logprob 差的训练曲线" width="900" /></p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "navigation.expand", "toc.follow", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../javascripts/heading-font.js"></script>
+      
+        <script src="../javascripts/katex.js"></script>
+      
+        <script src="../javascripts/mmv.js"></script>
+      
+        <script src="../katex/katex.min.js"></script>
+      
+        <script src="../katex/auto-render.min.js"></script>
+      
+    
+  </body>
+</html>
