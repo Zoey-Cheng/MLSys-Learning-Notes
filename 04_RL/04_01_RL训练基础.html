@@ -1118,6 +1118,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="04_03_%E8%AE%AD%E6%8E%A8%E5%8D%8F%E5%90%8C.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    03-训推协同 - 同步与异步
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1889,17 +1917,6 @@
 <p>策略、状态转移都是现成的——LLM 本身就是一个逐 token 决策的 policy。被训练的这个 LLM，RL 语境里叫 <strong>actor</strong>。整个框架里唯一需要新造的部件是 reward（§4.1）。</p>
 <h3 id="22-loop">2.2 loop 本体</h3>
 <p>一个 RL training step 分四段：rollout → reward → advantage → update。<strong>rollout</strong> 是 RL 术语，指"跑一遍当前策略收集数据"，LLM 下就是 <code>actor.generate()</code>：</p>
-<pre class="mermaid"><code>flowchart LR
-    R("rollout&lt;br/&gt;&lt;br/&gt;actor 自回归生成&lt;br/&gt;response&lt;br/&gt;&lt;b&gt;= 推理负载&lt;/b&gt;")
-    W("reward&lt;br/&gt;&lt;br/&gt;RM 打分&lt;br/&gt;+ per-token KL 惩罚")
-    A("advantage&lt;br/&gt;&lt;br/&gt;critic 估 V&lt;br/&gt;GAE 算每 token 的 A_t")
-    U("&lt;span style='color:#fff'&gt;update&lt;br/&gt;&lt;br/&gt;PPO loss 更新&lt;br/&gt;actor / critic&lt;br/&gt;&lt;b&gt;= 训练负载&lt;/b&gt;&lt;/span&gt;")
-
-    R --&gt; W --&gt; A --&gt; U
-    U --&gt;|"新一批 prompt"| R
-
-    style R fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px,color:#1a237e
-    style U fill:#3f51b5,stroke:#1a237e,stroke-width:2px,color:#fff</code></pre>
 <p>四段各是什么计算：</p>
 <ul>
 <li><strong>rollout（推理）</strong>：actor 逐 token 自回归生成 response</li>
