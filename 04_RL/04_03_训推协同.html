@@ -1850,7 +1850,7 @@
 \]</div>
 <p>结构对应 <a href="04_02_%E7%AE%97%E6%B3%95%E6%BC%94%E5%8C%96.html">02 篇</a> §3.4 手写 GRPO：<code>torch.no_grad()</code> 块先算两个 logprob，再进 update 循环。</p>
 <p>一个 step 的流程如下。</p>
-<p><img src="../assets/13-rl-sync-async/fig-01.png" alt="GRPO 一个 step 的四个阶段与执行它的模型" width="900" /></p>
+<p><img src="../assets/13-rl-sync-async/fig-01.png" alt="GRPO 一个 step 的四个阶段与执行它的模型" width="820" /></p>
 <p>这张图是一个闭环，数据和权重各走一个方向。以训练中途的第 17 步为例，rollout 用 v17 生成，update 后得到 v18：</p>
 <ul>
 <li><strong>数据：推理 → 训练</strong>。update 要等本批的 rollout、打分、logprob 都收齐</li>
@@ -2059,7 +2059,7 @@
 <li>all-gather 由各 rank 的 FSDP 自己发起，走到同一层时凑齐，driver 不参与</li>
 </ul>
 <p>切法写在方法声明上：计算类（<code>compute_ref_log_prob</code>、<code>update_actor</code>）按 DP 切、拼；初始化类（<code>init_model</code>）原样发给每个 rank。driver 只剩一行调用，换并行配置只改 worker 登记。</p>
-<p><img src="../assets/13-rl-sync-async/fig-02.png" alt="分层控制的三层与一次调用的路径" width="900" /></p>
+<p><img src="../assets/13-rl-sync-async/fig-02.png" alt="分层控制的三层与一次调用的路径" width="800" /></p>
 <p>对应 verl 的名字（<code>single_controller</code> 模块）：</p>
 <ul>
 <li>声明切法：<code>@register(dispatch_mode=Dispatch.DP_COMPUTE_PROTO)</code> / <code>Dispatch.ONE_TO_ALL</code>；新版本改用 <code>make_nd_compute_dataproto_dispatch_fn(mesh_name=...)</code></li>
@@ -2140,7 +2140,7 @@
 <li><strong>分池（disaggregate）</strong>：各一组卡，可以同时执行，异步的前提（§4）。池间要传权重和 trajectory（rollout 的输出：prompt + 生成的 token）</li>
 </ul>
 <p>这和推理侧 PD 混合 / PD 分离是同一个取舍（推理优化 10 篇：prefill 和 decode 拆成两池，代价是池间传 KV）。</p>
-<p><img src="../assets/13-rl-sync-async/fig-03.png" alt="四种放置：谁和谁在同一组卡上" width="900" /></p>
+<p><img src="../assets/13-rl-sync-async/fig-03.png" alt="四种放置：谁和谁在同一组卡上" width="600" /></p>
 <p>本文案例的选择：RM 是外部服务；<code>old_logp</code> 用训练引擎重算、<code>ref_logp</code> 训练侧。</p>
 <p>比较两种放置：同步全共池 8 卡，和异步（rollout 分出）的 8 + 8 卡。</p>
 <p>选哪种，看三笔账：</p>
@@ -2361,7 +2361,7 @@
 <li><strong>分池多出什么传输（§2.4）</strong>：每 step 一次权重同步</li>
 </ul>
 <p>分池是为了同时算，不是为了显存。等不等上一批 update，是 §3 同步与 §4 异步的区别。</p>
-<p><img src="../assets/13-rl-sync-async/fig-04.png" alt="共池与分池的每卡显存和传输" width="900" /></p>
+<p><img src="../assets/13-rl-sync-async/fig-04.png" alt="共池与分池的每卡显存和传输" width="700" /></p>
 <h2 id="3">3. 同步：两道等待</h2>
 <h3 id="31">3.1 理论</h3>
 <p><strong>[什么是同步]</strong></p>
@@ -2408,7 +2408,8 @@
 <li>异步去掉第二道：训推分卡，rollout 用旧几版权重</li>
 </ul>
 <p>先把同步和异步各画一个周期看区别，两张图同一比例尺，标注了周期；看完再分析同步：</p>
-<pre class="mermaid"><code>%%{init: {'theme': 'base', 'themeCSS': '.task{stroke-width:1.2px}.activeCrit0,.activeCrit1,.activeCrit2,.activeCrit3{fill:#FAEEC6;stroke:#B58A26}.taskText.critText0,.taskText.critText1,.taskText.critText2,.taskText.critText3{fill:#FFFFFF !important}.taskText.activeText0,.taskText.activeText1,.taskText.activeText2,.taskText.activeText3{fill:#12416F !important}.taskText.activeCritText0,.taskText.activeCritText1,.taskText.activeCritText2,.taskText.activeCritText3{fill:#6F4E08 !important}.grid .tick line{stroke:#E6E4DE !important}[id$=pv1],[id$=pv3],[id$=nx1],[id$=nx2]{fill:#FFFFFF;stroke:#A5A49D;stroke-dasharray:4 2}[id$=sp1]{transform:scaleY(.08);fill:#A5A49D;stroke:none}rect.vert{fill:#75746E !important;stroke:none !important;y:36px;height:72px}[id$=cy1]{height:1.5px;y:105px;fill:#75746E !important;stroke:none !important}[id$=cy1-text]{transform:translateY(-2px)}[id$=s4-text],[id$=b4-text]{font-size:9px}.taskText[id$=pv1-text],.taskText[id$=pv3-text],.taskText[id$=nx1-text],.taskText[id$=nx2-text]{fill:#5F5E5A !important}.taskText[id$=cy1-text]{fill:#2C2C2A !important}[id$=sw]{fill:none !important;stroke:none !important}.taskText[id$=sw-text]{fill:#5F5E5A !important}', 'gantt': {'displayMode': 'compact', 'topPadding': 40, 'leftPadding': 100, 'rightPadding': 20, 'useWidth': 1050}, 'themeVariables': {'fontFamily': 'Roboto, Noto Sans CJK SC, PingFang SC, Microsoft YaHei, sans-serif', 'textColor': '#2C2C2A', 'titleColor': '#2C2C2A', 'gridColor': '#E6E4DE', 'sectionBkgColor': '#FFFFFF', 'sectionBkgColor2': '#FFFFFF', 'altSectionBkgColor': '#FFFFFF', 'taskBkgColor': '#CDD0F2', 'taskBorderColor': '#747AD6', 'activeTaskBkgColor': '#D3E3F4', 'activeTaskBorderColor': '#3B7DBF', 'critBkgColor': '#747AD6', 'critBorderColor': '#534FBC', 'doneTaskBkgColor': '#EDEBE4', 'doneTaskBorderColor': '#A5A49D', 'taskTextColor': '#2B2D73', 'taskTextDarkColor': '#2C2C2A', 'taskTextLightColor': '#2C2C2A', 'taskTextOutsideColor': '#2C2C2A', 'vertLineColor': '#75746E'}}}%%
+<div class="gantt-wide">
+<pre class="mermaid"><code>%%{init: {'theme': 'base', 'themeCSS': '.task{stroke-width:1.2px}.activeCrit0,.activeCrit1,.activeCrit2,.activeCrit3{fill:#FAEEC6;stroke:#B58A26}.taskText.critText0,.taskText.critText1,.taskText.critText2,.taskText.critText3{fill:#FFFFFF !important}.taskText.activeText0,.taskText.activeText1,.taskText.activeText2,.taskText.activeText3{fill:#12416F !important}.taskText.activeCritText0,.taskText.activeCritText1,.taskText.activeCritText2,.taskText.activeCritText3{fill:#6F4E08 !important}.grid .tick line{stroke:#E6E4DE !important}.grid .tick text{font-size:12px !important}[id$=pv1],[id$=pv3],[id$=nx1],[id$=nx2]{fill:#FFFFFF;stroke:#A5A49D;stroke-dasharray:4 2}[id$=sp1]{transform:scaleY(.08);fill:#A5A49D;stroke:none}rect.vert{fill:#75746E !important;stroke:none !important;y:36px;height:72px}[id$=cy1]{height:1.5px;y:105px;fill:#75746E !important;stroke:none !important}[id$=cy1-text]{transform:translateY(-2px)}[id$=s4-text],[id$=b4-text]{font-size:11px}.taskText[id$=pv1-text],.taskText[id$=pv3-text],.taskText[id$=nx1-text],.taskText[id$=nx2-text]{fill:#5F5E5A !important}.taskText[id$=cy1-text]{fill:#2C2C2A !important}[id$=sw]{fill:none !important;stroke:none !important}.taskText[id$=sw-text]{fill:#5F5E5A !important}', 'gantt': {'displayMode': 'compact', 'fontSize': 14, 'sectionFontSize': 14, 'topPadding': 40, 'leftPadding': 100, 'rightPadding': 60, 'useWidth': 1050}, 'themeVariables': {'fontFamily': 'Roboto, Noto Sans CJK SC, PingFang SC, Microsoft YaHei, sans-serif', 'textColor': '#2C2C2A', 'titleColor': '#2C2C2A', 'gridColor': '#E6E4DE', 'sectionBkgColor': '#FFFFFF', 'sectionBkgColor2': '#FFFFFF', 'altSectionBkgColor': '#FFFFFF', 'taskBkgColor': '#CDD0F2', 'taskBorderColor': '#747AD6', 'activeTaskBkgColor': '#D3E3F4', 'activeTaskBorderColor': '#3B7DBF', 'critBkgColor': '#747AD6', 'critBorderColor': '#534FBC', 'doneTaskBkgColor': '#EDEBE4', 'doneTaskBorderColor': '#A5A49D', 'taskTextColor': '#2B2D73', 'taskTextDarkColor': '#2C2C2A', 'taskTextLightColor': '#2C2C2A', 'taskTextOutsideColor': '#2C2C2A', 'vertLineColor': '#75746E'}}}%%
 gantt
     title 同步 16 卡，推理与训练共卡：一步 1024 条
     dateFormat X
@@ -2428,7 +2429,9 @@ gantt
     ​                           :done, sp1, 0, 140s
     ​                           :vert, ve0, 0, 0s
     ​                           :vert, ve1, after s4, 0s</code></pre>
-<pre class="mermaid"><code>%%{init: {'theme': 'base', 'themeCSS': '.task{stroke-width:1.2px}.activeCrit0,.activeCrit1,.activeCrit2,.activeCrit3{fill:#FAEEC6;stroke:#B58A26}.taskText.critText0,.taskText.critText1,.taskText.critText2,.taskText.critText3{fill:#FFFFFF !important}.taskText.activeText0,.taskText.activeText1,.taskText.activeText2,.taskText.activeText3{fill:#12416F !important}.taskText.activeCritText0,.taskText.activeCritText1,.taskText.activeCritText2,.taskText.activeCritText3{fill:#6F4E08 !important}.grid .tick line{stroke:#E6E4DE !important}[id$=pv1],[id$=pv3],[id$=nx1],[id$=nx2]{fill:#FFFFFF;stroke:#A5A49D;stroke-dasharray:4 2}[id$=sp1]{transform:scaleY(.08);fill:#A5A49D;stroke:none}rect.vert{fill:#75746E !important;stroke:none !important;y:36px;height:120px}[id$=cy1]{height:1.5px;y:153px;fill:#75746E !important;stroke:none !important}[id$=cy1-text]{transform:translateY(-2px)}[id$=s4-text],[id$=b4-text]{font-size:9px}.taskText[id$=pv1-text],.taskText[id$=pv3-text],.taskText[id$=nx1-text],.taskText[id$=nx2-text]{fill:#5F5E5A !important}.taskText[id$=cy1-text]{fill:#2C2C2A !important}[id$=w0],[id$=w1]{fill:none !important;stroke:none !important}.taskText[id$=w0-text],.taskText[id$=w1-text]{fill:#5F5E5A !important}', 'gantt': {'displayMode': 'compact', 'topPadding': 40, 'leftPadding': 100, 'rightPadding': 20, 'useWidth': 1050}, 'themeVariables': {'fontFamily': 'Roboto, Noto Sans CJK SC, PingFang SC, Microsoft YaHei, sans-serif', 'textColor': '#2C2C2A', 'titleColor': '#2C2C2A', 'gridColor': '#E6E4DE', 'sectionBkgColor': '#FFFFFF', 'sectionBkgColor2': '#FFFFFF', 'altSectionBkgColor': '#FFFFFF', 'taskBkgColor': '#CDD0F2', 'taskBorderColor': '#747AD6', 'activeTaskBkgColor': '#D3E3F4', 'activeTaskBorderColor': '#3B7DBF', 'critBkgColor': '#747AD6', 'critBorderColor': '#534FBC', 'doneTaskBkgColor': '#EDEBE4', 'doneTaskBorderColor': '#A5A49D', 'taskTextColor': '#2B2D73', 'taskTextDarkColor': '#2C2C2A', 'taskTextLightColor': '#2C2C2A', 'taskTextOutsideColor': '#2C2C2A', 'vertLineColor': '#75746E'}}}%%
+</div>
+<div class="gantt-wide">
+<pre class="mermaid"><code>%%{init: {'theme': 'base', 'themeCSS': '.task{stroke-width:1.2px}.activeCrit0,.activeCrit1,.activeCrit2,.activeCrit3{fill:#FAEEC6;stroke:#B58A26}.taskText.critText0,.taskText.critText1,.taskText.critText2,.taskText.critText3{fill:#FFFFFF !important}.taskText.activeText0,.taskText.activeText1,.taskText.activeText2,.taskText.activeText3{fill:#12416F !important}.taskText.activeCritText0,.taskText.activeCritText1,.taskText.activeCritText2,.taskText.activeCritText3{fill:#6F4E08 !important}.grid .tick line{stroke:#E6E4DE !important}.grid .tick text{font-size:12px !important}[id$=pv1],[id$=pv3],[id$=nx1],[id$=nx2]{fill:#FFFFFF;stroke:#A5A49D;stroke-dasharray:4 2}[id$=sp1]{transform:scaleY(.08);fill:#A5A49D;stroke:none}rect.vert{fill:#75746E !important;stroke:none !important;y:36px;height:120px}[id$=cy1]{height:1.5px;y:153px;fill:#75746E !important;stroke:none !important}[id$=cy1-text]{transform:translateY(-2px)}[id$=s4-text],[id$=b4-text]{font-size:11px}.taskText[id$=pv1-text],.taskText[id$=pv3-text],.taskText[id$=nx1-text],.taskText[id$=nx2-text]{fill:#5F5E5A !important}.taskText[id$=cy1-text]{fill:#2C2C2A !important}[id$=w0],[id$=w1]{fill:none !important;stroke:none !important}.taskText[id$=w0-text],.taskText[id$=w1-text]{fill:#5F5E5A !important}', 'gantt': {'displayMode': 'compact', 'fontSize': 14, 'sectionFontSize': 14, 'topPadding': 40, 'leftPadding': 100, 'rightPadding': 60, 'useWidth': 1050}, 'themeVariables': {'fontFamily': 'Roboto, Noto Sans CJK SC, PingFang SC, Microsoft YaHei, sans-serif', 'textColor': '#2C2C2A', 'titleColor': '#2C2C2A', 'gridColor': '#E6E4DE', 'sectionBkgColor': '#FFFFFF', 'sectionBkgColor2': '#FFFFFF', 'altSectionBkgColor': '#FFFFFF', 'taskBkgColor': '#CDD0F2', 'taskBorderColor': '#747AD6', 'activeTaskBkgColor': '#D3E3F4', 'activeTaskBorderColor': '#3B7DBF', 'critBkgColor': '#747AD6', 'critBorderColor': '#534FBC', 'doneTaskBkgColor': '#EDEBE4', 'doneTaskBorderColor': '#A5A49D', 'taskTextColor': '#2B2D73', 'taskTextDarkColor': '#2C2C2A', 'taskTextLightColor': '#2C2C2A', 'taskTextOutsideColor': '#2C2C2A', 'vertLineColor': '#75746E'}}}%%
 gantt
     title 异步 16 卡，生成 2 + 判分 6 + 训练 8：两步各 512 条
     dateFormat X
@@ -2457,6 +2460,7 @@ gantt
     ​                           :done, sp1, 0, 140s
     ​                           :vert, ve0, after pv3, 0s
     ​                           :vert, ve1, after b4, 0s</code></pre>
+</div>
 <p>两张图的设置，时长都是实测取整，详细设定见下面两个案例：</p>
 <ul>
 <li><strong>同步</strong>：16 卡共卡，RM 是外部服务；mbs = 512，rollout 一批 1024 条，update 两次</li>
@@ -2493,7 +2497,8 @@ $$</p>
 <li><strong>耗时</strong>：放置一节配比账那张表的 16 卡列</li>
 </ul>
 <p><strong>[一个 step]</strong></p>
-<pre class="mermaid"><code>%%{init: {'theme': 'base', 'themeCSS': '.task{stroke-width:1.2px}.activeCrit0,.activeCrit1,.activeCrit2,.activeCrit3{fill:#FAEEC6;stroke:#B58A26}.taskText.critText0,.taskText.critText1,.taskText.critText2,.taskText.critText3{fill:#FFFFFF !important}.taskText.activeText0,.taskText.activeText1,.taskText.activeText2,.taskText.activeText3{fill:#12416F !important}.taskText.activeCritText0,.taskText.activeCritText1,.taskText.activeCritText2,.taskText.activeCritText3{fill:#6F4E08 !important}.grid .tick line{stroke:#E6E4DE !important}[id$=m1],[id$=s0]{fill:none !important;stroke:none !important}.taskText[id$=m1-text],.taskText[id$=s0-text]{fill:#5F5E5A !important}', 'gantt': {'displayMode': 'compact', 'useWidth': 1050, 'leftPadding': 100, 'rightPadding': 20, 'topPadding': 40}, 'themeVariables': {'fontFamily': 'Roboto, Noto Sans CJK SC, PingFang SC, Microsoft YaHei, sans-serif', 'textColor': '#2C2C2A', 'titleColor': '#2C2C2A', 'gridColor': '#E6E4DE', 'sectionBkgColor': '#FFFFFF', 'sectionBkgColor2': '#FFFFFF', 'altSectionBkgColor': '#FFFFFF', 'taskBkgColor': '#CDD0F2', 'taskBorderColor': '#747AD6', 'activeTaskBkgColor': '#D3E3F4', 'activeTaskBorderColor': '#3B7DBF', 'critBkgColor': '#747AD6', 'critBorderColor': '#534FBC', 'doneTaskBkgColor': '#EDEBE4', 'doneTaskBorderColor': '#A5A49D', 'taskTextColor': '#2B2D73', 'taskTextDarkColor': '#2C2C2A', 'taskTextLightColor': '#2C2C2A', 'taskTextOutsideColor': '#2C2C2A', 'vertLineColor': '#75746E'}}}%%
+<div class="gantt-wide">
+<pre class="mermaid"><code>%%{init: {'theme': 'base', 'themeCSS': '.task{stroke-width:1.2px}.activeCrit0,.activeCrit1,.activeCrit2,.activeCrit3{fill:#FAEEC6;stroke:#B58A26}.taskText.critText0,.taskText.critText1,.taskText.critText2,.taskText.critText3{fill:#FFFFFF !important}.taskText.activeText0,.taskText.activeText1,.taskText.activeText2,.taskText.activeText3{fill:#12416F !important}.taskText.activeCritText0,.taskText.activeCritText1,.taskText.activeCritText2,.taskText.activeCritText3{fill:#6F4E08 !important}.grid .tick line{stroke:#E6E4DE !important}.grid .tick text{font-size:12px !important}[id$=g5-text],[id$=g7-text],[id$=g6-text]{font-size:12px}[id$=m1],[id$=s0]{fill:none !important;stroke:none !important}.taskText[id$=m1-text],.taskText[id$=s0-text]{fill:#5F5E5A !important}', 'gantt': {'displayMode': 'compact', 'fontSize': 14, 'sectionFontSize': 14, 'useWidth': 1050, 'leftPadding': 100, 'rightPadding': 20, 'topPadding': 40}, 'themeVariables': {'fontFamily': 'Roboto, Noto Sans CJK SC, PingFang SC, Microsoft YaHei, sans-serif', 'textColor': '#2C2C2A', 'titleColor': '#2C2C2A', 'gridColor': '#E6E4DE', 'sectionBkgColor': '#FFFFFF', 'sectionBkgColor2': '#FFFFFF', 'altSectionBkgColor': '#FFFFFF', 'taskBkgColor': '#CDD0F2', 'taskBorderColor': '#747AD6', 'activeTaskBkgColor': '#D3E3F4', 'activeTaskBorderColor': '#3B7DBF', 'critBkgColor': '#747AD6', 'critBorderColor': '#534FBC', 'doneTaskBkgColor': '#EDEBE4', 'doneTaskBorderColor': '#A5A49D', 'taskTextColor': '#2B2D73', 'taskTextDarkColor': '#2C2C2A', 'taskTextLightColor': '#2C2C2A', 'taskTextOutsideColor': '#2C2C2A', 'vertLineColor': '#75746E'}}}%%
 gantt
     title 16 卡共池同步，一个 step 102 s
     dateFormat X
@@ -2509,6 +2514,7 @@ gantt
     section 外部打分
     ​                        :done, s0, 0, 15s
     打分 J = 53 s            :active, crit, s1, after s0, 53s</code></pre>
+</div>
 <p><strong>[利用率]</strong></p>
 <p>各阶段的 GPU 利用率差别很大。实测取整，Grafana 30 s 采样，按阶段叠成一步：</p>
 <table>
@@ -2564,7 +2570,7 @@ gantt
 <li><strong>等打分接近 0</strong>：16 张卡都在等外部服务，残余是采样跨了段界</li>
 </ul>
 <p>RL 任务的平均利用率天然低于 SFT：只有 update 那四分之一时间接近满载。要提升，对症的是缩短等待。</p>
-<p><img src="../assets/13-rl-sync-async/fig-05.png" alt="一个 step 内各阶段的 GPU 利用率" width="900" /></p>
+<p><img src="../assets/13-rl-sync-async/fig-05.png" alt="一个 step 内各阶段的 GPU 利用率" width="640" /></p>
 <p><strong>[同步内能做的一：重叠]</strong></p>
 <ul>
 <li><strong>打分与两个前向重叠</strong>：预算 H = 两个前向 18 s + 提前开始的 5 s = 省23 s</li>
@@ -2612,7 +2618,8 @@ gantt
 </tr>
 </tbody>
 </table>
-<pre class="mermaid"><code>%%{init: {'theme': 'base', 'themeCSS': '.task{stroke-width:1.2px}.activeCrit0,.activeCrit1,.activeCrit2,.activeCrit3{fill:#FAEEC6;stroke:#B58A26}.taskText.critText0,.taskText.critText1,.taskText.critText2,.taskText.critText3{fill:#FFFFFF !important}.taskText.activeText0,.taskText.activeText1,.taskText.activeText2,.taskText.activeText3{fill:#12416F !important}.taskText.activeCritText0,.taskText.activeCritText1,.taskText.activeCritText2,.taskText.activeCritText3{fill:#6F4E08 !important}.grid .tick line{stroke:#E6E4DE !important}[id$=a6-text]{font-size:9px}[id$=b6-text]{font-size:9px}[id$=am],[id$=bm],[id$=a0],[id$=b0]{fill:none !important;stroke:none !important}.taskText[id$=am-text],.taskText[id$=bm-text],.taskText[id$=a0-text],.taskText[id$=b0-text]{fill:#5F5E5A !important}', 'gantt': {'displayMode': 'compact', 'useWidth': 1050, 'leftPadding': 100, 'rightPadding': 20, 'topPadding': 40}, 'themeVariables': {'fontFamily': 'Roboto, Noto Sans CJK SC, PingFang SC, Microsoft YaHei, sans-serif', 'textColor': '#2C2C2A', 'titleColor': '#2C2C2A', 'gridColor': '#E6E4DE', 'sectionBkgColor': '#FFFFFF', 'sectionBkgColor2': '#FFFFFF', 'altSectionBkgColor': '#FFFFFF', 'taskBkgColor': '#CDD0F2', 'taskBorderColor': '#747AD6', 'activeTaskBkgColor': '#D3E3F4', 'activeTaskBorderColor': '#3B7DBF', 'critBkgColor': '#747AD6', 'critBorderColor': '#534FBC', 'doneTaskBkgColor': '#EDEBE4', 'doneTaskBorderColor': '#A5A49D', 'taskTextColor': '#2B2D73', 'taskTextDarkColor': '#2C2C2A', 'taskTextLightColor': '#2C2C2A', 'taskTextOutsideColor': '#2C2C2A', 'vertLineColor': '#75746E'}}}%%
+<div class="gantt-wide">
+<pre class="mermaid"><code>%%{init: {'theme': 'base', 'themeCSS': '.task{stroke-width:1.2px}.activeCrit0,.activeCrit1,.activeCrit2,.activeCrit3{fill:#FAEEC6;stroke:#B58A26}.taskText.critText0,.taskText.critText1,.taskText.critText2,.taskText.critText3{fill:#FFFFFF !important}.taskText.activeText0,.taskText.activeText1,.taskText.activeText2,.taskText.activeText3{fill:#12416F !important}.taskText.activeCritText0,.taskText.activeCritText1,.taskText.activeCritText2,.taskText.activeCritText3{fill:#6F4E08 !important}.grid .tick line{stroke:#E6E4DE !important}.grid .tick text{font-size:12px !important}[id$=a6-text],[id$=b6-text]{font-size:9px}[id$=b2-text],[id$=b3-text]{font-size:12px}[id$=am],[id$=bm],[id$=a0],[id$=b0]{fill:none !important;stroke:none !important}.taskText[id$=am-text],.taskText[id$=bm-text],.taskText[id$=a0-text],.taskText[id$=b0-text]{fill:#5F5E5A !important}', 'gantt': {'displayMode': 'compact', 'fontSize': 14, 'sectionFontSize': 14, 'useWidth': 1050, 'leftPadding': 100, 'rightPadding': 20, 'topPadding': 40}, 'themeVariables': {'fontFamily': 'Roboto, Noto Sans CJK SC, PingFang SC, Microsoft YaHei, sans-serif', 'textColor': '#2C2C2A', 'titleColor': '#2C2C2A', 'gridColor': '#E6E4DE', 'sectionBkgColor': '#FFFFFF', 'sectionBkgColor2': '#FFFFFF', 'altSectionBkgColor': '#FFFFFF', 'taskBkgColor': '#CDD0F2', 'taskBorderColor': '#747AD6', 'activeTaskBkgColor': '#D3E3F4', 'activeTaskBorderColor': '#3B7DBF', 'critBkgColor': '#747AD6', 'critBorderColor': '#534FBC', 'doneTaskBkgColor': '#EDEBE4', 'doneTaskBorderColor': '#A5A49D', 'taskTextColor': '#2B2D73', 'taskTextDarkColor': '#2C2C2A', 'taskTextLightColor': '#2C2C2A', 'taskTextOutsideColor': '#2C2C2A', 'vertLineColor': '#75746E'}}}%%
 gantt
     title 同步的卡数：8 卡 135 s，16 卡 102 s
     dateFormat X
@@ -2637,6 +2644,7 @@ gantt
     权重同步                 :done, b6, after b7, 6s
     ​                        :done, b0, 0, 15s
     打分 53 s                :active, crit, bs, after b0, 53s</code></pre>
+</div>
 <ul>
 <li><strong>rollout 几乎不变</strong>：22 → 20 s，decode 是 memory-bound，配比账里说过</li>
 <li><strong>训练侧减半</strong>：两个前向 32 → 18 s，update 53 → 27 s</li>
@@ -2680,7 +2688,7 @@ gantt
 </tbody>
 </table>
 <p>都还在同步里。要填上空位，得让下一批提前进来，还是异步。</p>
-<p><img src="../assets/13-rl-sync-async/fig-06.png" alt="long-CoT 场景下同步 rollout 的长尾与空出的 slot" width="900" /></p>
+<p><img src="../assets/13-rl-sync-async/fig-06.png" alt="long-CoT 场景下同步 rollout 的长尾与空出的 slot" width="600" /></p>
 <h2 id="4">4. 异步：分卡，错开版本</h2>
 <h3 id="41">4.1 理论</h3>
 <p><strong>[两件事]</strong></p>
@@ -2691,7 +2699,8 @@ gantt
 <li><strong>权重跨卡同步</strong>：每 N 次 update 一次，中间 rollout 用旧权重</li>
 </ul>
 <p>画出来就是同步一章开头那张异步图，这里再放一遍，下面的公式对着它看：</p>
-<pre class="mermaid"><code>%%{init: {'theme': 'base', 'themeCSS': '.task{stroke-width:1.2px}.activeCrit0,.activeCrit1,.activeCrit2,.activeCrit3{fill:#FAEEC6;stroke:#B58A26}.taskText.critText0,.taskText.critText1,.taskText.critText2,.taskText.critText3{fill:#FFFFFF !important}.taskText.activeText0,.taskText.activeText1,.taskText.activeText2,.taskText.activeText3{fill:#12416F !important}.taskText.activeCritText0,.taskText.activeCritText1,.taskText.activeCritText2,.taskText.activeCritText3{fill:#6F4E08 !important}.grid .tick line{stroke:#E6E4DE !important}[id$=pv1],[id$=pv3],[id$=nx1],[id$=nx2]{fill:#FFFFFF;stroke:#A5A49D;stroke-dasharray:4 2}[id$=sp1]{transform:scaleY(.08);fill:#A5A49D;stroke:none}rect.vert{fill:#75746E !important;stroke:none !important;y:36px;height:120px}[id$=cy1]{height:1.5px;y:153px;fill:#75746E !important;stroke:none !important}[id$=cy1-text]{transform:translateY(-2px)}[id$=s4-text],[id$=b4-text]{font-size:9px}.taskText[id$=pv1-text],.taskText[id$=pv3-text],.taskText[id$=nx1-text],.taskText[id$=nx2-text]{fill:#5F5E5A !important}.taskText[id$=cy1-text]{fill:#2C2C2A !important}[id$=w0],[id$=w1]{fill:none !important;stroke:none !important}.taskText[id$=w0-text],.taskText[id$=w1-text]{fill:#5F5E5A !important}', 'gantt': {'displayMode': 'compact', 'topPadding': 40, 'leftPadding': 100, 'rightPadding': 20, 'useWidth': 1050}, 'themeVariables': {'fontFamily': 'Roboto, Noto Sans CJK SC, PingFang SC, Microsoft YaHei, sans-serif', 'textColor': '#2C2C2A', 'titleColor': '#2C2C2A', 'gridColor': '#E6E4DE', 'sectionBkgColor': '#FFFFFF', 'sectionBkgColor2': '#FFFFFF', 'altSectionBkgColor': '#FFFFFF', 'taskBkgColor': '#CDD0F2', 'taskBorderColor': '#747AD6', 'activeTaskBkgColor': '#D3E3F4', 'activeTaskBorderColor': '#3B7DBF', 'critBkgColor': '#747AD6', 'critBorderColor': '#534FBC', 'doneTaskBkgColor': '#EDEBE4', 'doneTaskBorderColor': '#A5A49D', 'taskTextColor': '#2B2D73', 'taskTextDarkColor': '#2C2C2A', 'taskTextLightColor': '#2C2C2A', 'taskTextOutsideColor': '#2C2C2A', 'vertLineColor': '#75746E'}}}%%
+<div class="gantt-wide">
+<pre class="mermaid"><code>%%{init: {'theme': 'base', 'themeCSS': '.task{stroke-width:1.2px}.activeCrit0,.activeCrit1,.activeCrit2,.activeCrit3{fill:#FAEEC6;stroke:#B58A26}.taskText.critText0,.taskText.critText1,.taskText.critText2,.taskText.critText3{fill:#FFFFFF !important}.taskText.activeText0,.taskText.activeText1,.taskText.activeText2,.taskText.activeText3{fill:#12416F !important}.taskText.activeCritText0,.taskText.activeCritText1,.taskText.activeCritText2,.taskText.activeCritText3{fill:#6F4E08 !important}.grid .tick line{stroke:#E6E4DE !important}.grid .tick text{font-size:12px !important}[id$=pv1],[id$=pv3],[id$=nx1],[id$=nx2]{fill:#FFFFFF;stroke:#A5A49D;stroke-dasharray:4 2}[id$=sp1]{transform:scaleY(.08);fill:#A5A49D;stroke:none}rect.vert{fill:#75746E !important;stroke:none !important;y:36px;height:120px}[id$=cy1]{height:1.5px;y:153px;fill:#75746E !important;stroke:none !important}[id$=cy1-text]{transform:translateY(-2px)}[id$=s4-text],[id$=b4-text]{font-size:11px}.taskText[id$=pv1-text],.taskText[id$=pv3-text],.taskText[id$=nx1-text],.taskText[id$=nx2-text]{fill:#5F5E5A !important}.taskText[id$=cy1-text]{fill:#2C2C2A !important}[id$=w0],[id$=w1]{fill:none !important;stroke:none !important}.taskText[id$=w0-text],.taskText[id$=w1-text]{fill:#5F5E5A !important}', 'gantt': {'displayMode': 'compact', 'fontSize': 14, 'sectionFontSize': 14, 'topPadding': 40, 'leftPadding': 100, 'rightPadding': 60, 'useWidth': 1050}, 'themeVariables': {'fontFamily': 'Roboto, Noto Sans CJK SC, PingFang SC, Microsoft YaHei, sans-serif', 'textColor': '#2C2C2A', 'titleColor': '#2C2C2A', 'gridColor': '#E6E4DE', 'sectionBkgColor': '#FFFFFF', 'sectionBkgColor2': '#FFFFFF', 'altSectionBkgColor': '#FFFFFF', 'taskBkgColor': '#CDD0F2', 'taskBorderColor': '#747AD6', 'activeTaskBkgColor': '#D3E3F4', 'activeTaskBorderColor': '#3B7DBF', 'critBkgColor': '#747AD6', 'critBorderColor': '#534FBC', 'doneTaskBkgColor': '#EDEBE4', 'doneTaskBorderColor': '#A5A49D', 'taskTextColor': '#2B2D73', 'taskTextDarkColor': '#2C2C2A', 'taskTextLightColor': '#2C2C2A', 'taskTextOutsideColor': '#2C2C2A', 'vertLineColor': '#75746E'}}}%%
 gantt
     title 异步 16 卡，生成 2 + 判分 6 + 训练 8：两步各 512 条
     dateFormat X
@@ -2720,6 +2729,7 @@ gantt
     ​                           :done, sp1, 0, 140s
     ​                           :vert, ve0, after pv3, 0s
     ​                           :vert, ve1, after b4, 0s</code></pre>
+</div>
 <p><strong>[off policy 程度]</strong></p>
 <p>两个设置定 Δv（04 篇 用同一套记法）：</p>
 <ul>
@@ -2799,7 +2809,8 @@ H_a = L \cdot T_{\text{async}} + T_{\text{old}} + T_{\text{ref}}
 <li><strong>判分搬进任务</strong>：生成 8 卡太浪费，分 6 卡给内部判分；FP8 格式错多，改 BF16</li>
 </ul>
 <p><strong>[一个窗口]</strong></p>
-<pre class="mermaid"><code>%%{init: {'theme': 'base', 'themeCSS': '.task{stroke-width:1.2px}.activeCrit0,.activeCrit1,.activeCrit2,.activeCrit3{fill:#FAEEC6;stroke:#B58A26}.taskText.critText0,.taskText.critText1,.taskText.critText2,.taskText.critText3{fill:#FFFFFF !important}.taskText.activeText0,.taskText.activeText1,.taskText.activeText2,.taskText.activeText3{fill:#12416F !important}.taskText.activeCritText0,.taskText.activeCritText1,.taskText.activeCritText2,.taskText.activeCritText3{fill:#6F4E08 !important}.grid .tick line{stroke:#E6E4DE !important}[id$=tm1],[id$=tm2]{fill:none !important;stroke:none !important}.taskText[id$=tm1-text],.taskText[id$=tm2-text]{fill:#5F5E5A !important}', 'gantt': {'displayMode': 'compact', 'useWidth': 1050, 'leftPadding': 100, 'rightPadding': 20, 'topPadding': 40}, 'themeVariables': {'fontFamily': 'Roboto, Noto Sans CJK SC, PingFang SC, Microsoft YaHei, sans-serif', 'textColor': '#2C2C2A', 'titleColor': '#2C2C2A', 'gridColor': '#E6E4DE', 'sectionBkgColor': '#FFFFFF', 'sectionBkgColor2': '#FFFFFF', 'altSectionBkgColor': '#FFFFFF', 'taskBkgColor': '#CDD0F2', 'taskBorderColor': '#747AD6', 'activeTaskBkgColor': '#D3E3F4', 'activeTaskBorderColor': '#3B7DBF', 'critBkgColor': '#747AD6', 'critBorderColor': '#534FBC', 'doneTaskBkgColor': '#EDEBE4', 'doneTaskBorderColor': '#A5A49D', 'taskTextColor': '#2B2D73', 'taskTextDarkColor': '#2C2C2A', 'taskTextLightColor': '#2C2C2A', 'taskTextOutsideColor': '#2C2C2A', 'vertLineColor': '#75746E'}}}%%
+<div class="gantt-wide">
+<pre class="mermaid"><code>%%{init: {'theme': 'base', 'themeCSS': '.task{stroke-width:1.2px}.activeCrit0,.activeCrit1,.activeCrit2,.activeCrit3{fill:#FAEEC6;stroke:#B58A26}.taskText.critText0,.taskText.critText1,.taskText.critText2,.taskText.critText3{fill:#FFFFFF !important}.taskText.activeText0,.taskText.activeText1,.taskText.activeText2,.taskText.activeText3{fill:#12416F !important}.taskText.activeCritText0,.taskText.activeCritText1,.taskText.activeCritText2,.taskText.activeCritText3{fill:#6F4E08 !important}.grid .tick line{stroke:#E6E4DE !important}.grid .tick text{font-size:12px !important}[id$=tm1],[id$=tm2]{fill:none !important;stroke:none !important}.taskText[id$=tm1-text],.taskText[id$=tm2-text]{fill:#5F5E5A !important}', 'gantt': {'displayMode': 'compact', 'fontSize': 14, 'sectionFontSize': 14, 'useWidth': 1050, 'leftPadding': 100, 'rightPadding': 20, 'topPadding': 40}, 'themeVariables': {'fontFamily': 'Roboto, Noto Sans CJK SC, PingFang SC, Microsoft YaHei, sans-serif', 'textColor': '#2C2C2A', 'titleColor': '#2C2C2A', 'gridColor': '#E6E4DE', 'sectionBkgColor': '#FFFFFF', 'sectionBkgColor2': '#FFFFFF', 'altSectionBkgColor': '#FFFFFF', 'taskBkgColor': '#CDD0F2', 'taskBorderColor': '#747AD6', 'activeTaskBkgColor': '#D3E3F4', 'activeTaskBorderColor': '#3B7DBF', 'critBkgColor': '#747AD6', 'critBorderColor': '#534FBC', 'doneTaskBkgColor': '#EDEBE4', 'doneTaskBorderColor': '#A5A49D', 'taskTextColor': '#2B2D73', 'taskTextDarkColor': '#2C2C2A', 'taskTextLightColor': '#2C2C2A', 'taskTextOutsideColor': '#2C2C2A', 'vertLineColor': '#75746E'}}}%%
 gantt
     title 异步 16 卡，生成 2 + 判分 6 + 训练 8：两步 1024 条，92 s
     dateFormat X
@@ -2819,6 +2830,7 @@ gantt
     打分 第 k 批，上一步已开始 :active, crit, j0, 0, 18s
     打分 第 k+1 批           :active, crit, j1, 0, 61s
     打分 第 k+2 批           :active, crit, j2, after t2, 41s</code></pre>
+</div>
 <p>读图：</p>
 <ul>
 <li><strong>训练卡几乎不停</strong>：两步 92 s，实测 93 s</li>
@@ -2922,7 +2934,8 @@ gantt
 <p>异步只比 16 卡同步快 10%，但账不一样：同步的打分在外部，另用了 10 张 H100；异步把判分收进 16 卡里，占 6 张，训练卡从 16 减到 8，两个前向 + update 从 45 s 涨到 83 s，等打分省下的 27 s 几乎被吃掉。训练卡是地板，下一步是把它加回去。</p>
 <p><strong>[加卡：24 卡]</strong></p>
 <p>训练卡 8 → 16，其余不变。先看判分侧没改时的窗口：</p>
-<pre class="mermaid"><code>%%{init: {'theme': 'base', 'themeCSS': '.task{stroke-width:1.2px}.activeCrit0,.activeCrit1,.activeCrit2,.activeCrit3{fill:#FAEEC6;stroke:#B58A26}.taskText.critText0,.taskText.critText1,.taskText.critText2,.taskText.critText3{fill:#FFFFFF !important}.taskText.activeText0,.taskText.activeText1,.taskText.activeText2,.taskText.activeText3{fill:#12416F !important}.taskText.activeCritText0,.taskText.activeCritText1,.taskText.activeCritText2,.taskText.activeCritText3{fill:#6F4E08 !important}.grid .tick line{stroke:#E6E4DE !important}[id$=tm1],[id$=tm2]{fill:none !important;stroke:none !important}.taskText[id$=tm1-text],.taskText[id$=tm2-text]{fill:#5F5E5A !important}', 'gantt': {'displayMode': 'compact', 'useWidth': 1050, 'leftPadding': 100, 'rightPadding': 20, 'topPadding': 40}, 'themeVariables': {'fontFamily': 'Roboto, Noto Sans CJK SC, PingFang SC, Microsoft YaHei, sans-serif', 'textColor': '#2C2C2A', 'titleColor': '#2C2C2A', 'gridColor': '#E6E4DE', 'sectionBkgColor': '#FFFFFF', 'sectionBkgColor2': '#FFFFFF', 'altSectionBkgColor': '#FFFFFF', 'taskBkgColor': '#CDD0F2', 'taskBorderColor': '#747AD6', 'activeTaskBkgColor': '#D3E3F4', 'activeTaskBorderColor': '#3B7DBF', 'critBkgColor': '#747AD6', 'critBorderColor': '#534FBC', 'doneTaskBkgColor': '#EDEBE4', 'doneTaskBorderColor': '#A5A49D', 'taskTextColor': '#2B2D73', 'taskTextDarkColor': '#2C2C2A', 'taskTextLightColor': '#2C2C2A', 'taskTextOutsideColor': '#2C2C2A', 'vertLineColor': '#75746E'}}}%%
+<div class="gantt-wide">
+<pre class="mermaid"><code>%%{init: {'theme': 'base', 'themeCSS': '.task{stroke-width:1.2px}.activeCrit0,.activeCrit1,.activeCrit2,.activeCrit3{fill:#FAEEC6;stroke:#B58A26}.taskText.critText0,.taskText.critText1,.taskText.critText2,.taskText.critText3{fill:#FFFFFF !important}.taskText.activeText0,.taskText.activeText1,.taskText.activeText2,.taskText.activeText3{fill:#12416F !important}.taskText.activeCritText0,.taskText.activeCritText1,.taskText.activeCritText2,.taskText.activeCritText3{fill:#6F4E08 !important}.grid .tick line{stroke:#E6E4DE !important}.grid .tick text{font-size:12px !important}[id$=tm1],[id$=tm2]{fill:none !important;stroke:none !important}.taskText[id$=tm1-text],.taskText[id$=tm2-text]{fill:#5F5E5A !important}', 'gantt': {'displayMode': 'compact', 'fontSize': 14, 'sectionFontSize': 14, 'useWidth': 1050, 'leftPadding': 100, 'rightPadding': 20, 'topPadding': 40}, 'themeVariables': {'fontFamily': 'Roboto, Noto Sans CJK SC, PingFang SC, Microsoft YaHei, sans-serif', 'textColor': '#2C2C2A', 'titleColor': '#2C2C2A', 'gridColor': '#E6E4DE', 'sectionBkgColor': '#FFFFFF', 'sectionBkgColor2': '#FFFFFF', 'altSectionBkgColor': '#FFFFFF', 'taskBkgColor': '#CDD0F2', 'taskBorderColor': '#747AD6', 'activeTaskBkgColor': '#D3E3F4', 'activeTaskBorderColor': '#3B7DBF', 'critBkgColor': '#747AD6', 'critBorderColor': '#534FBC', 'doneTaskBkgColor': '#EDEBE4', 'doneTaskBorderColor': '#A5A49D', 'taskTextColor': '#2B2D73', 'taskTextDarkColor': '#2C2C2A', 'taskTextLightColor': '#2C2C2A', 'taskTextOutsideColor': '#2C2C2A', 'vertLineColor': '#75746E'}}}%%
 gantt
     title 异步 24 卡，生成 2 + 判分 6 + 训练 16，判分优化前：两步 1024 条，76 s
     dateFormat X
@@ -2942,6 +2955,7 @@ gantt
     打分 第 k 批，上一步已开始 :active, crit, j0, 0, 20s
     打分 第 k+1 批           :active, crit, j1, 0, 55s
     打分 第 k+2 批           :active, crit, j2, after t2, 43s</code></pre>
+</div>
 <ul>
 <li><strong>训练侧硬约束变短</strong>：两个前向 + update 83 → 48 s</li>
 <li><strong>打分成了元凶</strong>：预算 62 → 48 s，拖尾批 60–90 s 藏不住，等打分 3 → 21 s；1024 条只从 93 降到 76 s</li>
@@ -2983,18 +2997,7 @@ gantt
 </tbody>
 </table>
 <p><strong>[流式 queue]</strong></p>
-<pre class="mermaid"><code>%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Roboto, Noto Sans CJK SC, PingFang SC, Microsoft YaHei, sans-serif', 'primaryColor': '#EDEBE4', 'primaryBorderColor': '#A5A49D', 'primaryTextColor': '#2C2C2A', 'lineColor': '#75746E', 'edgeLabelBackground': '#FFFFFF', 'fontSize': '13px'}}}%%
-flowchart LR
-    G("rollout，不停&lt;br/&gt;最多落后 K 版就停") --&gt; J("打分") --&gt; B("凑够一批&lt;br/&gt;几版权重混着") --&gt; T("update")
-    T --&gt;|"新权重"| G
-    classDef infer fill:#D3E3F4,stroke:#3B7DBF,color:#12416F
-    classDef score fill:#FAEEC6,stroke:#B58A26,color:#6F4E08
-    classDef data fill:#EDEBE4,stroke:#A5A49D,color:#2C2C2A
-    classDef train fill:#747AD6,stroke:#747AD6,color:#FFFFFF
-    class G infer
-    class J score
-    class B data
-    class T train</code></pre>
+<p><img src="../assets/13-rl-sync-async/fig-07.png" alt="流式 queue：rollout 不停、打完分当场凑批、每 N 次 update 推新权重" width="720" /></p>
 <ul>
 <li><strong>rollout 不按批</strong>：一直产出，落后训练到设定的版本数才停</li>
 <li><strong>打完分当场凑batch</strong>：凑够一批就送去 update，一批里混着几版权重生成的</li>
@@ -3004,7 +3007,8 @@ flowchart LR
 <p><strong>[完全异步]</strong></p>
 <p>判据：一条 response 里的 token 是否由不同版本的权重生成。</p>
 <p>案例里不会，一条写完才换权重；完全异步里新权重到了就切：</p>
-<pre class="mermaid"><code>%%{init: {'theme': 'base', 'themeCSS': '.task{stroke-width:1.2px}.activeCrit0,.activeCrit1,.activeCrit2,.activeCrit3{fill:#FAEEC6;stroke:#B58A26}.taskText.critText0,.taskText.critText1,.taskText.critText2,.taskText.critText3{fill:#FFFFFF !important}.taskText.activeText0,.taskText.activeText1,.taskText.activeText2,.taskText.activeText3{fill:#12416F !important}.taskText.activeCritText0,.taskText.activeCritText1,.taskText.activeCritText2,.taskText.activeCritText3{fill:#6F4E08 !important}.grid .tick line{stroke:#E6E4DE !important}.grid .tick text{display:none}[id$=c1],[id$=i1]{fill:#E9EDF4;stroke:#6F8FB8}[id$=i3]{fill:#B5C7DF;stroke:#6F8FB8}[id$=i5]{fill:#195FA5;stroke:#195FA5}.taskText[id$=c1-text],.taskText[id$=i1-text],.taskText[id$=i3-text]{fill:#2C2C2A !important}', 'gantt': {'displayMode': 'compact', 'useWidth': 1050, 'leftPadding': 130, 'rightPadding': 20, 'topPadding': 40}, 'themeVariables': {'fontFamily': 'Roboto, Noto Sans CJK SC, PingFang SC, Microsoft YaHei, sans-serif', 'textColor': '#2C2C2A', 'titleColor': '#2C2C2A', 'gridColor': '#E6E4DE', 'sectionBkgColor': '#FFFFFF', 'sectionBkgColor2': '#FFFFFF', 'altSectionBkgColor': '#FFFFFF', 'taskBkgColor': '#CDD0F2', 'taskBorderColor': '#747AD6', 'activeTaskBkgColor': '#D3E3F4', 'activeTaskBorderColor': '#3B7DBF', 'critBkgColor': '#747AD6', 'critBorderColor': '#534FBC', 'doneTaskBkgColor': '#EDEBE4', 'doneTaskBorderColor': '#A5A49D', 'taskTextColor': '#2B2D73', 'taskTextDarkColor': '#2C2C2A', 'taskTextLightColor': '#2C2C2A', 'taskTextOutsideColor': '#2C2C2A', 'vertLineColor': '#75746E'}}}%%
+<div class="gantt-wide">
+<pre class="mermaid"><code>%%{init: {'theme': 'base', 'themeCSS': '.task{stroke-width:1.2px}.activeCrit0,.activeCrit1,.activeCrit2,.activeCrit3{fill:#FAEEC6;stroke:#B58A26}.taskText.critText0,.taskText.critText1,.taskText.critText2,.taskText.critText3{fill:#FFFFFF !important}.taskText.activeText0,.taskText.activeText1,.taskText.activeText2,.taskText.activeText3{fill:#12416F !important}.taskText.activeCritText0,.taskText.activeCritText1,.taskText.activeCritText2,.taskText.activeCritText3{fill:#6F4E08 !important}.grid .tick line{stroke:#E6E4DE !important}.grid .tick text{font-size:12px !important}.grid .tick text{display:none}[id$=c1],[id$=i1]{fill:#E9EDF4;stroke:#6F8FB8}[id$=i3]{fill:#B5C7DF;stroke:#6F8FB8}[id$=i5]{fill:#195FA5;stroke:#195FA5}.taskText[id$=c1-text],.taskText[id$=i1-text],.taskText[id$=i3-text]{fill:#2C2C2A !important}', 'gantt': {'displayMode': 'compact', 'fontSize': 14, 'sectionFontSize': 14, 'useWidth': 1050, 'leftPadding': 130, 'rightPadding': 20, 'topPadding': 40}, 'themeVariables': {'fontFamily': 'Roboto, Noto Sans CJK SC, PingFang SC, Microsoft YaHei, sans-serif', 'textColor': '#2C2C2A', 'titleColor': '#2C2C2A', 'gridColor': '#E6E4DE', 'sectionBkgColor': '#FFFFFF', 'sectionBkgColor2': '#FFFFFF', 'altSectionBkgColor': '#FFFFFF', 'taskBkgColor': '#CDD0F2', 'taskBorderColor': '#747AD6', 'activeTaskBkgColor': '#D3E3F4', 'activeTaskBorderColor': '#3B7DBF', 'critBkgColor': '#747AD6', 'critBorderColor': '#534FBC', 'doneTaskBkgColor': '#EDEBE4', 'doneTaskBorderColor': '#A5A49D', 'taskTextColor': '#2B2D73', 'taskTextDarkColor': '#2C2C2A', 'taskTextLightColor': '#2C2C2A', 'taskTextOutsideColor': '#2C2C2A', 'vertLineColor': '#75746E'}}}%%
 gantt
     title 一条长 response 的 token 各由哪版权重生成（横轴：token 位置）
     dateFormat X
@@ -3015,6 +3019,7 @@ gantt
     v17                       :active, i1, 0, 35s
     v18，新权重到了就切       :i3, after i1, 35s
     v19                       :crit, i5, after i3, 30s</code></pre>
+</div>
 <ul>
 <li><strong>可中断生成</strong>（<a href="https://arxiv.org/abs/2505.24298">AReaL</a>）：打断在途的 response，重 prefill，换新权重接着写</li>
 <li><strong>变体</strong>（<a href="https://arxiv.org/abs/2501.12599">Kimi K1.5</a> partial rollout）：不等新权重，按额度切，每轮 rollout 时间封顶。两个超参：<ul>
