@@ -231,6 +231,22 @@
   text-align: center !important;
 }
 
+/* --------- 甘特泳道图 (RL 03)：时间轴比流程图宽，桌面占满正文列；手机横向滚动 --------- */
+.md-typeset .gantt-wide .mermaid,
+.gantt-wide .mermaid {
+  max-width: 100% !important;
+}
+@media screen and (max-width: 44.9375em) {
+  .md-typeset .gantt-wide {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .md-typeset .gantt-wide .mermaid,
+  .gantt-wide .mermaid {
+    min-width: 800px;
+  }
+}
+
 /* --------- Table 强制居中 (v4) --------- */
 /* Material 把 table 包在 .md-typeset__scrollwrap 里 (横向滚动响应式), 用 flex 居中里面的 table */
 .md-typeset__scrollwrap {
