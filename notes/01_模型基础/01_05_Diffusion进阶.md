@@ -54,7 +54,7 @@ SD1.x / SDXL 用的是 **U-Net**，原是 2015 年 Ronneberger 等人做医学�
 
 > 只想懂 FLUX 一系的话，SD U-Net 的细节（§1.2–§1.3）可以跳过
 
-### 1.1 原始 U-Net：纯 CNN Encoder Decoder + skip
+### 1.1 原始 U-Net
 
 题外话：这是主包本科毕设时候的模型。死去的记忆它袭击我
 
@@ -157,9 +157,9 @@ Transformer Block 在 SD 源码中叫 **Spatial Transformer**。"Spatial" 指它
 - **Up Block 比 Down Block 多一个 ResNet**（3 vs 2）：因为 skip connection concat 后通道翻倍，需要多一层来融合。
 - **Level 4 没有 Transformer Block**：在最低分辨率（`8×8`）不接文本 cross-attention。
 
-### 1.4 短板：为什么 2023 起要换掉
+### 1.4 短板
 
-SD1.x / SDXL 用得住，但 U-Net 有三个短板：
+SD1.x / SDXL 用得住，但 U-Net 有三个短板，2023 起被换掉：
 
 - **CNN 归纳偏置在 latent 上收益小**：局部性 / 平移等变这些先验是为像素设计的，latent 已是压缩过的特征
 - **结构不规则**：每层多少个 ResNet、多少个 Transformer、哪层有 cross-attn 哪层没有，全是启发式调参。没有 Transformer 那种干净的 scaling law（加 $N$ 层就是加 $N$ 层）
@@ -173,7 +173,7 @@ DiT (2023) 就是这个替换（§3.1）：整个 U-Net 换成标准 Transformer
 
 > Latent / Stable Diffusion 是使用 U-Net 作为 backbone 的代表模型线
 
-上篇 §3.2 结尾 note 点过：**直接在 512×512×3 的像素空间做 diffusion 成本过高**。U-Net 每一步处理几十万维张量，T 步下来训练和推理成本都难以接受。
+**直接在 512×512×3 的像素空间做 diffusion 成本过高**。U-Net 每一步处理几十万维张量，T 步下来训练和推理成本都难以接受。
 
 BasicDDIM + U-Net 到产品级文生图，缺三样东西，对应 §2.1–§2.3 三个增量：
 
@@ -185,21 +185,19 @@ BasicDDIM + U-Net 到产品级文生图，缺三样东西，对应 §2.1–§2.3
 
 Latent Diffusion（Rombach et al., 2021.12，开源后即 **Stable Diffusion**）的第一个增量是一条通用的省算力思路：真正有用的信号是低维的，就**到低维空间里做运算**。
 
-- LoRA 是这个思路的权重版（权重更新的有效秩很低，用低秩子空间 $A\cdot B$ 替代全秩 $\Delta W$），用的是简单 `nn.Linear`
-
-- LDM 则是空间版：图像语义远比像素维度低，把 diffusion 从 `512×512×3` 的像素搬到 `64×64×4` 的 VAE latent 里做（encoder 是卷积网络：ResNet block + stride-2 Conv 下采样 ×3，瓶颈处带 attention）
-
 ### 2.1 搬进 VAE latent 空间
 
 上篇 §2.3 的 VAE 在这里再次用上。但不用它一步生成，只用 encoder/decoder 做「像素 ↔ 低维特征」的压缩和还原，生成交给 diffusion。
 
 <img src="../assets/10-diffusion-2/fig-09.png" alt="image-20260711114650024" style="zoom:40%;" />
 
-- **diffusion 过程整个搬到 latent 上**：本质是特征降维，数据维度降到约 1/48，计算量大幅下降。
+- **diffusion 过程整个搬到 latent 上**：LDM 是这条思路的空间版。图像语义远比像素维度低，把 diffusion 从 `512×512×3` 的像素搬到 `64×64×4` 的 VAE latent 里做。本质是特征降维，数据维度降到约 1/48，计算量大幅下降。
 - **职责分离**：VAE 负责像素细节的压缩和还原（预训练后冻结）；diffusion 只在 latent 层面建模分布。高频纹理交给 VAE decoder。
-- **这个 VAE 不是上篇的 vanilla VAE**：loss 有额外改造（重建更清晰、保住高频纹理），结构细节本篇略过。
+- **这个 VAE 不是上篇的 vanilla VAE**：encoder 是卷积网络（ResNet block + stride-2 Conv 下采样 ×3，瓶颈处带 attention）；loss 有额外改造（重建更清晰、保住高频纹理），其余结构细节本篇略过。
 
 这是 SD 能在消费级显卡上跑文生图的直接原因。
+
+> LoRA 是这个思路的权重版（权重更新的有效秩很低，用低秩子空间 $A\cdot B$ 替代全秩 $\Delta W$），用的是简单 `nn.Linear`
 
 ### 2.2 文本条件：cross-attention
 
@@ -339,9 +337,7 @@ $\epsilon_\theta$ 内部（U-Net vs Transformer）和上篇 §4.1 / §5.2 的训
 
 SD3 / FLUX 这一代在 backbone 之外还换了训练目标，那是 §4。
 
-### 3.1 DiT：换成 Transformer + adaLN-Zero
-
-> 注意：这里的 $c$ 不是文本 prompt，是类别标签
+### 3.1 DiT
 
 DiT (Peebles & Xie, 2023) 把噪声网络 $\epsilon_\theta$ 整个换成标准 Transformer。生成模型的工程栈从此和 LLM 对齐，[01_01_Transformer.md](01_01_Transformer.md) 和 [01_03_VLM.md](01_03_VLM.md) 里的 Transformer 和 ViT 几乎直接复用。
 
@@ -409,7 +405,7 @@ class DiTBlock(nn.Module):
         return x
 ```
 
-### 3.2 MMDiT：拼接 + 联合 self-attn
+### 3.2 MMDiT
 
 本节只讲一件事：**文本 prompt $c$ 怎么进 Transformer backbone**。（§3.1 DiT 的 $c$ 还是类别标签）
 
@@ -454,7 +450,7 @@ backbone 的演化到 MMDiT 为止：**图像生成和 VLM 收敛到同一架构
 
 
 
-## 4. Flow Matching: 训练目标 ε → v（SD3 / FLUX）
+## 4. Flow Matching
 
 > 积分路径从曲线换成直线（导数恒定了）
 
@@ -462,7 +458,7 @@ backbone 的演化到 MMDiT 为止：**图像生成和 VLM 收敛到同一架构
 
 到这里 SD3 / FLUX 的三块全齐了：latent + 文本 + CFG（§2，从上一代继承）、MMDiT backbone（§3.2）、flow matching 训练目标（本节）。
 
-### 4.1 Flow Matching：把弯路径换成直线
+### 4.1 直线路径
 
 **[问题：DDPM 的路径是弯的]**
 
@@ -557,7 +553,7 @@ def sample_fm(model, vae, text_enc, prompt, shape, steps=20, w=7.5):
 
 
 
-## 5. 代际对照：SD1.x / SDXL / SD3 / FLUX
+## 5. 代际对照
 
 从 SD (Stable Diffusion) 第一代到当前 SOTA，backbone (§1 → §3) 和训练目标 (§4) 两个维度映射到具体产品：
 
