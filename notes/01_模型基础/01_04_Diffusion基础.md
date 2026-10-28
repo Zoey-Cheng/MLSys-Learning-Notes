@@ -15,7 +15,7 @@ title: "04-Diffusion (上): 从 VAE 到 DDPM / DDIM"
 
 前几篇讲的都是 **LLM / VLM 风格的自回归生成**——离散 token 依次生成、词表上采 next token。但图像是连续、高维信号，像素间没有天然先后顺序；因此图像生成走另一条路——**diffusion 系列**。
 
-**Diffusion 的整体逻辑** 可以一句话压缩：生成模型本质是「学到样本背后的分布、再采样新样本」。
+**Diffusion 的整体逻辑** 可以一句话压缩：把「从噪声一步生成图」拆成多步去噪，网络每步只预测噪声。
 
 Diffusion 的实现分两层，本篇只做框架层：
 
@@ -146,41 +146,6 @@ $$
 
 这两个都可以表示 ELBO 的定义，由于第一行算不动，所以用第二行实现具体计算。
 
-**[VAE 训练：调两组参数，一起最大化 ELBO]**
-
-- **$\theta$**（VAE 的 decoder / DDPM 的 noise predictor）：
-  - 直观：**两条线一起抬高**——$\theta$ 同时影响 $\log p$ 和 ELBO，但只有 ELBO 可算，所以调 $\theta$ 顶 ELBO、$\log p$ 跟着升
-  - 实义：让生成的 $\hat x$ 贴近真实数据
-- **$\phi$**（VAE 的 encoder）：
-  - 直观：**只贴下面那条**——$\log p$ 不依赖 $\phi$，$\phi$ 只能动 ELBO
-  - 实义：让 ELBO 贴近 $\log p$——差距越小，优化 ELBO 越接近真正想最大化的 $\log p$
-
-**[VAE 推理：只用 decoder]**
-
-- **由 $z$ 推 $\hat x$**：
-
-  - $z$ 是从 prior $\mathcal N(0, I)$ 采的**一个具体向量**（latent 空间中的一个点），decoder 把它映射成一张图  $\hat x$
-  
-- **$\hat x$ 是什么？** 
-
-  - 就是由参数推出的一张图（tensor）——不是 ELBO，不是数值
-
-  - ELBO / KL 都是用来算训练 loss的，推理时不算。decoder 之所以能出像样的图，是因为训练时 ELBO 把参数 $\theta^*$ 调好了
-
-- **文字 prompt 怎么进？**
-
-  - 纯 VAE 不带条件
-  - **文生图**：decoder 多加一个条件 $c$（文本 embedding，CLIP / T5 编码出来）
-
-  ```
-  text ── Text Encoder──► c ─┐
-                             ├──► Decoder(z, c) ──► x̂
-  z ~ N(0, I) ───────────────┘
-  ```
-
-  具体怎么注入条件（cross-attention / adaLN）见下篇。
-
-
 
 
 ### 1.5 蒙特卡洛估计
@@ -264,13 +229,7 @@ VAE 沿用 AE "压缩 → 还原" 的两段结构，加几处改造让 latent �
 
 **[Loss 部分]**（数学推导，可跳过）
 
-> - **loss 用 ELBO**：理想 loss 是负对数似然 $-\log p(x)$——对应 §1.2 MLE 的目标"模型给真实数据打的概率越高越好"（最大化 $\log p(x)$ 等价于最小化 $-\log p(x)$）。但它**算不动**——$\log p(x) = \log \int p(x|z)p(z)\,dz$，要对所有 latent $z$ 积分，高维下没闭式。
->
->   **解决思路**（完整推导见 [§1.4 ELBO 变分下界](#14-elbo-变分下界-)）：找一个可算的下界 ELBO，max ELBO 等于把 $\log p(x)$ 顶上去。引入 VAE encoder $q_\phi(z|x)$，ELBO 化成可算的两项：
->
-> $$
-> \text{ELBO}(\theta, \phi;\, x) = \underbrace{\mathbb E_{q_\phi(z|x)}[\log p_\theta(x|z)]}_{\text{重建项} \approx \text{MSE}(x, \hat x)} - \underbrace{D_{\mathrm{KL}}\!\big(q_\phi(z|x) \,\|\, p(z)\big)}_{\text{KL 正则项: 拉向 } \mathcal N(0,I)}
-> $$
+> - **loss 用 ELBO**：理想 loss 是负对数似然 $-\log p(x)$——对应 §1.2 MLE 的目标"模型给真实数据打的概率越高越好"（最大化 $\log p(x)$ 等价于最小化 $-\log p(x)$）。但它**算不动**，所以找一个可算的下界 ELBO，max ELBO 等于把 $\log p(x)$ 顶上去（完整推导见 [§1.4 ELBO 变分下界](#14-elbo-变分下界-)）。引入 VAE encoder $q_\phi(z|x)$ 后，ELBO = 重建项 − KL：
 >
 >   - **重建项**：$x$ → encoder → $z$ → decoder → $\hat x$，越接近原图越大（$\le 0$，越接近 0 越好）
 >   - **KL 项**：encoder 输出离标准高斯多远，$\ge 0$，被压向 0 等价于把 $q_\phi(z|x)$ 拉向 $\mathcal N(0,I)$
@@ -288,13 +247,49 @@ AE / VAE 对比：
 | loss | 重建 MSE | **ELBO** = 重建项 − KL |
 | 能从 $\mathcal N(0,I)$ 生成 | **不能** | **能** |
 
-**训练 / 推理**：训练时 encoder + decoder 一起调，最大化 ELBO；推理（= 生成）时**扔掉 encoder**，从 $\mathcal N(0,I)$ 采 $z$ → decoder → 出图。
+**[VAE 训练：调两组参数，一起最大化 ELBO]**
+
+训练时 encoder + decoder 一起调，最大化 ELBO。
+
+- **$\theta$**（VAE 的 decoder / DDPM 的 noise predictor）：
+  - 直观：**两条线一起抬高**——$\theta$ 同时影响 $\log p$ 和 ELBO，但只有 ELBO 可算，所以调 $\theta$ 顶 ELBO、$\log p$ 跟着升
+  - 实义：让生成的 $\hat x$ 贴近真实数据
+- **$\phi$**（VAE 的 encoder）：
+  - 直观：**只贴下面那条**——$\log p$ 不依赖 $\phi$，$\phi$ 只能动 ELBO
+  - 实义：让 ELBO 贴近 $\log p$——差距越小，优化 ELBO 越接近真正想最大化的 $\log p$
+
+**[VAE 推理：只用 decoder]**
+
+推理（= 生成）时**扔掉 encoder**，从 $\mathcal N(0,I)$ 采 $z$ → decoder → 出图。
+
+- **由 $z$ 推 $\hat x$**：
+
+  - $z$ 是从 prior $\mathcal N(0, I)$ 采的**一个具体向量**（latent 空间中的一个点），decoder 把它映射成一张图  $\hat x$
+  
+- **$\hat x$ 是什么？** 
+
+  - 就是由参数推出的一张图（tensor）——不是 ELBO，不是数值
+
+  - ELBO / KL 都是用来算训练 loss的，推理时不算。decoder 之所以能出像样的图，是因为训练时 ELBO 把参数 $\theta^*$ 调好了
+
+- **文字 prompt 怎么进？**
+
+  - 纯 VAE 不带条件
+  - **文生图**：decoder 多加一个条件 $c$（文本 embedding，CLIP / T5 编码出来）
+
+  ```
+  text ── Text Encoder──► c ─┐
+                             ├──► Decoder(z, c) ──► x̂
+  z ~ N(0, I) ───────────────┘
+  ```
+
+  具体怎么注入条件（cross-attention / adaLN）见下篇。
 
 **VAE 的弱点在"一步"**：decoder 一步从 $\mathcal N(0,I)$ 跳到结构复杂的真实图像，这个映射太难学，VAE 出图通常偏糊。**§2.4 的 diffusion 把这一步拆成 T 步**。
 
 > 记住这个 VAE：它在下篇 latent diffusion 里会**原样回来**——只借它的 encoder/decoder 做压缩，生成交给 diffusion。
 
-### 2.4 从 VAE 到 Diffusion：把单步拆成很多步
+### 2.4 从 VAE 到 Diffusion
 
 VAE 难在"一步"——decoder 要一次从 $\mathcal N(0,I)$ 跳到真实图。Diffusion 的办法是 **把这一大跳拆成 T 个简单的小步**，每步只去掉一点点噪声，每个小步就是一个简单的条件高斯，好学得多。
 
@@ -339,6 +334,8 @@ DDPM（Ho et al., 2020）把 §2.4 那个"T 步小去噪"的想法定型成第�
 - **encoder（前向加噪 - 固定）**：固定 schedule、**无参数**，已知 $x_0$ 后可用公式表示任意 $x_t$
 - **decoder（反向去噪 - 训练）**：要训的网络 $\epsilon_\theta(x_t, t)$，预测当初从 $x_0$ 掺进去的那个噪声 $\epsilon$
 
+先约定记号：每步噪声强度由调度 $\beta_t$ 控制（$\beta_1<\dots<\beta_T$，约定线性从 1e-4 到 0.02），令 $\alpha_t=1-\beta_t$、$\bar\alpha_t=\prod_{s=1}^t\alpha_s$。
+
 **为什么 多步decoder 只需要预测"一个噪声"？** 
 
 > 因为高斯的**加性封闭**（§1.1），一轮和多轮加噪都能写成只含有一个随机高斯噪声的形式：
@@ -358,8 +355,6 @@ t 个独立 $\epsilon_s$ 的线性组合仍是 $\mathcal N(0,I)$，所以多轮�
 - **t**（当前在第几步，$1 \le t \le T$）是**变量**，作为输入送进网络、告知当前噪声等级；$x_0$ 为纯图，$x_T$ 为纯噪声
 
 ### 3.1 训练与推理公式
-
-先约定记号：每步噪声强度由调度 $\beta_t$ 控制（$\beta_1<\dots<\beta_T$，约定线性从 1e-4 到 0.02），令 $\alpha_t=1-\beta_t$、$\bar\alpha_t=\prod_{s=1}^t\alpha_s$。
 
 **[加噪公式（共用：训练 / 推理都要用）]**
 
@@ -400,9 +395,12 @@ $$
 
 - **起点**：$x_T \sim \mathcal N(0, I)$（一次 `torch.randn`）
 - **每步**：$(x_t, t)$ 输入 decoder → $\hat\epsilon = \epsilon_\theta(x_t, t)$ → 按下面公式退到 $x_{t-1}$
-- **终点**：$t = 0$ 时不加 $z$，输出 $x_0$（生成图）
 
-直觉：按加噪公式反解一步，再加 $\sigma_t z$ 补回一点随机性。
+  $$x_{t-1} = \frac{1}{\sqrt{\alpha_t}}\Big(x_t - \frac{1-\alpha_t}{\sqrt{1-\bar\alpha_t}}\,\epsilon_\theta(x_t,t)\Big) + \sigma_t z,\qquad z\sim\mathcal N(0,I),\;\; \sigma_t=\sqrt{\beta_t}$$
+
+  直觉：按加噪公式反解一步，再加 $\sigma_t z$ 补回一点随机性。
+
+- **终点**：$t = 0$ 时不加 $z$，输出 $x_0$（生成图）
 
 **这一步串行、要重复 T 次**——§3.2 讨论的采样开销问题就在这里。
 
@@ -487,7 +485,7 @@ def sample(model, shape):                     # shape: [B, C, H, W]
 
 
 
-## 5. DDIM：把推理砍到几十步
+## 5. DDIM：几十步出图
 
 DDIM（Song et al., 2020.10）是针对 §3.2 采样开销最直接的方案：**不重新训练，只换 §4.2 的采样公式**。
 
