@@ -1,8 +1,8 @@
 ---
-title: "05-diffusion RL - 对比 LLM RL"
+title: "05-Diffusion RL - 对比 LLM RL"
 ---
 
-# 05-diffusion RL: 对比 LLM RL
+# 05-Diffusion RL: 对比 LLM RL
 
 > **TL; DR**：LLM 的 GRPO 整套搬过来就能用，只有一处变了：模型每步产出的不再是一个 token，而是去噪一步。剩下的不同全从这儿来——logprob 得换个算法，KV cache 没了，池间传输的主要来源从权重变成轨迹。
 
