@@ -12,7 +12,7 @@ MLSys 自学笔记，每篇尽量带可运行代码，知乎同步更新。
 - 训练：前后向计算流程，DP/EP/SP/CP/TP/PP 并行 + 通信量分析
 - 推理：prefill / decode 分离合并，以及 KV Cache 各类相关优化
 - 算子：基础 CUDA 算子，FA 1/2，进阶 - 架构相关优化、MoE 相关算子
-- RL：……还没想好，DPO/PPO/GRPO，sync / async / multi turn 之类的
+- RL：算法演化（DPO/GRPO）、训推协同与一致性、diffusion RL、Agentic RL，最后对比各家框架
 - 手写题 Quick Ref ([模型](notes/07_面试手写题/07_01_模型.md) / [推理](notes/07_面试手写题/07_02_推理.md) / [算子](notes/07_面试手写题/07_03_算子CUDA.md))
 
 qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
@@ -23,7 +23,7 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 
 **[About Me]** 26 Master NG 菜狗
 - **Intern**：ByteDance CN @ AML 科学计算 → NVIDIA CN @ cuTile → NVIDIA US @ XLA
-- **Fulltime**：ByteDance US @ AI Search, ML infra - 训练支持
+- **Fulltime**：ByteDance US @ AI Search, ML infra - 训推支持
 
 ## 笔记列表
 
@@ -44,7 +44,9 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 |  | [02-算法演化 (DPO / GRPO / DAPO / OPD)](notes/04_RL/04_02_算法演化.md) | [link](https://zhuanlan.zhihu.com/p/2087874696385771286) | [ipynb](code/12_dpo_grpo_opd.ipynb) ｜ [colab](https://drive.google.com/file/d/1dzNP4RzIoox-Ef29yuW48fRInDXdq5pU/view?usp=drive_link) | DPO / GRPO / OPD |
 |  | [03-训推协同 (同步与异步)](notes/04_RL/04_03_训推协同.md) | [link](https://zhuanlan.zhihu.com/p/2092069360126924782) | [ipynb](code/13_sync_async_ray.ipynb) ｜ [colab](https://drive.google.com/file/d/1eB5z35b3FmrS82_4zVPINg28eNT_zuU9/view?usp=sharing) | Ray 同步 / 异步简化调度 |
 |  | 04-训推一致性 *WIP* | | | |
-|  | 05-Agentic RL *WIP* | | | |
+|  | [05-diffusion RL (对比 LLM RL)](notes/04_RL/04_05_diffusionRL.md) | | [ipynb](code/15_diffusion_grpo.ipynb) ｜ [colab](https://drive.google.com/file/d/1sPemXovEHHu0XGlfFuFEYPVyuRBo6QN8/view?usp=sharing) | diffusion GRPO 简化实现 |
+|  | 06-Agentic RL *WIP* | | | |
+|  | 07-RL框架对比 *WIP* | | | |
 | 推理优化 | [01-推理基础(PD / 指标 / KV Cache)](notes/05_推理优化/05_01_推理基础.md) | [link](https://zhuanlan.zhihu.com/p/2052410872912418496) | [ipynb](code/08_mini_inference.ipynb) ｜ [colab](https://drive.google.com/file/d/1Zlicq3BShtFv4iWECkbHSqJ2iNZT42xW/view?usp=sharing) | mini inference |
 | 算子 | [01-算子手写(1) - CUDA 入门 op](notes/06_算子/05_01_CUDA入门.md) | [link](https://zhuanlan.zhihu.com/p/1892487783110644443) | [ipynb](code/02-cuda-ops.ipynb) ｜ [colab](https://drive.google.com/file/d/1tcFq7B5rouZHKX239F4514f-_INscfvm/view?usp=drive_link) | 一些基础CUDA算子 |
 |  | 02-Flash Attention (上) - FA1/2 *WIP* | | | |
@@ -52,6 +54,7 @@ qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（
 
 ## 更新历史
 
+- **11/15/2026**: RL → 05-diffusion RL (对比 LLM RL) [[link]](notes/04_RL/04_05_diffusionRL.md)，网页版发布
 - **10/10/2026**: RL → 03-训推协同 (同步与异步) [[link]](notes/04_RL/04_03_训推协同.md)，网页版和知乎同步发布
 - **09/27/2026**: RL → 02-算法演化 (DPO / GRPO / DAPO / OPD) [[link]](notes/04_RL/04_02_算法演化.md)，网页版和知乎同步发布
 - **07/19/2026**: RL → 01-RL训练基础 (loop 与 RLHF-PPO) [[link]](notes/04_RL/04_01_RL训练基础.md)，网页版和知乎同步发布
