@@ -1,0 +1,2839 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="MLSys 自学笔记，知乎同步更新">
+      
+      
+      
+        <link rel="canonical" href="https://zoey-cheng.github.io/MLSys-Learning-Notes/04_RL/04_05_diffusionRL.html">
+      
+      
+        <link rel="prev" href="04_03_%E8%AE%AD%E6%8E%A8%E5%8D%8F%E5%90%8C.html">
+      
+      
+        <link rel="next" href="../05_%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96/05_01_%E6%8E%A8%E7%90%86%E5%9F%BA%E7%A1%80.html">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>05-diffusion RL - 对比 LLM RL - MLSys 菜狗自学笔记</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../katex/katex.min.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#05-diffusion-rl-llm-rl" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../index.html" title="MLSys 菜狗自学笔记" class="md-header__button md-logo" aria-label="MLSys 菜狗自学笔记" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            MLSys 菜狗自学笔记
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              05-diffusion RL - 对比 LLM RL
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换到暗色模式"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到暗色模式" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换到亮色模式"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到亮色模式" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Zoey-Cheng/MLSys-Learning-Notes
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../index.html" title="MLSys 菜狗自学笔记" class="md-nav__button md-logo" aria-label="MLSys 菜狗自学笔记" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    MLSys 菜狗自学笔记
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Zoey-Cheng/MLSys-Learning-Notes
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    模型基础
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    模型基础
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_01_Transformer.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-Transformer 架构详解:以 LLaMA 为例
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_02_MoE.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-MoE 架构详解: 从基础版到 DeepSeek / Qwen3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_03_VLM.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    03-VLM: 从 ViT/CLIP 到 Qwen2-VL / DeepSeek-OCR
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_04_Diffusion%E5%9F%BA%E7%A1%80.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    04-Diffusion (上): 从 VAE 到 DDPM / DDIM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_05_Diffusion%E8%BF%9B%E9%98%B6.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    05-Diffusion (下): 从 Latent Diffusion 到 DiT / FLUX
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    训练策略
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    训练策略
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02_%E8%AE%AD%E7%BB%83%E7%AD%96%E7%95%A5/02_01_%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%E5%9F%BA%E7%A1%80.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-分布式背景:通信/单卡计算流
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    训练方法
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    训练方法
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_01_Pretrain.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-预训练 Pretrain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03_%E8%AE%AD%E7%BB%83%E6%96%B9%E6%B3%95/03_02_SFT.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-监督微调 SFT
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RL
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RL
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="04_01_RL%E8%AE%AD%E7%BB%83%E5%9F%BA%E7%A1%80.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-RL训练基础: loop与RLHF-PPO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="04_02_%E7%AE%97%E6%B3%95%E6%BC%94%E5%8C%96.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-算法演化: DPO / GRPO / DAPO / OPD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="04_03_%E8%AE%AD%E6%8E%A8%E5%8D%8F%E5%90%8C.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    03-训推协同: 同步与异步
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    05-diffusion RL - 对比 LLM RL
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="04_05_diffusionRL.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    05-diffusion RL - 对比 LLM RL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前言
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 结构映射
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 结构映射">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-diffusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Diffusion回顾
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 训练
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-grpo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. GRPO 怎么做
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. GRPO 怎么做">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-rollout-pair" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 rollout：轨迹与 pair
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-advantage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 advantage：组内归一
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-logprob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 logprob
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-loss" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 loss
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 训推不一致
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 负载
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 负载">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 显存
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 计算量
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 传输
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 代码：一个 step 的骨架
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 小结
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    推理优化
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    推理优化
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05_%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96/05_01_%E6%8E%A8%E7%90%86%E5%9F%BA%E7%A1%80.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-推理基础: PD/KV Cache
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    算子
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    算子
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../06_%E7%AE%97%E5%AD%90/05_01_CUDA%E5%85%A5%E9%97%A8.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-算子手写(1) - CUDA 入门 op
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ♪ 手写题 Quick Ref
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ♪ 手写题 Quick Ref
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07_%E9%9D%A2%E8%AF%95%E6%89%8B%E5%86%99%E9%A2%98/07_01_%E6%A8%A1%E5%9E%8B.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01-模型
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07_%E9%9D%A2%E8%AF%95%E6%89%8B%E5%86%99%E9%A2%98/07_02_%E6%8E%A8%E7%90%86.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    02-推理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07_%E9%9D%A2%E8%AF%95%E6%89%8B%E5%86%99%E9%A2%98/07_03_%E7%AE%97%E5%AD%90CUDA.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    03-算子
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前言
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 结构映射
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 结构映射">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-diffusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Diffusion回顾
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 训练
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-grpo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. GRPO 怎么做
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. GRPO 怎么做">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-rollout-pair" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 rollout：轨迹与 pair
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-advantage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 advantage：组内归一
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-logprob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 logprob
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-loss" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 loss
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 训推不一致
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 负载
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 负载">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 显存
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 计算量
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 传输
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 代码：一个 step 的骨架
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 小结
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="05-diffusion-rl-llm-rl">05-diffusion RL: 对比 LLM RL</h1>
+<blockquote>
+<p><strong>TL; DR</strong>：LLM 的 GRPO 整套搬过来就能用，只有一处变了：模型每步产出的不再是一个 token，而是去噪一步。剩下的不同全从这儿来——logprob 得换个算法，KV cache 没了，池间传输的主要来源从权重变成轨迹。</p>
+</blockquote>
+<ul>
+<li><strong>[Quick Ref for 手写 code]</strong>：一个 step 的骨架（§4）｜ <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/15_diffusion_grpo.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/1sPemXovEHHu0XGlfFuFEYPVyuRBo6QN8/view?usp=sharing">Colab</a></li>
+</ul>
+<h2 id="_1">前言</h2>
+<p>这一篇把 GRPO 换到 diffusion（文生图、文生视频）上。算法是 Flow-GRPO，即用在 flow matching 模型（SD3 这一代，§1.1 回顾）上的 GRPO。</p>
+<p>读者已经熟 LLM 侧的 GRPO，所以全篇按"那边怎么做、这边怎么变"来排：</p>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>章节</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>结构：GRPO 的部件各自对应什么</td>
+<td>§1 结构映射</td>
+</tr>
+<tr>
+<td>算法：一个 step 怎么做</td>
+<td>§2 GRPO 怎么做</td>
+</tr>
+<tr>
+<td>负载：算多少、占多少、搬多少</td>
+<td>§3 负载</td>
+</tr>
+<tr>
+<td>代码：串起来长什么样</td>
+<td>§4 骨架</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>参照是一对同门框架：miles 做 LLM RL，miles_diffusion 做 diffusion RL。后者按前者的设计另起仓库，主要差异来自负载。</p>
+<p>全篇的数字取自 miles_diffusion 里训练 SD3 的那个脚本（<code>scripts/run_diffusion_grpo_sd3_hps_sglang.py</code>）：SD3.5-Medium 出 512×512 的图，去噪 10 步，CFG 4.5，LoRA rank 32，训推前向都是 fp16，2 卡共池；每步 8 prompt × 16 张 = 128 条，分 2 个优化窗口。打分用 HPS，一个按人类偏好训练的图文打分模型。</p>
+<p>代码对应 <code>miles_diffusion</code> commit <code>81c7a781</code>、<code>sglang</code> sglang-miles-pin 分支 commit <code>7b6993a3</code>，核对于 2026-11-14。</p>
+</blockquote>
+<h2 id="1">1. 结构映射</h2>
+<p>先回顾 diffusion 的结构和训练，再把一次推理装进 GRPO 的 loop，最后拆到单个 action。</p>
+<h3 id="11-diffusion">1.1 Diffusion回顾</h3>
+<p>这一节把后文用到的 diffusion 知识从头过一遍。完整推导在 <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_04_Diffusion%E5%9F%BA%E7%A1%80.html">Diffusion 基础篇</a> 和 <a href="../01_%E6%A8%A1%E5%9E%8B%E5%9F%BA%E7%A1%80/01_05_Diffusion%E8%BF%9B%E9%98%B6.html">进阶篇</a>。</p>
+<p><strong>[框架：加噪与去噪]</strong></p>
+<p>LLM 逐 token 生成，图像不这样做。diffusion 分两个方向：加噪是固定公式，去噪才用模型。</p>
+<p>以最早的 <strong>DDPM 为例</strong>：</p>
+<ul>
+<li><strong>逐步加噪</strong>：<span class="arithmatex">\(x_t = \sqrt{\alpha_t}\,x_{t-1} + \sqrt{\beta_t}\,\epsilon_t\)</span>，每步现场采一份噪声，是线性加法。<span class="arithmatex">\(\beta_t\)</span> 是第 <span class="arithmatex">\(t\)</span> 步的噪声量，等距递增，<span class="arithmatex">\(\alpha_t = 1 - \beta_t\)</span></li>
+<li><strong>可多步合并</strong>：上式可合并成 <span class="arithmatex">\(x_t = \sqrt{\bar\alpha_t}\,x_0 + \sqrt{1-\bar\alpha_t}\,\epsilon\)</span>，<span class="arithmatex">\(\epsilon \sim \mathcal N(0, I)\)</span>。<span class="arithmatex">\(\bar\alpha_t = \alpha_1 \cdots \alpha_t\)</span> 是连乘，先慢后快地降到接近 0</li>
+<li><strong>去噪要模型</strong>：只有 <span class="arithmatex">\(x_t\)</span> 时，<span class="arithmatex">\(x_0\)</span> 和 <span class="arithmatex">\(\epsilon\)</span> 都未知，一个方程解不出，所以训练模型来猜</li>
+<li><strong>训练</strong>：采一份 <span class="arithmatex">\(\epsilon\)</span>，一次算出 <span class="arithmatex">\(x_t\)</span>。把 <span class="arithmatex">\(x_t\)</span> 和 <span class="arithmatex">\(t\)</span> 输入模型，预测这份 <span class="arithmatex">\(\epsilon\)</span>，loss 是 MSE</li>
+<li><strong>推理</strong>：从纯噪声 <span class="arithmatex">\(x_T\)</span> 出发，每步调用一次模型，再用固定公式算出均值、加一份随机噪声，得到 <span class="arithmatex">\(x_{t-1}\)</span>；走完上千步得到 <span class="arithmatex">\(x_0\)</span></li>
+</ul>
+<p><strong>[网络：去噪时预测什么]</strong></p>
+<p>网络只用在去噪方向：看一张带噪图，预测里面的噪声。</p>
+<div class="arithmatex">\[\text{pred} = f_\theta(x_t,\ t,\ c)\]</div>
+<ul>
+<li><strong>输入</strong>：带噪图 <span class="arithmatex">\(x_t\)</span>、步号 <span class="arithmatex">\(t\)</span>（即噪声程度）、条件 <span class="arithmatex">\(c\)</span>（prompt 的 text embedding）</li>
+<li><strong>输出</strong>：和 <span class="arithmatex">\(x_t\)</span> 同 shape，DDPM 下是噪声 <span class="arithmatex">\(\epsilon\)</span>，不是下一步的图</li>
+<li><strong>主干</strong>：早期是 U-Net（CNN），SD3 换成 Transformer 类变种 (DiT)，主干怎么换，框架都不变。</li>
+</ul>
+<p>训练和推理都调用它，但调用方式不同：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><span class="arithmatex">\(x_t\)</span> 从哪来</th>
+<th>调用次数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>训练</td>
+<td>随机取一个 <span class="arithmatex">\(t\)</span>，从 <span class="arithmatex">\(x_0\)</span> 一次算出</td>
+<td>每个样本 1 次</td>
+</tr>
+<tr>
+<td>推理</td>
+<td>上一步算出的结果</td>
+<td>每步 1 次，走完全部步数</td>
+</tr>
+</tbody>
+</table>
+<p><strong>[DDIM 与 flow matching]</strong></p>
+<p>后来的两种做法都保留“加噪用公式、去噪用模型”。DDIM 只换去噪的采样公式，flow matching 把加噪公式和预测目标也换了。SD3 用的是 flow matching。</p>
+<p><img src="../assets/15-diffusion-rl/fig-01.png" alt="DDPM、DDIM、flow matching 的加噪路径、步点密度与采样差别" width="860" /></p>
+<table>
+<thead>
+<tr>
+<th>框架</th>
+<th><span class="arithmatex">\(x_t\)</span></th>
+<th>网络预测</th>
+<th>怎么采样</th>
+<th>每步随机项</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DDPM</td>
+<td><span class="arithmatex">\(\sqrt{\bar\alpha_t}\,x_0 + \sqrt{1-\bar\alpha_t}\,\epsilon\)</span></td>
+<td>噪声 <span class="arithmatex">\(\epsilon\)</span></td>
+<td>逐步去噪，上千步</td>
+<td>有，即 SDE 采样</td>
+</tr>
+<tr>
+<td>DDIM</td>
+<td>同 DDPM</td>
+<td>同 DDPM，不重训</td>
+<td>跳步，几十步</td>
+<td>无，即 ODE 采样</td>
+</tr>
+<tr>
+<td>flow matching</td>
+<td><span class="arithmatex">\((1-t)\,x_0 + t\,\epsilon\)</span></td>
+<td>速度 <span class="arithmatex">\(v\)</span></td>
+<td>Euler 法：<span class="arithmatex">\(x \leftarrow x - v\,\Delta t\)</span></td>
+<td>无，即 ODE 采样</td>
+</tr>
+</tbody>
+</table>
+<p>flow matching 把加噪看成从 <span class="arithmatex">\(x_0\)</span> 匀速走到 <span class="arithmatex">\(\epsilon\)</span>：<span class="arithmatex">\(x_t = x_0 + t\,v\)</span>。<span class="arithmatex">\(t\)</span> 每涨 0.1，走完 10% 的路。</p>
+<table>
+<thead>
+<tr>
+<th>量</th>
+<th>含义</th>
+<th>训练时</th>
+<th>推理时</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(t \in [0, 1]\)</span></td>
+<td>时钟</td>
+<td>随机采</td>
+<td>按步数排好</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(v = \epsilon - x_0\)</span></td>
+<td>速度：方向和快慢</td>
+<td>直接算出，当 GT</td>
+<td>网络预测</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(x_t\)</span></td>
+<td>当前位置</td>
+<td>用公式算出</td>
+<td>上一步的结果</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>去噪</strong>：时钟拨回 <span class="arithmatex">\(\Delta t\)</span>，位置走 <span class="arithmatex">\(x \leftarrow x - \hat v\,\Delta t\)</span></li>
+<li><strong>少步</strong>：网络学到各条直线的平均方向，采样轨迹接近直线，大步走偏得少</li>
+</ul>
+<p><strong>[模型：SD3 这一代]</strong></p>
+<p>除了主干 DiT，SD3 还有：</p>
+<ul>
+<li><strong>VAE</strong>：把图压成 latent（512×512 变成 <code>[16, 64, 64]</code>），<span class="arithmatex">\(x_t\)</span> 从此指 latent</li>
+<li><strong>加入文字</strong>：图文 token 拼成一条序列，一起做 attention（见下图）<ul>
+<li><strong>图像 token</strong>：latent 像 ViT 一样切 patch</li>
+<li><strong>文本 token</strong>（即 <span class="arithmatex">\(c\)</span>）：prompt 过 2 个 CLIP 和 1 个 T5，只算一次</li>
+<li><strong>整句向量（pooled）</strong>：不进序列，和 <span class="arithmatex">\(t\)</span> 合并后调每层的 LayerNorm</li>
+</ul>
+</li>
+<li><strong>CFG</strong>：让图更贴 prompt，推理成本 ×2<ul>
+<li>每步带、不带 prompt 各跑一次，两者的差就是 prompt 的作用，放大 <span class="arithmatex">\(w\)</span> 倍：<span class="arithmatex">\(\tilde v = v(\varnothing) + w\,\big(v(c) - v(\varnothing)\big)\)</span></li>
+</ul>
+</li>
+</ul>
+<p><img src="../assets/15-diffusion-rl/fig-02.png" alt="图像切 patch 后和文本 token 拼成一条序列进 DiT，整句向量和步号 t 合并后调 LayerNorm" width="760" /></p>
+<h3 id="12">1.2 训练</h3>
+<p>下面把 diffusion 的 SFT 和 RL 逐一对回 LLM，对 <a href="04_01_RL%E8%AE%AD%E7%BB%83%E5%9F%BA%E7%A1%80.html">01 篇</a> §3.0 的对比表。</p>
+<p><strong>[SFT：模仿数据]</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>LLM</th>
+<th>diffusion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>输入</td>
+<td>语料的 token 序列</td>
+<td>带噪图 <span class="arithmatex">\(x_t\)</span>、步号 <span class="arithmatex">\(t\)</span>、prompt <span class="arithmatex">\(c\)</span></td>
+</tr>
+<tr>
+<td>输出</td>
+<td>下一个 token 的分布</td>
+<td>猜的“噪声 − 原图”，记作 <span class="arithmatex">\(\hat v\)</span></td>
+</tr>
+<tr>
+<td>GT</td>
+<td>下一个 token 的 one-hot</td>
+<td>实际的“噪声 − 原图”，<span class="arithmatex">\(\epsilon - x_0\)</span></td>
+</tr>
+<tr>
+<td>loss</td>
+<td>CE</td>
+<td>MSE</td>
+</tr>
+<tr>
+<td>一条样本监督几处</td>
+<td>每个位置</td>
+<td>抽到的那个 <span class="arithmatex">\(t\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>对于每个sample：</p>
+<p><img src="../assets/15-diffusion-rl/fig-03.png" alt="SFT 怎么调用模型：LLM 与 diffusion" width="860" /></p>
+<p>两边的 loss 都是模型输出对 GT 算距离：</p>
+<div class="arithmatex">\[\text{LLM (Cross Entropy)：}\ \mathcal L = -\sum_i \log p_\theta(y_i \mid y_{&lt;i},\ c)\]</div>
+<div class="arithmatex">\[\text{diffusion (MSE)：}\ \mathcal L = \big\| f_\theta(x_t,\ t,\ c) - (\epsilon - x_0) \big\|^2,\quad x_t = (1-t)\,x_0 + t\,\epsilon\]</div>
+<ul>
+<li><strong>GT 从哪来 (当场制备)</strong>：取图 <span class="arithmatex">\(x_0\)</span>，现场采 <span class="arithmatex">\(\epsilon\)</span> 和 <span class="arithmatex">\(t\)</span>，加噪出 <span class="arithmatex">\(x_t\)</span>，再算 <span class="arithmatex">\(\epsilon - x_0\)</span></li>
+<li><strong>模型猜什么</strong>：只看到 <span class="arithmatex">\(x_t\)</span>，猜 <span class="arithmatex">\(\hat v\)</span>，等价于反推原图 <span class="arithmatex">\(\hat x_0 = x_t - t\,\hat v\)</span></li>
+<li><strong>缺陷同 LLM</strong>：手指画多了，没有梯度去压；审美这类目标写不出 GT</li>
+</ul>
+<p><strong>[RL：从打分里学]</strong></p>
+<p>流程和 LLM 的 GRPO 一样，只是每个阶段的内容换了：</p>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>模型</th>
+<th>LLM</th>
+<th>diffusion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>rollout</td>
+<td>actor</td>
+<td>逐 token 生成 response</td>
+<td>从纯噪声逐步去噪出图，记下每步 <span class="arithmatex">\((x_t, x_{t-1})\)</span></td>
+</tr>
+<tr>
+<td>打分</td>
+<td>RM，冻结</td>
+<td>给 response 一个分</td>
+<td>给图一个分</td>
+</tr>
+<tr>
+<td>KL</td>
+<td>ref，冻结</td>
+<td>同一前缀，比 token 分布</td>
+<td>同一 <span class="arithmatex">\(x_t\)</span>，比 <span class="arithmatex">\(x_{t-1}\)</span> 的高斯分布</td>
+</tr>
+<tr>
+<td>update</td>
+<td>actor，被训练</td>
+<td>一次前向算完所有位置</td>
+<td>每对 <span class="arithmatex">\((x_t, x_{t-1})\)</span> 一次前向，拼 batch 并行</td>
+</tr>
+</tbody>
+</table>
+<p>对于每个sample：</p>
+<p><img src="../assets/15-diffusion-rl/fig-04.png" alt="RL 怎么调用模型：LLM 与 diffusion" width="860" /></p>
+<p>advantage 和 logprob 对着下图看：</p>
+<p><img src="../assets/15-diffusion-rl/fig-05.png" alt="左：一组 rollout 打分后组内归一化得到 A；右：logprob 看实际走到的点在高斯上的高度，A 决定 μ_θ 往哪移" width="860" /></p>
+<ul>
+<li><strong>图 ①</strong>：同一 prompt 出 16 张图，噪声各不相同。组内比分得 <span class="arithmatex">\(A\)</span>，一张图的 10 步共用。</li>
+</ul>
+<ul>
+<li><strong>图 ②</strong>：模型瞄准 <span class="arithmatex">\(\mu_\theta\)</span>，再随机偏一点（每步新采的噪声）走到 <span class="arithmatex">\(x_{t-1}\)</span>。偏得越少，logprob 越大。</li>
+</ul>
+<p><strong>loss</strong>：公式同 LLM。代入高斯后，两项都是 MSE（略去系数）：</p>
+<div class="arithmatex">\[A \cdot (x_{t-1}-\mu_\theta)^2 \;+\; \beta \cdot (\mu_\theta-\mu_{\text{ref}})^2\]</div>
+<p>前项像 SFT，GT 换成自己走的一步：<span class="arithmatex">\(A&gt;0\)</span> 拉近，<span class="arithmatex">\(A&lt;0\)</span> 推远。后项把 <span class="arithmatex">\(\mu_\theta\)</span> 拉回 ref。</p>
+<p><strong>update</strong>：只训 LoRA。每步一次 DiT 前向和反向，一张图 10 次；LLM 一条 response 一次。</p>
+<h2 id="2-grpo">2. GRPO 怎么做</h2>
+<p>先回忆 <a href="04_02_%E7%AE%97%E6%B3%95%E6%BC%94%E5%8C%96.html">02 篇</a> §3.1 的 GRPO 一个 step：</p>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>做什么</th>
+<th>本章</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>rollout</td>
+<td>同一 prompt 采 <span class="arithmatex">\(G\)</span> 条</td>
+<td>2.1</td>
+</tr>
+<tr>
+<td>reward + advantage</td>
+<td>逐条打分，组内标准化</td>
+<td>2.2</td>
+</tr>
+<tr>
+<td>训练前向</td>
+<td>actor 和 ref 各前向一次</td>
+<td>2.3</td>
+</tr>
+<tr>
+<td>loss + update</td>
+<td>ratio × <span class="arithmatex">\(A\)</span>，clip，KL 另算一项</td>
+<td>2.4、2.5</td>
+</tr>
+</tbody>
+</table>
+<p>logprob 是唯一真正换了定义的部件，单独放 2.3。每节先一句 LLM 的做法，再看 diffusion 换了什么。</p>
+<p>结论：loss 公式一字不改，变的只有 logprob 的定义。clip 的数值、KL 的算法、训推失配的修法，都是它的后果。</p>
+<h3 id="21-rollout-pair">2.1 rollout：轨迹与 pair</h3>
+<p>LLM 的 rollout 产出一条回答，diffusion 产出一条去噪链。每步去噪是一次决策，对回 RL 的说法：</p>
+<p><img src="../assets/15-diffusion-rl/fig-06.png" alt="同一 prompt 的一组轨迹：LLM 与 diffusion" width="720" /></p>
+<ul>
+<li><strong>state</strong>：<ul>
+<li>diffusion：prompt + 当前这张带噪图 <span class="arithmatex">\(x_t\)</span></li>
+<li>LLM：prompt + 已生成的 token</li>
+</ul>
+</li>
+<li><strong>action</strong>：<ul>
+<li>diffusion：下一步的 <span class="arithmatex">\(x_{t-1}\)</span></li>
+<li>LLM：下一个 token</li>
+</ul>
+</li>
+<li><strong>reward</strong>：出图后一个分，只在末端</li>
+<li><strong>定长</strong>：步数由配置定，每条都是 10，没有 03 篇 §3.3 的长尾</li>
+</ul>
+<p>rollout 里每一步 <span class="arithmatex">\((x_t, x_{t-1})\)</span> 叫一个 pair。训练时它是一个样本，对应 LLM 的一个 token 位置。</p>
+<p>rollout 记下每步的 <span class="arithmatex">\((x_t, x_{t-1})\)</span>、logprob 和条件，对应 LLM 的 experiences。</p>
+<h3 id="22-advantage">2.2 advantage：组内归一</h3>
+<p>GRPO 的做法：同一 prompt 采一组，组内比分。公式两边一样：</p>
+<div class="arithmatex">\[A_i = \frac{R_i - \bar R}{\sigma_R + \varepsilon}\]</div>
+<p><span class="arithmatex">\(\bar R\)</span>、<span class="arithmatex">\(\sigma_R\)</span> 是组内分数的均值和标准差，<span class="arithmatex">\(\varepsilon\)</span> 防除零。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>LLM</th>
+<th>diffusion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>一组</td>
+<td>同一 prompt 的 <span class="arithmatex">\(G\)</span> 条回答</td>
+<td>同一 prompt 的 16 张图</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(R_i\)</span></td>
+<td>RM 给整条回答的分</td>
+<td>HPS 给整张图的分</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(A_i\)</span> 的使用者</td>
+<td>回答里的每个 token</td>
+<td>图里的每个 pair</td>
+</tr>
+</tbody>
+</table>
+<p>HPS 是按人类偏好训练的图文打分模型，对应 LLM 的 RM。</p>
+<p>这一环两边没有差别。真正换掉的是下一节的 logprob。</p>
+<h3 id="23-logprob">2.3 logprob</h3>
+<p><strong>[LLM：回忆]</strong></p>
+<p>rollout 采出 "I like cat."，每个位置，模型对实际采到的 token 都有一个概率：</p>
+<table>
+<thead>
+<tr>
+<th>位置</th>
+<th>实际 token</th>
+<th>模型给它的概率</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>I</td>
+<td>0.40</td>
+</tr>
+<tr>
+<td>2</td>
+<td>like</td>
+<td>0.30</td>
+</tr>
+<tr>
+<td>3</td>
+<td>cat</td>
+<td>0.10</td>
+</tr>
+<tr>
+<td>4</td>
+<td>.</td>
+<td>0.80</td>
+</tr>
+</tbody>
+</table>
+<p>这四个概率取对数，就是 logprob。rollout 时记下，叫 old_logp。</p>
+<p>update 要用这批数据更新好几次。权重一变，同一句话每个位置的概率跟着变：</p>
+<table>
+<thead>
+<tr>
+<th>位置</th>
+<th>实际 token</th>
+<th>old 概率</th>
+<th>更新后的 new 概率</th>
+<th>ratio = new ÷ old</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>I</td>
+<td>0.40</td>
+<td>0.40</td>
+<td>1.0</td>
+</tr>
+<tr>
+<td>2</td>
+<td>like</td>
+<td>0.30</td>
+<td>0.36</td>
+<td>1.2</td>
+</tr>
+<tr>
+<td>3</td>
+<td>cat</td>
+<td>0.10</td>
+<td>0.08</td>
+<td>0.8</td>
+</tr>
+<tr>
+<td>4</td>
+<td>.</td>
+<td>0.80</td>
+<td>0.80</td>
+<td>1.0</td>
+</tr>
+</tbody>
+</table>
+<p>ratio 再 clip，见 2.4。</p>
+<p>一次 update 要用到三份 logprob，来源不同：</p>
+<table>
+<thead>
+<tr>
+<th>logprob</th>
+<th>哪来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>old_logp（分母）</td>
+<td>rollout 当场记，或训练前向重算</td>
+</tr>
+<tr>
+<td>new_logp（分子）</td>
+<td>训练前向，actor 算</td>
+</tr>
+<tr>
+<td>ref 的（KL 用）</td>
+<td>训练前向，ref 算</td>
+</tr>
+</tbody>
+</table>
+<p>分母这两种取法差别不小，2.5 再说。</p>
+<p><strong>[diffusion：logprob 怎么算]</strong></p>
+<p>logprob 的定义对回 LLM：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>LLM</th>
+<th>diffusion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>条件</td>
+<td>前面的 token</td>
+<td>当前这张图 <span class="arithmatex">\(x_t\)</span></td>
+</tr>
+<tr>
+<td>实际采到</td>
+<td>一个 token</td>
+<td><span class="arithmatex">\(x_{t-1}\)</span></td>
+</tr>
+<tr>
+<td>logprob</td>
+<td><span class="arithmatex">\(\log P(\text{token} \mid \text{前文})\)</span></td>
+<td><span class="arithmatex">\(\log p(x_{t-1} \mid x_t)\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>一步去噪分两件事：</p>
+<ol>
+<li><strong>瞄准</strong>：DiT 预测 <span class="arithmatex">\(\hat v\)</span>，沿它走一步，到瞄准点 <span class="arithmatex">\(\mu_\theta = x_t - \hat v\,\Delta t\)</span>（10 步则 <span class="arithmatex">\(\Delta t = 0.1\)</span>）</li>
+<li><strong>偏一点</strong>：在 <span class="arithmatex">\(\mu_\theta\)</span> 上加一份噪声，落到 <span class="arithmatex">\(x_{t-1} = \mu_\theta + \sigma_t \epsilon\)</span><ul>
+<li><span class="arithmatex">\(\epsilon \sim \mathcal{N}(0, I)\)</span> 逐元素随机抽，<span class="arithmatex">\(\sigma_t\)</span> 定幅度，每步不同</li>
+</ul>
+</li>
+</ol>
+<p>这个形式是 Flow-GRPO 选的，不是 flow matching 自带的：</p>
+<ul>
+<li><strong>原本</strong>：flow matching 走 ODE，每步确定，没有 logprob</li>
+<li><strong>Flow-GRPO</strong>：改走 SDE，每步加一份噪声，才有 logprob</li>
+<li><strong>不影响出图</strong>：出图的分布和 ODE 一样</li>
+</ul>
+<blockquote>
+<p><strong>速查：ODE 与 SDE 采样</strong></p>
+<p>ODE = 常微分方程，SDE = 随机微分方程（S 是 Stochastic）。差别只在每步有没有随机项。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>ODE</th>
+<th>SDE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>一步</td>
+<td><span class="arithmatex">\(x \leftarrow x - \hat v\,\Delta t\)</span></td>
+<td><span class="arithmatex">\(x \leftarrow (x - \hat v\,\Delta t) + \sigma_t\epsilon\)</span>（高斯噪声）</td>
+</tr>
+<tr>
+<td>同一个 <span class="arithmatex">\(x_T\)</span></td>
+<td>每次出同一张图</td>
+<td>每次出不同的图</td>
+</tr>
+<tr>
+<td>例子</td>
+<td>flow matching、DDIM（§1.1 的表）</td>
+<td>DDPM</td>
+</tr>
+<tr>
+<td><strong>有 logprob</strong></td>
+<td><strong>没有</strong></td>
+<td><strong>有</strong></td>
+</tr>
+</tbody>
+</table>
+<p>用 ODE 则 ratio 恒为 1，学不到东西。LLM 没这问题，temperature 再低也有概率。</p>
+</blockquote>
+<p>用一维的数走一遍：瞄准点 <span class="arithmatex">\(\mu = 0.50\)</span>，噪声大小 <span class="arithmatex">\(\sigma = 0.10\)</span>。落点离瞄准点越远，钟形曲线上的高度越低。</p>
+<p><img src="../assets/15-diffusion-rl/fig-07.png" alt="一维例子：钟形曲线上三个落点的高度" width="620" /></p>
+<table>
+<thead>
+<tr>
+<th>实际落点</th>
+<th>高度</th>
+<th>logprob = 高度取对数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.50</td>
+<td>3.99</td>
+<td>1.38</td>
+</tr>
+<tr>
+<td>0.60</td>
+<td>2.42</td>
+<td>0.88</td>
+</tr>
+<tr>
+<td>0.80</td>
+<td>0.04</td>
+<td>−3.12</td>
+</tr>
+</tbody>
+</table>
+<p>真实的 <span class="arithmatex">\(x_{t-1}\)</span> 有 65536 个元素，每个元素各算一次，再取 mean，量级回到单个元素。公式：</p>
+<div class="arithmatex">\[\log p(x_{t-1} \mid x_t) = \operatorname{mean}_i \left[ -\frac{(x_{t-1,i} - \mu_i)^2}{2\sigma_t^2} - \log \sigma_t - \tfrac{1}{2}\log 2\pi \right]\]</div>
+<p><strong>[对回 LLM]</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>LLM</th>
+<th>diffusion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>模型输出</td>
+<td>词表概率表</td>
+<td>瞄准点 <span class="arithmatex">\(\mu_\theta\)</span></td>
+</tr>
+<tr>
+<td>采出 action</td>
+<td>一个 token</td>
+<td>一个 <span class="arithmatex">\(x_{t-1}\)</span>，latent 里 65536 个实数</td>
+</tr>
+<tr>
+<td>logprob</td>
+<td>查表取那一格</td>
+<td>每个元素代高斯公式，再取 mean</td>
+</tr>
+</tbody>
+</table>
+<p><img src="../assets/15-diffusion-rl/fig-08.png" alt="一个 action 的 logprob 怎么得到：LLM 与 diffusion" width="640" /></p>
+<h3 id="24-loss">2.4 loss</h3>
+<p><strong>[公式照搬]</strong></p>
+<p>每个 pair 的 loss，和 LLM 每个 token 位置的一模一样：</p>
+<div class="arithmatex">\[\mathcal{L} = -\min\big(\rho A,\ \mathrm{clip}(\rho,\,1-\epsilon,\,1+\epsilon)\,A\big) + \beta\,D_{\mathrm{KL}}\]</div>
+<ul>
+<li><span class="arithmatex">\(\rho = \exp(\text{new\_logp} - \text{old\_logp})\)</span>：新旧权重给同一个 action 的概率之比</li>
+<li><span class="arithmatex">\(A\)</span>：2.2 的组内归一化分数</li>
+<li><span class="arithmatex">\(D_{\mathrm{KL}}\)</span>：actor 和 ref 的距离</li>
+</ul>
+<p>代入高斯后两项都成了 MSE：按 <span class="arithmatex">\(A\)</span> 的正负把 <span class="arithmatex">\(\mu_\theta\)</span> 往自己走的那一步拉近或推远，再把它拉回 ref。公式没变，变的是两处数值。</p>
+<p><img src="../assets/15-diffusion-rl/fig-09.png" alt="loss 公式一字不改，clip 和 KL 两处数值从 LLM 的做法换成 diffusion 的做法，右侧给出原因" width="940" /></p>
+<h3 id="25">2.5 训推不一致</h3>
+<p><span class="arithmatex">\(\rho\)</span> 的分母本该是推理引擎采样时的概率（§2.4），实际隔着三段差。这是 04 训推一致性篇 的主题：</p>
+<p><img src="../assets/15-diffusion-rl/fig-10.png" alt="四个 logprob 和三段差：引擎差、采样到步首、步内；重算的 ρ 只盖步内，bypass 的 ρ 三段全包" width="860" /></p>
+<blockquote>
+<p>数字出自 04 训推一致性篇的参考任务，那是个 MoE：选中不同 expert 可能把 ① 放大了两个量级。dense 小得多，diffusion 侧没测过。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>差</th>
+<th>哪来</th>
+<th>多大</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>① 引擎差</td>
+<td>norm 这类算子内部用 fp32 算，两边转回低精度的位置不同</td>
+<td>最大的一段，KL 0.0136</td>
+</tr>
+<tr>
+<td>② 采样到步首</td>
+<td>rollout 领先几批，同步为 0</td>
+<td>同 ③</td>
+</tr>
+<tr>
+<td>③ 步内</td>
+<td>一批多次 update</td>
+<td>隔 1 版约 KL 1e-5</td>
+</tr>
+</tbody>
+</table>
+<p>分母取 <code>old_logp</code> 还是 <code>rollout_logp</code> 是配置，两边都能选。</p>
+<p><strong>差别只有一条：① 的修法不一样。</strong></p>
+<p><strong>[LLM：乘法修正]</strong> —— 一个权重 <span class="arithmatex">\(w\)</span>，乘在 loss 上</p>
+<p>logprob 是单个 token 的概率取对数，两个相减取 <span class="arithmatex">\(\exp\)</span> 就是密度比：</p>
+<div class="arithmatex">\[w = \exp(\text{old\_logp} - \text{rollout\_logp}) = \frac{p_\theta(a)}{q(a)},\qquad \mathbb{E}_{p_\theta}[f] = \mathbb{E}_{q}\big[w\,f\big]\]</div>
+<p>它乘在 §2.4 那个 loss 的最外面，按 batch 平均：</p>
+<div class="arithmatex">\[\mathcal{L} = -\frac1B\sum_j w_j \min\big(\rho_j A_j,\ \mathrm{clip}(\rho_j)\,A_j\big)\]</div>
+<p><span class="arithmatex">\(w\)</span> 是常数、不回传梯度，在 clip 外（04 训推一致性篇把它叫 decoupled）。样本采自 <span class="arithmatex">\(q\)</span>，每条乘 <span class="arithmatex">\(w\)</span> 就当采自 <span class="arithmatex">\(p_\theta\)</span>，① 修完。</p>
+<p><strong>[diffusion：乘法这条路断了]</strong></p>
+<p>logprob 对 65536 个元素取过 mean（§2.3），同一个减法算出来的不是密度比：</p>
+<div class="arithmatex">\[\exp(\text{old\_logp} - \text{rollout\_logp}) = \Big(\prod_i \frac{p_i}{q_i}\Big)^{1/N} = \Big(\frac{p_\theta(x_{t-1})}{q(x_{t-1})}\Big)^{1/N}\]</div>
+<ul>
+<li><strong>算出来的是 <span class="arithmatex">\(N\)</span> 次方根</strong>：<span class="arithmatex">\(N\)</span> 个元素独立，连乘才是整步的密度</li>
+<li><strong>计算本身不难，但没法用</strong>：每元素 1e-4 的差乘 65536，<span class="arithmatex">\(w\)</span> 落在 <span class="arithmatex">\(e^{\pm 6.5}\)</span>，跨 5 个数量级<ul>
+<li>loss 是 batch 内按 <span class="arithmatex">\(w\)</span> 的加权平均，<span class="arithmatex">\(w = 700\)</span> 那条就独占了八成权重 = batch size 掉到 1</li>
+</ul>
+</li>
+<li><strong>LLM 为什么没事</strong>：<span class="arithmatex">\(w\)</span> 按 token 算，每个 token 只有一维<ul>
+<li>整条 response 连乘同样会塌</li>
+</ul>
+</li>
+</ul>
+<p><strong>[diffusion：加法修正]</strong> 修正在梯度上</p>
+<p>没有权重可乘，就不碰样本权重，改动梯度本身：</p>
+<div class="arithmatex">\[\nabla_\theta \log p_\theta(x_{t-1}) \;\longrightarrow\; \nabla_\theta \log p_\theta(x_{t-1}) - \underbrace{\nabla_\theta \log p_\theta(\mu_q)}_{\text{score 在采样分布下的平均方向，on-policy 时为 }0}\]</div>
+<p>减掉的那项是什么？先看 <span class="arithmatex">\(\nabla_\theta \log p_\theta\)</span> 本身，高斯下有闭式：</p>
+<div class="arithmatex">\[\nabla_\theta \log p_\theta(x) \;\propto\; x - \mu_\theta\]</div>
+<p>就是 §1.2 的拉近 / 推远：从瞄准点 <span class="arithmatex">\(\mu_\theta\)</span> 指向这次实际走到的点。</p>
+<p><img src="../assets/15-diffusion-rl/fig-11.png" alt="自己采样时 score 的箭头互相抵消，engine 采样时平均指向 μq − μθ" width="860" /></p>
+<ul>
+<li><strong>减的就是图里那支琥珀箭头</strong>：<span class="arithmatex">\(\mu_q - \mu_\theta\)</span> 方向，来自引擎差（on policy = 0）</li>
+<li><strong>怎么算</strong>：rollout 每步回传 <span class="arithmatex">\(\mu_q\)</span>，<span class="arithmatex">\(\mu_\theta\)</span> 训练前向已有 -&gt; 计算梯度时代入公式</li>
+<li><strong>现成实现</strong>：miles 的 LLM 侧是 <code>--loss-type score_centering</code>；diffusion 侧只有 open 的 fork <a href="https://github.com/radixark/miles_diffusion/pull/298">PR #298</a></li>
+<li>不过分布没换过去，不等价乘法修正</li>
+</ul>
+<h2 id="3">3. 负载</h2>
+<p>rollout、打分、update 三个阶段落在卡上，本章算三样：显存、计算量、传输。</p>
+<p>放法沿用 03 训推协同篇：共池（同步）轮流占卡，分池（异步）各占一组同时跑。</p>
+<p>结论先行：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>LLM RL</th>
+<th>diffusion RL</th>
+<th>展开</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>显存峰值</td>
+<td>在 update，训练态最重</td>
+<td>在 rollout，text encoder 常驻</td>
+<td>§3.1</td>
+</tr>
+<tr>
+<td>计算</td>
+<td>逐 token，有长尾</td>
+<td>每步整段重算，定长规整</td>
+<td>§3.2</td>
+</tr>
+<tr>
+<td>传输的主要来源</td>
+<td>权重同步 61 GB</td>
+<td>轨迹，每批约 1 GB</td>
+<td>§3.3</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>LLM 列取自 03 篇的参考任务（Qwen3-30B-A3B，16 卡 B200）</li>
+<li>diffusion 列按前言的 SD3 demo 配置估（DiT 2.5B，连 text encoder、VAE 全套约 8B，2 卡）</li>
+</ul>
+<p>显存、计算按模型总量记，与卡数无关。</p>
+<h3 id="31">3.1 显存</h3>
+<p>权重 = 参数量 × dtype，这条两边一样。差别在两处：随负载涨的那块是什么，训练态有多重。</p>
+<p>各阶段用到的量：</p>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>LLM</th>
+<th>diffusion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>rollout</td>
+<td>推理权重 61 GB + <strong>KV cache 约 100 GB，随并发 × 长度上限涨</strong></td>
+<td>DiT 5 GB + <strong>text encoder 11 GB</strong> + VAE 0.2 GB + 激活（随分辨率涨），<strong>无 KV</strong></td>
+</tr>
+<tr>
+<td>打分</td>
+<td>RM，外部服务</td>
+<td>HPS 约 2 GB</td>
+</tr>
+<tr>
+<td>训练前向（actor、ref）</td>
+<td>actor 的 bf16 副本 61 GB（也可直接用推理结果，但不推荐）+ ref 61 GB</td>
+<td>重算时复用 update 的底座 5 GB，不另占(大部分时候默认用推理结果)；ref 跟着 update 跑</td>
+</tr>
+<tr>
+<td>update</td>
+<td>actor 训练态 488 GB（bf16 副本 61 + 梯度、优化器状态 427）+ 激活</td>
+<td>底座 5 GB（冻结，兼任 ref）+ LoRA 几十 MB + 激活</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>数据相关分几种：前后向 - 大 = 激活；推理 - 大 = 表现为KV；无梯度前向 - 小 = 可忽略（逐层算完即丢）</p>
+</blockquote>
+<p>共池（同步）下各阶段轮流占卡，两边峰值阶段正好相反：</p>
+<p><img src="../assets/15-diffusion-rl/fig-12.png" alt="各阶段用到的显存，按权重 / 梯度与优化器状态 / KV 与激活堆叠：LLM 峰值在 update 488 GB，diffusion 在 rollout 16 GB" width="860" /></p>
+<p><strong>[rollout 侧：会涨的块换了]</strong></p>
+<ul>
+<li><strong>LLM</strong>：随 decode KV Cache <strong>累加</strong></li>
+<li><strong>diffusion：没有明显累加</strong> 递增的；有算一步丢一步的临时激活，峰值约百 MB（推算）；视频几万 token 才到 GB<ul>
+<li>text encoder 11 GB：开头算一次 <span class="arithmatex">\(c\)</span>，之后一直常驻</li>
+</ul>
+</li>
+</ul>
+<p><strong>[update 侧：四样存储各跟谁走]</strong></p>
+<p>权重和优化器状态常驻；梯度一步之内、激活前向存到反向，用完就丢。</p>
+<table>
+<thead>
+<tr>
+<th>存什么</th>
+<th>正比于</th>
+<th>LLM 全参</th>
+<th>diffusion 只训 LoRA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>actor 权重</td>
+<td>模型本身</td>
+<td>61</td>
+<td>底座 5 + 挂上的 LoRA 几十 MB</td>
+</tr>
+<tr>
+<td>ref 权重</td>
+<td>模型本身</td>
+<td>另一份 61</td>
+<td>就是底座，不另占</td>
+</tr>
+<tr>
+<td>梯度、优化器状态、高精度副本</td>
+<td><strong>被训参数</strong></td>
+<td>427</td>
+<td>∝ LoRA，几十 MB</td>
+</tr>
+<tr>
+<td>激活</td>
+<td><strong>全参主干</strong> × token 数</td>
+<td>大</td>
+<td>同左，不随 LoRA 缩</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>ZeRO-3</strong>：61 + 427 摊到 8 卡 → 每卡 61（03 篇）</li>
+<li><strong>ref = 起点权重</strong>：LLM 的 actor 改走了，只能另存一份；diffusion 底座没动过，就是起点</li>
+</ul>
+<p><strong>[共池时谁闲着]</strong></p>
+<p>闲置的是可 offload 让出的。放得下就不让，省搬运：</p>
+<table>
+<thead>
+<tr>
+<th>在跑</th>
+<th>闲着（LLM）</th>
+<th>闲着（diffusion）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>rollout</td>
+<td>训练那套 488 + ref 61</td>
+<td>训练侧的底座 5</td>
+</tr>
+<tr>
+<td>update</td>
+<td>推理权重 61 + KV 约 100</td>
+<td>engine 全套 16：DiT、text encoder、VAE</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>速查：HPS</strong></p>
+<p>Human Preference Score，给"人喜不喜欢这张图"打分，角色 = LLM 的 RM。</p>
+<ul>
+<li>结构 = CLIP（ViT-H，2 GB）。输入图 + prompt，各自 encode 成向量，内积就是输出的分，一个标量</li>
+<li>原版 CLIP 的内积量"图文贴不贴"；在人类偏好数据上微调权重后，量的变成"人喜不喜欢"</li>
+<li>可换别的：PickScore、VLM 当裁判、OCR 规则分</li>
+</ul>
+</blockquote>
+<h3 id="32">3.2 计算量</h3>
+<p>LLM 推理分 prefill 和 decode（见<a href="../05_%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96/05_01_%E6%8E%A8%E7%90%86%E5%9F%BA%E7%A1%80.html">推理基础篇</a>）。decode 每次只算 1 个新 token，前缀靠 KV cache 复用。diffusion 没有 decode：</p>
+<p><img src="../assets/15-diffusion-rl/fig-13.png" alt="一次前向算什么：LLM decode 与 diffusion 去噪" width="760" /></p>
+<p><strong>[rollout 侧]</strong></p>
+<table>
+<thead>
+<tr>
+<th>每条轨迹</th>
+<th>LLM</th>
+<th>diffusion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>前向次数</td>
+<td>回答多长就几次</td>
+<td>10 步 × CFG 2 支 = 20 次</td>
+</tr>
+<tr>
+<td>每次前向的 token</td>
+<td>1 个</td>
+<td>1357 个全算</td>
+</tr>
+<tr>
+<td>长尾</td>
+<td>有</td>
+<td>无</td>
+</tr>
+<tr>
+<td>VAE 解码</td>
+<td>无</td>
+<td>出图 1 次，在 engine</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>速查：CFG 的 2 支</strong></p>
+<p>classifier-free guidance（Diffusion下），让图更服从 prompt：每步带、不带 prompt 各跑一次，差值放大 <span class="arithmatex">\(w\)</span> 倍：</p>
+<div class="arithmatex">\[\tilde v = v(\varnothing) + w\,\big(v(c) - v(\varnothing)\big)\]</div>
+<p>rollout、update、ref 的每次前向都是两支，反向也穿两支的图——训练要复现 <span class="arithmatex">\(\tilde v\)</span> 才能算 logprob。下文计数不再重复标。</p>
+</blockquote>
+<ul>
+<li><strong>变规整</strong>：耗时由步数和分辨率定，配置定了就不变；没有 03 篇 §3.3 的长尾</li>
+<li><strong>视频按帧放大</strong>：token 数和 HPS 打分次数都正比于帧数</li>
+</ul>
+<p><strong>[训练侧]</strong></p>
+<table>
+<thead>
+<tr>
+<th>每条轨迹</th>
+<th>LLM</th>
+<th>diffusion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>训练前向：old_logp</td>
+<td>1 次</td>
+<td>无，用 rollout 回传的</td>
+</tr>
+<tr>
+<td>训练前向：ref</td>
+<td>1 次</td>
+<td>每步 1 次，跟着 update 跑</td>
+</tr>
+<tr>
+<td>update 前向 + 反向</td>
+<td>1 次</td>
+<td>每步 1 次，共 10 次</td>
+</tr>
+<tr>
+<td>打分</td>
+<td>RM 1 次前向</td>
+<td>HPS 1 次前向</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>训练侧比 LLM 重</strong>：LLM 一次前向盖住整条的所有位置；diffusion 的每一步都要单独前向，一条就是 10 次</li>
+<li><strong>拼 batch 只省时间</strong>：10 步一起算，次数还是 10</li>
+<li><strong>分池不改计算</strong>：前向次数一样，异步省的是等待（小结）</li>
+</ul>
+<h3 id="33">3.3 传输</h3>
+<p>要搬的两样：轨迹（推理 → 训练）和权重（训练 → 推理）。03 训推协同篇里权重占绝大部分、轨迹可忽略；这里正好相反：</p>
+<p><img src="../assets/15-diffusion-rl/fig-14.png" alt="传输的主要来源对调：LLM 在权重同步，diffusion 在轨迹" width="760" /></p>
+<ul>
+<li><strong>轨迹重</strong>：每对 <span class="arithmatex">\((x_t, x_{t-1})\)</span> 都要回传，一条 8 MB（11 个 latent + 正负条件），128 条约 1 GB</li>
+<li><strong>权重轻</strong>：只传 LoRA 的 A、B；全量 DiT 也才 5 GB</li>
+<li><strong>视频更重</strong>：随帧数涨，一小批就到 GB</li>
+<li><strong>共池 / 分池只差权重</strong>：权重同卡交接 vs 走 NCCL；轨迹都要跨进程搬</li>
+</ul>
+<h2 id="4-step">4. 代码：一个 step 的骨架</h2>
+<p>§2 的算法写成代码，三层。可跑版本在 <a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/15_diffusion_grpo.ipynb">ipynb</a>。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>grpo_step                            主体：rollout → 打分 → 归一 → update
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a> ├── rollout                         采样，无梯度，记 old_logp
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a> └── update 循环                      每步一次前向，带梯度，算 new_logp
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>      └── cfg / sde_step / log_prob  两边共用
+</code></pre></div>
+<p><strong>[基础：一步去噪和它的 logprob]</strong> ｜ §2.3</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">cfg</span><span class="p">(</span><span class="n">dit</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">cond</span><span class="p">,</span> <span class="n">null_cond</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="mf">4.5</span><span class="p">):</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="sd">"""CFG：带、不带 prompt 各跑一次，差值放大 w 倍。每次调用 = 两次前向"""</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">v_pos</span><span class="p">,</span> <span class="n">v_neg</span> <span class="o">=</span> <span class="n">dit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">cond</span><span class="p">),</span> <span class="n">dit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">null_cond</span><span class="p">)</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="k">return</span> <span class="n">v_neg</span> <span class="o">+</span> <span class="n">w</span> <span class="o">*</span> <span class="p">(</span><span class="n">v_pos</span> <span class="o">-</span> <span class="n">v_neg</span><span class="p">)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">sde_step</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">sigma_next</span><span class="p">,</span> <span class="n">noise_level</span><span class="o">=</span><span class="mf">0.7</span><span class="p">):</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="sd">"""一步去噪：先算瞄准点 μ，再加一份噪声落到 x_prev</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="sd">    返回 x_prev、mu（都是 (B,16,64,64)）、std（标量）</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="sd">    """</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="n">dt</span>  <span class="o">=</span> <span class="n">sigma_next</span> <span class="o">-</span> <span class="n">sigma</span>                                 <span class="c1"># 负数，时钟往 0 走</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="n">std</span> <span class="o">=</span> <span class="n">noise_level</span> <span class="o">*</span> <span class="p">(</span><span class="n">sigma</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">sigma</span><span class="p">))</span><span class="o">.</span><span class="n">sqrt</span><span class="p">()</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="n">dt</span><span class="p">)</span><span class="o">.</span><span class="n">sqrt</span><span class="p">()</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="n">mu</span>  <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">v</span> <span class="o">*</span> <span class="n">dt</span>                                         <span class="c1"># 略去 SDE 的漂移修正项</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="k">return</span> <span class="n">mu</span> <span class="o">+</span> <span class="n">std</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn_like</span><span class="p">(</span><span class="n">mu</span><span class="p">),</span> <span class="n">mu</span><span class="p">,</span> <span class="n">std</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="k">def</span><span class="w"> </span><span class="nf">log_prob</span><span class="p">(</span><span class="n">x_prev</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">std</span><span class="p">):</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">    </span><span class="sd">"""高斯对数密度，对非 batch 维取 mean → (B,)"""</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="n">ll</span> <span class="o">=</span> <span class="o">-</span><span class="p">((</span><span class="n">x_prev</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">std</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">std</span><span class="p">)</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="k">return</span> <span class="n">ll</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>                            <span class="c1"># 65536 个元素取平均，不是求和</span>
+</code></pre></div>
+<p>这个 mean 决定了后面两件事：clip 取 1e-4（§2.4），乘法修正不成立（§2.5）。</p>
+<p><strong>[① rollout：一次采 G 条，每步都记下来]</strong> ｜ §2.1</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">rollout</span><span class="p">(</span><span class="n">dit</span><span class="p">,</span> <span class="n">cond</span><span class="p">,</span> <span class="n">null_cond</span><span class="p">,</span> <span class="n">sigmas</span><span class="p">,</span> <span class="n">G</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">n_steps</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="sd">"""同一 prompt 采 G 条轨迹</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="sd">    返回 traj（长度 n_steps，每项 (x_t, x_prev, old_logp)）和最终 latent (G,16,64,64)</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="sd">    """</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">x</span><span class="p">,</span> <span class="n">traj</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">64</span><span class="p">)</span> <span class="o">*</span> <span class="n">sigmas</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[]</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_steps</span><span class="p">):</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        <span class="n">v</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">(</span><span class="n">dit</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">sigmas</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">cond</span><span class="p">,</span> <span class="n">null_cond</span><span class="p">)</span>          <span class="c1"># 整段 1357 个 token 全算</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>        <span class="n">x_prev</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">std</span> <span class="o">=</span> <span class="n">sde_step</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">sigmas</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sigmas</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>        <span class="n">traj</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">x_prev</span><span class="p">,</span> <span class="n">log_prob</span><span class="p">(</span><span class="n">x_prev</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">std</span><span class="p">)))</span>  <span class="c1"># old_logp 当场记下</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>        <span class="n">x</span> <span class="o">=</span> <span class="n">x_prev</span>                                           <span class="c1"># 下一步输入全变，没什么可复用</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="k">return</span> <span class="n">traj</span><span class="p">,</span> <span class="n">x</span>
+</code></pre></div>
+<p><strong>[②③⑤ 一个 step：打分、归一、update]</strong> ｜ §2.2、§2.4</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">grpo_step</span><span class="p">(</span><span class="n">dit</span><span class="p">,</span> <span class="n">opt</span><span class="p">,</span> <span class="n">cond</span><span class="p">,</span> <span class="n">null_cond</span><span class="p">,</span> <span class="n">sigmas</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">0.01</span><span class="p">):</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">traj</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="n">rollout</span><span class="p">(</span><span class="n">dit</span><span class="p">,</span> <span class="n">cond</span><span class="p">,</span> <span class="n">null_cond</span><span class="p">,</span> <span class="n">sigmas</span><span class="p">)</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">R</span> <span class="o">=</span> <span class="n">hps</span><span class="p">(</span><span class="n">vae</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">x0</span><span class="p">))</span>                                  <span class="c1"># ② 打分，一条轨迹一个分</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">A</span> <span class="o">=</span> <span class="p">(</span><span class="n">R</span> <span class="o">-</span> <span class="n">R</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span> <span class="o">/</span> <span class="p">(</span><span class="n">R</span><span class="o">.</span><span class="n">std</span><span class="p">()</span> <span class="o">+</span> <span class="mf">1e-4</span><span class="p">)</span>                    <span class="c1"># ③ 组内归一，10 步共用</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">loss</span> <span class="o">=</span> <span class="mi">0</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">x_t</span><span class="p">,</span> <span class="n">x_prev</span><span class="p">,</span> <span class="n">old_logp</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">traj</span><span class="p">):</span>       <span class="c1"># ⑤ 一步 = 一条训练样本</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>        <span class="n">v</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">(</span><span class="n">dit</span><span class="p">,</span> <span class="n">x_t</span><span class="p">,</span> <span class="n">sigmas</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">cond</span><span class="p">,</span> <span class="n">null_cond</span><span class="p">)</span>        <span class="c1"># actor，带梯度</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        <span class="n">_</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">std</span> <span class="o">=</span> <span class="n">sde_step</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x_t</span><span class="p">,</span> <span class="n">sigmas</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sigmas</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">(),</span> <span class="n">dit</span><span class="o">.</span><span class="n">disable_adapter</span><span class="p">():</span>         <span class="c1"># ref = 关掉 LoRA 的自己</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>            <span class="n">v_ref</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">(</span><span class="n">dit</span><span class="p">,</span> <span class="n">x_t</span><span class="p">,</span> <span class="n">sigmas</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">cond</span><span class="p">,</span> <span class="n">null_cond</span><span class="p">)</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>            <span class="n">_</span><span class="p">,</span> <span class="n">mu_ref</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">sde_step</span><span class="p">(</span><span class="n">v_ref</span><span class="p">,</span> <span class="n">x_t</span><span class="p">,</span> <span class="n">sigmas</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sigmas</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>        <span class="n">ratio</span> <span class="o">=</span> <span class="p">(</span><span class="n">log_prob</span><span class="p">(</span><span class="n">x_prev</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">std</span><span class="p">)</span> <span class="o">-</span> <span class="n">old_logp</span><span class="p">)</span><span class="o">.</span><span class="n">exp</span><span class="p">()</span> <span class="c1"># 分母来自 rollout，没有重算</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>        <span class="n">surr</span>  <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">ratio</span> <span class="o">*</span> <span class="n">A</span><span class="p">,</span> <span class="n">ratio</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">eps</span><span class="p">,</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">eps</span><span class="p">)</span> <span class="o">*</span> <span class="n">A</span><span class="p">)</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>        <span class="n">kl</span>    <span class="o">=</span> <span class="p">((</span><span class="n">mu</span> <span class="o">-</span> <span class="n">mu_ref</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">std</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>   <span class="c1"># 闭式</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>        <span class="n">loss</span>  <span class="o">=</span> <span class="n">loss</span> <span class="o">+</span> <span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">surr</span> <span class="o">-</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">kl</span><span class="p">))</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">();</span> <span class="n">opt</span><span class="o">.</span><span class="n">step</span><span class="p">();</span> <span class="n">opt</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+</code></pre></div>
+<h2 id="5">5. 小结</h2>
+<p><strong>结构（§1–§2）</strong>：GRPO 的 loop 原样搬过来，只换了模型每步产出什么——LLM 是下一个 token，这里是去噪一步。</p>
+<table>
+<thead>
+<tr>
+<th>部件</th>
+<th>LLM RL</th>
+<th>diffusion RL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>模型每步产出什么</td>
+<td>下一个 token</td>
+<td>去噪一步，出一张噪声少一点的图</td>
+</tr>
+<tr>
+<td>一条训练样本</td>
+<td>一个 token 位置</td>
+<td>一步去噪的输入和输出两张图</td>
+</tr>
+<tr>
+<td>logprob 怎么得到</td>
+<td>查词表那一格，取对数</td>
+<td>代高斯公式，65536 个元素取平均</td>
+</tr>
+<tr>
+<td>clip 范围</td>
+<td>0.2</td>
+<td>1e-4</td>
+</tr>
+<tr>
+<td>KL 怎么算</td>
+<td>拿样本估</td>
+<td>两个高斯只差均值，有公式直接算</td>
+</tr>
+<tr>
+<td>引擎差怎么修</td>
+<td>乘一个重要性权重</td>
+<td>乘法不成立，改成在梯度上减一项</td>
+</tr>
+<tr>
+<td>ratio 的分母默认取谁</td>
+<td>训练侧重算一遍</td>
+<td>直接用 rollout 记下的</td>
+</tr>
+<tr>
+<td>logprob 一定存在吗</td>
+<td>是，概率总有</td>
+<td>否，只有 SDE 采样才有</td>
+</tr>
+</tbody>
+</table>
+<p><strong>一个 step（§2、§3 落到调度上）</strong>：对回 03 训推协同篇前言的 step 表，骨架一格没动，格子全换了内容：</p>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>LLM GRPO（03 训推协同篇）</th>
+<th>diffusion（按配置估）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>① rollout</td>
+<td>actor 推理态</td>
+<td>actor 推理态，sgl-d</td>
+</tr>
+<tr>
+<td>② reward</td>
+<td>RM</td>
+<td>HPS</td>
+</tr>
+<tr>
+<td>③ advantage</td>
+<td>CPU，摊到 token</td>
+<td>CPU，摊到 pair</td>
+</tr>
+<tr>
+<td>④ update 准备</td>
+<td>ref 前向、重算 <code>old_logp</code></td>
+<td>无</td>
+</tr>
+<tr>
+<td>⑤ update</td>
+<td>训练引擎</td>
+<td>训练引擎，只加载 DiT</td>
+</tr>
+<tr>
+<td>权重同步</td>
+<td>全量</td>
+<td>只传 LoRA</td>
+</tr>
+</tbody>
+</table>
+<p><img src="../assets/15-diffusion-rl/fig-15.png" alt="GRPO 一个 step 的五个阶段，换到 diffusion 上" width="820" /></p>
+<ul>
+<li><strong>sgl-d</strong>：SGLang 里做 diffusion 推理的栈，项目的简写；LLM 用的那套叫 <code>srt</code>，同仓不同栈</li>
+<li>表里其余各格前文都有：④ 消失是 §2.5 的 bypass，ref 并进 ⑤、只加载 DiT 见 §3.1</li>
+</ul>
+<p><strong>负载（§3）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>LLM RL</th>
+<th>diffusion RL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>rollout 一次前向算多少</td>
+<td>1 个新 token</td>
+<td>整段 latent，1357 个 token</td>
+</tr>
+<tr>
+<td>每条耗时</td>
+<td>长短不一，有长尾</td>
+<td>步数定好，整齐</td>
+</tr>
+<tr>
+<td>rollout 时会涨的显存</td>
+<td>KV cache，随并发 × 长度</td>
+<td>激活，随分辨率</td>
+</tr>
+<tr>
+<td>显存峰值在哪个阶段</td>
+<td>update</td>
+<td>rollout</td>
+</tr>
+<tr>
+<td>传输的主要来源</td>
+<td>权重同步</td>
+<td>轨迹</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "navigation.expand", "toc.follow", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../javascripts/heading-font.js"></script>
+      
+        <script src="../javascripts/katex.js"></script>
+      
+        <script src="../javascripts/mmv.js"></script>
+      
+        <script src="../katex/katex.min.js"></script>
+      
+        <script src="../katex/auto-render.min.js"></script>
+      
+    
+  </body>
+</html>

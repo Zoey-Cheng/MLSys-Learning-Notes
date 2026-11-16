@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -29,10 +29,10 @@
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -883,6 +883,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="04_RL/04_05_diffusionRL.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    05-diffusion RL - 对比 LLM RL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1286,7 +1314,7 @@
 <li>训练：前后向计算流程，DP/EP/SP/CP/TP/PP 并行 + 通信量分析</li>
 <li>推理：prefill / decode 分离合并，以及 KV Cache 各类相关优化</li>
 <li>算子：基础 CUDA 算子，FA 1/2，进阶 - 架构相关优化、MoE 相关算子</li>
-<li>RL：……还没想好，DPO/PPO/GRPO，sync / async / multi turn 之类的</li>
+<li>RL：算法演化（DPO/GRPO）、训推协同与一致性、diffusion RL、Agentic RL，最后对比各家框架</li>
 <li>手写题 Quick Ref (<a href="07_%E9%9D%A2%E8%AF%95%E6%89%8B%E5%86%99%E9%A2%98/07_01_%E6%A8%A1%E5%9E%8B.html">模型</a> / <a href="07_%E9%9D%A2%E8%AF%95%E6%89%8B%E5%86%99%E9%A2%98/07_02_%E6%8E%A8%E7%90%86.html">推理</a> / <a href="07_%E9%9D%A2%E8%AF%95%E6%89%8B%E5%86%99%E9%A2%98/07_03_%E7%AE%97%E5%AD%90CUDA.html">算子</a>)</li>
 </ul>
 <p>qwq 其实 25 年就想写了，一直在拖，上班了继续慢慢更新中（</p>
@@ -1396,7 +1424,21 @@
 </tr>
 <tr>
 <td></td>
-<td>05-Agentic RL <em>WIP</em></td>
+<td><a href="04_RL/04_05_diffusionRL.html">05-diffusion RL (对比 LLM RL)</a></td>
+<td></td>
+<td><a href="https://github.com/Zoey-Cheng/MLSys-Learning-Notes/blob/main/code/15_diffusion_grpo.ipynb">ipynb</a> ｜ <a href="https://drive.google.com/file/d/1sPemXovEHHu0XGlfFuFEYPVyuRBo6QN8/view?usp=sharing">colab</a></td>
+<td>diffusion GRPO 简化实现</td>
+</tr>
+<tr>
+<td></td>
+<td>06-Agentic RL <em>WIP</em></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>07-RL框架对比 <em>WIP</em></td>
 <td></td>
 <td></td>
 <td></td>
@@ -1436,10 +1478,11 @@
 <p><strong>[About Me]</strong> 26 Master NG 菜狗</p>
 <ul>
 <li><strong>Intern</strong>：ByteDance CN @ AML 科学计算 → NVIDIA CN @ cuTile → NVIDIA US @ XLA</li>
-<li><strong>Fulltime</strong>：ByteDance US @ AI Search, ML infra - 训练支持</li>
+<li><strong>Fulltime</strong>：ByteDance US @ AI Search, ML infra - 训推支持</li>
 </ul>
 <h2 id="_2">更新历史</h2>
 <ul>
+<li><strong>11/15/2026</strong>: RL → 05-diffusion RL (对比 LLM RL) <a href="04_RL/04_05_diffusionRL.html">[link]</a>，网页版发布</li>
 <li><strong>10/10/2026</strong>: RL → 03-训推协同 (同步与异步) <a href="04_RL/04_03_%E8%AE%AD%E6%8E%A8%E5%8D%8F%E5%90%8C.html">[link]</a>，网页版和知乎同步发布</li>
 <li><strong>09/27/2026</strong>: RL → 02-算法演化 (DPO / GRPO / DAPO / OPD) <a href="04_RL/04_02_%E7%AE%97%E6%B3%95%E6%BC%94%E5%8C%96.html">[link]</a>，网页版和知乎同步发布</li>
 <li><strong>07/19/2026</strong>: RL → 01-RL训练基础 (loop 与 RLHF-PPO) <a href="04_RL/04_01_RL%E8%AE%AD%E7%BB%83%E5%9F%BA%E7%A1%80.html">[link]</a>，网页版和知乎同步发布</li>
@@ -1513,10 +1556,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "navigation.expand", "toc.follow", "search.suggest", "search.highlight", "content.code.copy"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "navigation.expand", "toc.follow", "search.suggest", "search.highlight", "content.code.copy"], "search": "assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
     
     
-      <script src="assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
         <script src="javascripts/heading-font.js"></script>
       
